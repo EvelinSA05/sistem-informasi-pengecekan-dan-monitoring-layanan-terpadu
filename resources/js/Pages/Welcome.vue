@@ -36,30 +36,33 @@ const handleSubmit = (e) => {
                 <div class="absolute -right-24 bottom-10 w-[380px] h-[380px] rounded-full border border-white/10 bg-white/[0.015]"></div>
             </div>
 
-            <!-- Top Header / Logo -->
-            <div class="relative z-10 flex items-center gap-3.5">
-                <div class="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center shadow-inner text-white">
-                    <!-- Shield Checker Icon -->
-                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L4 5V11.09C4 16.14 7.41 20.85 12 22C16.59 20.85 20 16.14 20 11.09V5L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.15"/>
-                        <path d="M9 11.5L11 13.5L15 9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+            <!-- Top Header / Logo & System Sub-title -->
+            <div class="relative z-10 flex flex-col items-start gap-2">
+                <!-- Official Logo Card -->
+                <div class="px-3.5 py-1.5 rounded-xl bg-white shadow-md shadow-blue-950/20 border border-white/60 flex items-center justify-center transition-transform hover:scale-[1.01]">
+                    <img
+                        src="/images/logo_majadigi.png"
+                        alt="Majadigi - Majapahit Digital"
+                        class="h-8 w-auto object-contain"
+                    />
                 </div>
-                <div>
-                    <h1 class="text-lg font-extrabold tracking-wider text-white leading-tight">MAJADIGI</h1>
-                    <p class="text-[11px] font-bold tracking-widest text-cyan-300 uppercase">CHECKER SYSTEM</p>
+
+                <!-- Sub-title Badge Below Logo -->
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white/15 backdrop-blur-md border border-white/20 shadow-sm">
+                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse"></span>
+                    <span class="text-[10px] font-bold tracking-widest text-cyan-200 uppercase">CHECKER SYSTEM</span>
                 </div>
             </div>
 
             <!-- Middle Headline & Description -->
-            <div class="relative z-10 my-auto py-10 lg:py-0 max-w-lg">
+            <div class="relative z-10 my-auto py-4 max-w-lg">
                 <h2 class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight leading-[1.15]">
                     Pantau Layanan<br/>
                     Digital<br/>
                     <span class="text-cyan-300 drop-shadow-sm">Jawa Timur</span>
                 </h2>
 
-                <p class="mt-5 text-blue-100/85 text-sm sm:text-base font-normal leading-relaxed">
+                <p class="mt-4 text-blue-100/85 text-sm sm:text-base font-normal leading-relaxed">
                     Platform monitoring terpusat untuk mengecek dan memantau kualitas layanan Majadigi secara berkala dan terstruktur.
                 </p>
             </div>
