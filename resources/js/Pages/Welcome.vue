@@ -1,19 +1,29 @@
 <script setup>
 import { ref } from 'vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import InputError from '@/Components/InputError.vue';
 
-const email = ref('');
-const password = ref('');
+defineProps({
+    canResetPassword: {
+        type: Boolean,
+    },
+    status: {
+        type: String,
+    },
+});
+
 const showPassword = ref(false);
-const isSubmitting = ref(false);
 
-const handleSubmit = (e) => {
-    e.preventDefault();
-    // UI-only interaction simulation as requested
-    isSubmitting.value = true;
-    setTimeout(() => {
-        isSubmitting.value = false;
-    }, 500);
+const form = useForm({
+    username: '',
+    password: '',
+    remember: false,
+});
+
+const submit = () => {
+    form.post(route('login'), {
+        onFinish: () => form.reset('password'),
+    });
 };
 </script>
 
@@ -139,44 +149,52 @@ const handleSubmit = (e) => {
                     </p>
                 </div>
 
+                <div v-if="status" class="mb-5 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-sm font-medium text-emerald-700">
+                    {{ status }}
+                </div>
+
                 <!-- Form Inputs -->
-                <form @submit="handleSubmit" class="space-y-5">
-                    <!-- Email Field -->
+                <form @submit.prevent="submit" class="space-y-5">
+                    <!-- Username Field -->
                     <div>
-                        <label for="email" class="block text-sm font-semibold text-slate-700 mb-2">
-                            Email
+                        <label for="username" class="block text-sm font-semibold text-slate-700 mb-2">
+                            Username
                         </label>
                         <div class="relative">
                             <input
-                                id="email"
-                                v-model="email"
-                                type="email"
-                                placeholder="budi@kominfo.jatim.go.id"
+                                id="username"
+                                v-model="form.username"
+                                type="text"
+                                placeholder="budi@gmail.com"
                                 required
+                                autofocus
+                                autocomplete="username"
                                 class="w-full px-4 py-3.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200 shadow-sm"
                             />
                         </div>
+                        <InputError class="mt-2" :message="form.errors.username" />
                     </div>
 
                     <!-- Password Field -->
                     <div>
                         <label for="password" class="block text-sm font-semibold text-slate-700 mb-2">
-                            Kata Sandi
+                            Password
                         </label>
                         <div class="relative">
                             <input
                                 id="password"
-                                v-model="password"
+                                v-model="form.password"
                                 :type="showPassword ? 'text' : 'password'"
-                                placeholder="••••••••••••"
+                                placeholder="Masukkan password"
                                 required
+                                autocomplete="current-password"
                                 class="w-full px-4 py-3.5 pr-11 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200 shadow-sm"
                             />
                             <button
                                 type="button"
                                 @click="showPassword = !showPassword"
                                 class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors p-1"
-                                :title="showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'"
+                                :title="showPassword ? 'Sembunyikan password' : 'Tampilkan password'"
                             >
                                 <!-- Eye Open / Close Icon -->
                                 <svg v-if="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,18 +206,30 @@ const handleSubmit = (e) => {
                                 </svg>
                             </button>
                         </div>
+                        <InputError class="mt-2" :message="form.errors.password" />
                     </div>
 
                     <!-- Submit Button -->
                     <div class="pt-2">
                         <button
                             type="submit"
-                            :disabled="isSubmitting"
-                            class="w-full py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25 hover:shadow-blue-600/35 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-75 disabled:pointer-events-none"
+                            :class="{ 'opacity-50 pointer-events-none': form.processing }"
+                            :disabled="form.processing"
+                            class="w-full py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25 hover:shadow-blue-600/35 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
                         >
                             <span>Masuk</span>
                             <span class="text-lg leading-none font-normal">→</span>
                         </button>
+                    </div>
+
+                    <!-- Link to Register -->
+                    <div class="text-center pt-2">
+                        <p class="text-sm text-slate-500">
+                            Belum memiliki akun?
+                            <Link :href="route('register')" class="font-semibold text-blue-600 hover:text-blue-700 hover:underline ml-1">
+                                Daftar Sekarang
+                            </Link>
+                        </p>
                     </div>
                 </form>
 

@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import InputError from '@/Components/InputError.vue';
 
 defineProps({
@@ -15,7 +15,7 @@ defineProps({
 const showPassword = ref(false);
 
 const form = useForm({
-    email: '',
+    username: '',
     password: '',
     remember: false,
 });
@@ -46,18 +46,21 @@ const submit = () => {
                 <div class="absolute -right-24 bottom-10 w-[380px] h-[380px] rounded-full border border-white/10 bg-white/[0.015]"></div>
             </div>
 
-            <!-- Top Header / Logo -->
-            <div class="relative z-10 flex items-center gap-3.5">
-                <div class="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center shadow-inner text-white">
-                    <!-- Shield Checker Icon -->
-                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L4 5V11.09C4 16.14 7.41 20.85 12 22C16.59 20.85 20 16.14 20 11.09V5L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.15"/>
-                        <path d="M9 11.5L11 13.5L15 9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+            <!-- Top Header / Logo & System Sub-title -->
+            <div class="relative z-10 flex flex-col items-start gap-2">
+                <!-- Official Logo Card -->
+                <div class="px-3.5 py-1.5 rounded-xl bg-white shadow-md shadow-blue-950/20 border border-white/60 flex items-center justify-center transition-transform hover:scale-[1.01]">
+                    <img
+                        src="/images/logo_majadigi.png"
+                        alt="Majadigi - Majapahit Digital"
+                        class="h-8 w-auto object-contain"
+                    />
                 </div>
-                <div>
-                    <h1 class="text-lg font-extrabold tracking-wider text-white leading-tight">MAJADIGI</h1>
-                    <p class="text-[11px] font-bold tracking-widest text-cyan-300 uppercase">CHECKER SYSTEM</p>
+
+                <!-- Sub-title Badge Below Logo -->
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white/15 backdrop-blur-md border border-white/20 shadow-sm">
+                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse"></span>
+                    <span class="text-[10px] font-bold tracking-widest text-cyan-200 uppercase">CHECKER SYSTEM</span>
                 </div>
             </div>
 
@@ -149,37 +152,37 @@ const submit = () => {
 
                 <!-- Form Inputs -->
                 <form @submit.prevent="submit" class="space-y-5">
-                    <!-- Email Field -->
+                    <!-- Username Field -->
                     <div>
-                        <label for="email" class="block text-sm font-semibold text-slate-700 mb-2">
-                            Email
+                        <label for="username" class="block text-sm font-semibold text-slate-700 mb-2">
+                            Username
                         </label>
                         <div class="relative">
                             <input
-                                id="email"
-                                v-model="form.email"
-                                type="email"
-                                placeholder="budi@kominfo.jatim.go.id"
+                                id="username"
+                                v-model="form.username"
+                                type="text"
+                                placeholder="budi@gmail.com"
                                 required
                                 autofocus
                                 autocomplete="username"
                                 class="w-full px-4 py-3.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200 shadow-sm"
                             />
                         </div>
-                        <InputError class="mt-2" :message="form.errors.email" />
+                        <InputError class="mt-2" :message="form.errors.username" />
                     </div>
 
                     <!-- Password Field -->
                     <div>
                         <label for="password" class="block text-sm font-semibold text-slate-700 mb-2">
-                            Kata Sandi
+                            Password
                         </label>
                         <div class="relative">
                             <input
                                 id="password"
                                 v-model="form.password"
                                 :type="showPassword ? 'text' : 'password'"
-                                placeholder="••••••••••••"
+                                placeholder="Masukkan password"
                                 required
                                 autocomplete="current-password"
                                 class="w-full px-4 py-3.5 pr-11 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200 shadow-sm"
@@ -188,7 +191,7 @@ const submit = () => {
                                 type="button"
                                 @click="showPassword = !showPassword"
                                 class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors p-1"
-                                :title="showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'"
+                                :title="showPassword ? 'Sembunyikan password' : 'Tampilkan password'"
                             >
                                 <svg v-if="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -213,6 +216,16 @@ const submit = () => {
                             <span>Masuk</span>
                             <span class="text-lg leading-none font-normal">→</span>
                         </button>
+                    </div>
+
+                    <!-- Link to Register -->
+                    <div class="text-center pt-2">
+                        <p class="text-sm text-slate-500">
+                            Belum memiliki akun?
+                            <Link :href="route('register')" class="font-semibold text-blue-600 hover:text-blue-700 hover:underline ml-1">
+                                Daftar Sekarang
+                            </Link>
+                        </p>
                     </div>
                 </form>
 
