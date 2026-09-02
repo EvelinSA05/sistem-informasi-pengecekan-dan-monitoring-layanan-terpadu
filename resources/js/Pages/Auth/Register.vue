@@ -9,10 +9,10 @@ const showConfirmPassword = ref(false);
 const form = useForm({
     name: '',
     email: '',
+    // username: '',
     password: '',
     password_confirmation: '',
 });
-
 // Real-time mismatch detection
 const isPasswordMismatch = computed(() => {
     return form.password_confirmation.length > 0 && form.password !== form.password_confirmation;
@@ -291,7 +291,6 @@ const submit = () => {
                             class="w-full py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25 hover:shadow-blue-600/35 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <span>Daftar Sekarang</span>
-                            <span class="text-lg leading-none font-normal">→</span>
                         </button>
                     </div>
 

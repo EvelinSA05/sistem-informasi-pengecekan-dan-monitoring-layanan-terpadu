@@ -17,10 +17,20 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
+        // Akun Admin
         User::factory()->create([
-            'name' => 'Admin User',
-            'username' => 'admin',
+            'name' => 'Admin Majadigi',
+            'email' => 'admin@majadigi.com',
+            'username' => 'admin_majadigi',
             'role' => 'admin',
+        ]);
+
+        // Akun Tester
+        User::factory()->create([
+            'name' => 'Tester Majadigi',
+            'email' => 'tester@majadigi.com',
+            'username' => 'tester_majadigi',
+            'role' => 'tester',
         ]);
     }
 }

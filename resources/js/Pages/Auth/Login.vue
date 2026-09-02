@@ -15,7 +15,7 @@ defineProps({
 const showPassword = ref(false);
 
 const form = useForm({
-    username: '',
+    email: '',
     password: '',
     remember: false,
 });
@@ -152,16 +152,16 @@ const submit = () => {
 
                 <!-- Form Inputs -->
                 <form @submit.prevent="submit" class="space-y-5">
-                    <!-- Username Field -->
+                    <!-- Email Field -->
                     <div>
-                        <label for="username" class="block text-sm font-semibold text-slate-700 mb-2">
-                            Username
+                        <label for="email" class="block text-sm font-semibold text-slate-700 mb-2">
+                            Email
                         </label>
                         <div class="relative">
                             <input
-                                id="username"
-                                v-model="form.username"
-                                type="text"
+                                id="email"
+                                v-model="form.email"
+                                type="email"
                                 placeholder="budi@gmail.com"
                                 required
                                 autofocus
@@ -169,7 +169,7 @@ const submit = () => {
                                 class="w-full px-4 py-3.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200 shadow-sm"
                             />
                         </div>
-                        <InputError class="mt-2" :message="form.errors.username" />
+                        <InputError class="mt-2" :message="form.errors.email" />
                     </div>
 
                     <!-- Password Field -->
@@ -214,7 +214,6 @@ const submit = () => {
                             class="w-full py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25 hover:shadow-blue-600/35 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
                         >
                             <span>Masuk</span>
-                            <span class="text-lg leading-none font-normal">→</span>
                         </button>
                     </div>
 
