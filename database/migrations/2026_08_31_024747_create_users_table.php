@@ -1,4 +1,3 @@
-```php
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -21,7 +20,6 @@ return new class extends Migration
 
             $table->string('nip', 50)->nullable()->unique();
             $table->string('bidang', 100)->nullable();
-
             $table->enum('status', ['aktif', 'tidak aktif'])->default('aktif');
 
             $table->string('role', 20);
@@ -39,4 +37,3 @@ return new class extends Migration
         Schema::dropIfExists('users');
     }
 };
-```
