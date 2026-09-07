@@ -1,3 +1,4 @@
+```php
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -17,7 +18,14 @@ return new class extends Migration
             $table->string('email', 150)->unique();
             $table->string('username', 100)->unique();
             $table->string('password', 255);
+
+            $table->string('nip', 50)->nullable()->unique();
+            $table->string('bidang', 100)->nullable();
+
+            $table->enum('status', ['aktif', 'tidak aktif'])->default('aktif');
+
             $table->string('role', 20);
+
             $table->rememberToken();
             $table->timestamps();
         });
@@ -31,3 +39,4 @@ return new class extends Migration
         Schema::dropIfExists('users');
     }
 };
+```
