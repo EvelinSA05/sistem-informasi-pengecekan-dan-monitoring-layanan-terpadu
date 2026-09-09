@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PeriodController extends Controller
 {
@@ -91,11 +92,10 @@ class PeriodController extends Controller
     }
 
     /**
-     * Halaman form pembuatan periode baru (Screenshot 2 & 3).
+     * Helper untuk mengambil data tester dan layanan
      */
-    public function create()
+    private function getFormData()
     {
-        // Ambil tester yang berstatus aktif
         $testers = User::where('role', 'tester')
             ->where('status', 'aktif')
             ->orderBy('name')
@@ -116,12 +116,10 @@ class PeriodController extends Controller
                 ];
             });
 
-        // Ambil semua layanan aktif
         $services = Service::where('is_active', true)
             ->orderBy('id')
             ->get(['id', 'source_service_id', 'service_name', 'category', 'icon', 'service_url']);
 
-        // Format bulan untuk dropdown
         $monthOptions = [];
         foreach ($this->indonesianMonths as $num => $name) {
             $monthOptions[] = [
@@ -130,12 +128,55 @@ class PeriodController extends Controller
             ];
         }
 
-        return Inertia::render('Admin/Periods/Create', [
+        return [$testers, $services, $monthOptions];
+    }
+
+    /**
+     * Halaman form pembuatan periode baru (Screenshot 2 & 3).
+     */
+    public function create()
+    {
+        [$testers, $services, $monthOptions] = $this->getFormData();
+
+        return Inertia::render('Admin/Periods/Form', [
+            'isEdit' => false,
+            'period' => null,
             'testers' => $testers,
             'services' => $services,
             'monthOptions' => $monthOptions,
-            'currentMonth' => (int) date('n'),
-            'currentYear' => (int) date('Y'),
+            'initialMonth' => (int) date('n'),
+            'initialYear' => (int) date('Y'),
+            'initialTesterIds' => [],
+        ]);
+    }
+
+    /**
+     * Halaman form edit periode (Screenshot 5).
+     */
+    public function edit(CheckingPeriod $period)
+    {
+        [$testers, $services, $monthOptions] = $this->getFormData();
+
+        $carbonDate = Carbon::parse($period->date);
+        $month = (int) $carbonDate->format('n');
+        $year = (int) $carbonDate->format('Y');
+
+        $assignedTesterIds = $period->periodTesters()->pluck('tester_id')->toArray();
+
+        return Inertia::render('Admin/Periods/Form', [
+            'isEdit' => true,
+            'period' => [
+                'id' => $period->id,
+                'title' => ($this->indonesianMonths[$month] ?? '') . ' ' . $year,
+                'date' => $period->date,
+                'status' => $period->status,
+            ],
+            'testers' => $testers,
+            'services' => $services,
+            'monthOptions' => $monthOptions,
+            'initialMonth' => $month,
+            'initialYear' => $year,
+            'initialTesterIds' => $assignedTesterIds,
         ]);
     }
 
@@ -156,7 +197,6 @@ class PeriodController extends Controller
 
         $date = sprintf('%04d-%02d-01', $request->year, $request->month);
 
-        // Cek apakah periode dengan bulan dan tahun yang sama sudah ada
         if (CheckingPeriod::where('date', $date)->exists()) {
             return back()->withErrors([
                 'month' => 'Periode untuk ' . ($this->indonesianMonths[$request->month] ?? $request->month) . ' ' . $request->year . ' sudah ada.',
@@ -164,14 +204,12 @@ class PeriodController extends Controller
         }
 
         DB::transaction(function () use ($date, $request) {
-            // 1. Buat record periode
             $period = CheckingPeriod::create([
                 'date' => $date,
                 'status' => 'proses',
                 'created_by' => $request->user()->id,
             ]);
 
-            // 2. Kaitkan tester terpilih
             $testerIds = array_values(array_unique($request->tester_ids));
             foreach ($testerIds as $testerId) {
                 PeriodTester::create([
@@ -180,11 +218,9 @@ class PeriodController extends Controller
                 ]);
             }
 
-            // 3. Ambil seluruh layanan aktif
             $services = Service::where('is_active', true)->orderBy('id')->get();
             $testerCount = count($testerIds);
 
-            // 4. Distribusi Layanan Otomatis secara merata (Round-Robin)
             foreach ($services as $index => $service) {
                 $assignedTesterId = $testerIds[$index % $testerCount];
                 PeriodService::create([
@@ -220,6 +256,8 @@ class PeriodController extends Controller
 
         $totalServices = $period->periodServices->count();
         $checkedServices = $period->periodServices->filter(fn($ps) => $ps->status !== 'pending' && !empty($ps->checked_at))->count();
+        $normalServices = $period->periodServices->where('status', 'normal')->count();
+        $issuesServices = $period->periodServices->where('status', 'gangguan')->count();
         $pendingServices = $totalServices - $checkedServices;
 
         // Group services by tester
@@ -268,6 +306,8 @@ class PeriodController extends Controller
                 'creator_name' => $period->creator?->name ?? 'Admin',
                 'total_services' => $totalServices,
                 'checked_services' => $checkedServices,
+                'normal_services' => $normalServices,
+                'issues_services' => $issuesServices,
                 'pending_services' => $pendingServices,
                 'progress_percent' => $totalServices > 0 ? round(($checkedServices / $totalServices) * 100) : 0,
             ],
@@ -276,19 +316,82 @@ class PeriodController extends Controller
     }
 
     /**
-     * Memperbarui status periode (Edit).
+     * Memperbarui data periode (Edit form / Quick status toggle).
      */
     public function update(Request $request, CheckingPeriod $period)
     {
+        // Kasus 1: Toggle status dari halaman Show
+        if ($request->has('status') && !$request->has('tester_ids')) {
+            $request->validate([
+                'status' => 'required|in:proses,selesai',
+            ]);
+
+            $period->update([
+                'status' => $request->status,
+            ]);
+
+            return back()->with('success', 'Status periode berhasil diperbarui.');
+        }
+
+        // Kasus 2: Update dari Form Edit Periode (Bulan, Tahun, Tester & Distribusi)
         $request->validate([
-            'status' => 'required|in:proses,selesai',
+            'month' => 'required|integer|between:1,12',
+            'year' => 'required|integer|between:2020,2099',
+            'tester_ids' => 'required|array|min:1',
+            'tester_ids.*' => 'exists:users,id',
+        ], [
+            'tester_ids.required' => 'Pilih minimal satu tester untuk periode pengecekan.',
+            'tester_ids.min' => 'Pilih minimal satu tester untuk periode pengecekan.',
         ]);
 
-        $period->update([
-            'status' => $request->status,
-        ]);
+        $date = sprintf('%04d-%02d-01', $request->year, $request->month);
 
-        return back()->with('success', 'Status periode berhasil diperbarui.');
+        // Cek duplikasi tanggal kecuali untuk periode ini sendiri
+        if (CheckingPeriod::where('date', $date)->where('id', '!=', $period->id)->exists()) {
+            return back()->withErrors([
+                'month' => 'Periode untuk ' . ($this->indonesianMonths[$request->month] ?? $request->month) . ' ' . $request->year . ' sudah ada.',
+            ]);
+        }
+
+        DB::transaction(function () use ($period, $date, $request) {
+            $period->update([
+                'date' => $date,
+            ]);
+
+            // Simpan status cek yang sudah ada sebelum redistribusi agar catatan tidak hilang
+            $existingServices = PeriodService::where('period_id', $period->id)->get()->keyBy('service_id');
+
+            // Perbarui tester periode
+            $testerIds = array_values(array_unique($request->tester_ids));
+            PeriodTester::where('period_id', $period->id)->delete();
+            foreach ($testerIds as $testerId) {
+                PeriodTester::create([
+                    'period_id' => $period->id,
+                    'tester_id' => $testerId,
+                ]);
+            }
+
+            // Redistribusi layanan aktif
+            $services = Service::where('is_active', true)->orderBy('id')->get();
+            $testerCount = count($testerIds);
+
+            PeriodService::where('period_id', $period->id)->delete();
+            foreach ($services as $index => $service) {
+                $assignedTesterId = $testerIds[$index % $testerCount];
+                $prev = $existingServices->get($service->id);
+
+                PeriodService::create([
+                    'period_id' => $period->id,
+                    'service_id' => $service->id,
+                    'tester_id' => $assignedTesterId,
+                    'status' => $prev ? $prev->status : 'pending',
+                    'description' => $prev ? $prev->description : null,
+                    'checked_at' => $prev ? $prev->checked_at : null,
+                ]);
+            }
+        });
+
+        return redirect()->route('admin.periods.index')->with('success', 'Data periode berhasil diperbarui.');
     }
 
     /**
@@ -299,5 +402,178 @@ class PeriodController extends Controller
         $period->delete();
 
         return redirect()->route('admin.periods.index')->with('success', 'Periode pengecekan berhasil dihapus.');
+    }
+
+    /**
+     * Export Laporan Periode ke Format Excel (CSV kompatibel Excel dengan UTF-8 BOM).
+     */
+    public function exportExcel(CheckingPeriod $period): StreamedResponse
+    {
+        $period->load([
+            'creator:id,name',
+            'periodServices.service',
+            'periodServices.tester',
+        ]);
+
+        $carbonDate = Carbon::parse($period->date);
+        $monthNum = (int) $carbonDate->format('n');
+        $monthName = $this->indonesianMonths[$monthNum] ?? $carbonDate->format('F');
+        $year = $carbonDate->format('Y');
+
+        $filename = "Laporan_Pengecekan_{$monthName}_{$year}.csv";
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        $callback = function () use ($period, $monthName, $year) {
+            $file = fopen('php://output', 'w');
+
+            // UTF-8 BOM for Microsoft Excel compatibility
+            fputs($file, "\xEF\xBB\xBF");
+
+            // Header Laporan Eksekutif
+            fputcsv($file, ['MAJADIGI CHECKER - DINAS KOMUNIKASI DAN INFORMATIKA PROVINSI JAWA TIMUR']);
+            fputcsv($file, ['LAPORAN HASIL PENGECEKAN LAYANAN DIGITAL']);
+            fputcsv($file, []);
+            fputcsv($file, ['Periode Pengecekan', "{$monthName} {$year}"]);
+            fputcsv($file, ['Status Periode', strtoupper($period->status)]);
+            fputcsv($file, ['Dibuat Oleh', $period->creator?->name ?? 'Admin']);
+            fputcsv($file, ['Tanggal Laporan', date('d/m/Y H:i:s')]);
+            fputcsv($file, []);
+
+            // Ringkasan Metrik
+            $total = $period->periodServices->count();
+            $normal = $period->periodServices->where('status', 'normal')->count();
+            $issues = $period->periodServices->where('status', 'gangguan')->count();
+            $pending = $period->periodServices->where('status', 'pending')->count();
+            $checked = $total - $pending;
+            $percent = $total > 0 ? round(($checked / $total) * 100) : 0;
+
+            fputcsv($file, ['RINGKASAN METRIK']);
+            fputcsv($file, ['Total Layanan', $total]);
+            fputcsv($file, ['Layanan Normal', $normal]);
+            fputcsv($file, ['Layanan Terkendala', $issues]);
+            fputcsv($file, ['Belum Diperiksa', $pending]);
+            fputcsv($file, ['Tingkat Kesiapan (Progress)', "{$percent}%"]);
+            fputcsv($file, []);
+
+            // Tabel Data Detail Layanan
+            fputcsv($file, [
+                'No',
+                'ID Layanan',
+                'Nama Layanan',
+                'Kategori / Bidang',
+                'Tester Penanggung Jawab',
+                'Bidang Tester',
+                'Email Tester',
+                'Status Pengecekan',
+                'Waktu Pengecekan',
+                'Keterangan / Catatan',
+            ]);
+
+            $no = 1;
+            foreach ($period->periodServices as $ps) {
+                $statusLabel = match($ps->status) {
+                    'normal' => 'NORMAL',
+                    'gangguan' => 'KENDALA / GANGGUAN',
+                    default => 'BELUM DICEK',
+                };
+
+                fputcsv($file, [
+                    $no++,
+                    $ps->service?->source_service_id ?? '-',
+                    $ps->service?->service_name ?? '-',
+                    $ps->service?->category ?? 'Umum',
+                    $ps->tester?->name ?? '-',
+                    $ps->tester?->bidang ?? '-',
+                    $ps->tester?->email ?? '-',
+                    $statusLabel,
+                    $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d/m/Y H:i') : '-',
+                    $ps->description ?? '-',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Export Laporan Periode ke Tampilan Infografis / Siap Cetak PDF.
+     */
+    public function exportPdf(CheckingPeriod $period)
+    {
+        $period->load([
+            'creator:id,name,email',
+            'periodTesters.tester:id,name,email,bidang,nip',
+            'periodServices.service:id,source_service_id,service_name,category,icon,service_url',
+            'periodServices.tester:id,name,email,bidang',
+        ]);
+
+        $carbonDate = Carbon::parse($period->date);
+        $monthNum = (int) $carbonDate->format('n');
+        $monthName = $this->indonesianMonths[$monthNum] ?? $carbonDate->format('F');
+        $year = $carbonDate->format('Y');
+
+        $totalServices = $period->periodServices->count();
+        $checkedServices = $period->periodServices->filter(fn($ps) => $ps->status !== 'pending' && !empty($ps->checked_at))->count();
+        $normalServices = $period->periodServices->where('status', 'normal')->count();
+        $issuesServices = $period->periodServices->where('status', 'gangguan')->count();
+        $pendingServices = $totalServices - $checkedServices;
+        $progressPercent = $totalServices > 0 ? round(($checkedServices / $totalServices) * 100) : 0;
+
+        // Distribusi tester
+        $testersWorkload = [];
+        foreach ($period->periodTesters as $pt) {
+            $t = $pt->tester;
+            if (!$t) continue;
+            $tServices = $period->periodServices->where('tester_id', $t->id);
+            $tChecked = $tServices->filter(fn($ps) => $ps->status !== 'pending' && !empty($ps->checked_at))->count();
+            $testersWorkload[] = [
+                'name' => $t->name,
+                'bidang' => $t->bidang ?? 'Layanan Publik',
+                'total' => $tServices->count(),
+                'checked' => $tChecked,
+                'percent' => $tServices->count() > 0 ? round(($tChecked / $tServices->count()) * 100) : 0,
+            ];
+        }
+
+        $servicesList = $period->periodServices->map(function ($ps, $idx) {
+            return [
+                'no' => $idx + 1,
+                'service_name' => $ps->service?->service_name ?? 'Layanan',
+                'category' => $ps->service?->category ?? 'Umum',
+                'tester_name' => $ps->tester?->name ?? 'Tester',
+                'status' => $ps->status,
+                'checked_at' => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y H:i') : '-',
+                'description' => $ps->description ?? '-',
+            ];
+        });
+
+        return Inertia::render('Admin/Periods/ExportReport', [
+            'report' => [
+                'title' => "{$monthName} {$year}",
+                'month_name' => $monthName,
+                'year' => $year,
+                'status' => $period->status,
+                'created_at_label' => Carbon::parse($period->created_at)->format('d F Y H:i'),
+                'creator_name' => $period->creator?->name ?? 'Admin',
+                'generated_at' => Carbon::now()->format('d F Y H:i'),
+                'total_services' => $totalServices,
+                'checked_services' => $checkedServices,
+                'normal_services' => $normalServices,
+                'issues_services' => $issuesServices,
+                'pending_services' => $pendingServices,
+                'progress_percent' => $progressPercent,
+            ],
+            'testers_workload' => $testersWorkload,
+            'services' => $servicesList,
+        ]);
     }
 }

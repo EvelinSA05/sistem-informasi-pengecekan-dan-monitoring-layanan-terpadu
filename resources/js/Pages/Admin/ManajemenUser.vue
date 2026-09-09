@@ -224,11 +224,11 @@ function confirmDelete() {
             <table class="w-full text-sm">
                 <thead>
                     <tr class="border-b border-slate-100 bg-slate-50/50">
-                        <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Tester</th>
-                        <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">NIP</th>
-                        <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Bidang</th>
-                        <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                        <th class="px-5 py-3"></th>
+                        <th class="text-center px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Tester</th>
+                        <th class="text-center px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">NIP</th>
+                        <th class="text-center px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Bidang</th>
+                        <th class="text-center px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                        <th class="text-center px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -246,7 +246,7 @@ function confirmDelete() {
                         class="hover:bg-slate-50/70 transition-colors group"
                     >
                         <!-- Tester col -->
-                        <td class="px-5 py-3.5">
+                        <td class="px-5 py-3.5 text-left">
                             <div class="flex items-center gap-3">
                                 <div :class="['w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm', getAvatarColor(user.name)]">
                                     {{ getInitials(user.name) }}
@@ -258,18 +258,18 @@ function confirmDelete() {
                             </div>
                         </td>
                         <!-- NIP col -->
-                        <td class="px-5 py-3.5 text-slate-600 font-mono text-xs">
+                        <td class="px-5 py-3.5 text-center text-slate-600 font-mono text-xs">
                             {{ user.nip ?? '-' }}
                         </td>
                         <!-- Bidang col -->
-                        <td class="px-5 py-3.5">
+                        <td class="px-5 py-3.5 text-center">
                             <span v-if="user.bidang" class="inline-flex px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold">
                                 {{ user.bidang }}
                             </span>
                             <span v-else class="text-slate-400 text-xs">-</span>
                         </td>
                         <!-- Status col -->
-                        <td class="px-5 py-3.5">
+                        <td class="px-5 py-3.5 text-center">
                             <span
                                 :class="[
                                     'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold',
@@ -283,8 +283,8 @@ function confirmDelete() {
                             </span>
                         </td>
                         <!-- Actions col -->
-                        <td class="px-5 py-3.5">
-                            <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <td class="px-5 py-3.5 text-center">
+                            <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <!-- Detail -->
                                 <button
                                     @click="openDetailModal(user)"

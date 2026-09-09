@@ -38,8 +38,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/periods/create', [AdminPeriodController::class, 'create'])->name('periods.create');
         Route::post('/periods', [AdminPeriodController::class, 'store'])->name('periods.store');
         Route::get('/periods/{period}', [AdminPeriodController::class, 'show'])->name('periods.show');
+        Route::get('/periods/{period}/edit', [AdminPeriodController::class, 'edit'])->name('periods.edit');
         Route::put('/periods/{period}', [AdminPeriodController::class, 'update'])->name('periods.update');
         Route::delete('/periods/{period}', [AdminPeriodController::class, 'destroy'])->name('periods.destroy');
+        Route::get('/periods/{period}/export/excel', [AdminPeriodController::class, 'exportExcel'])->name('periods.export.excel');
+        Route::get('/periods/{period}/export/pdf', [AdminPeriodController::class, 'exportPdf'])->name('periods.export.pdf');
     });
 });
 
