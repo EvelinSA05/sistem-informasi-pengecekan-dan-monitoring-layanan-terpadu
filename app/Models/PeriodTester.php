@@ -13,6 +13,8 @@ class PeriodTester extends Model
         'tester_id',
     ];
 
+    public $timestamps = false;
+
     public function period()
     {
         return $this->belongsTo(CheckingPeriod::class, 'period_id');

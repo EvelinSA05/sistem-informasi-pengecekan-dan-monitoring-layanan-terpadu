@@ -2,6 +2,11 @@
 import { ref, computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 
+const props = defineProps({
+    title: { type: String, default: 'Dashboard' },
+    subtitle: { type: String, default: 'Selamat datang di Majadigi Checker' },
+});
+
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 
@@ -27,6 +32,7 @@ const adminNavItems = [
     {
         label: 'Dashboard',
         route: 'dashboard',
+        activeRoute: 'dashboard',
         href: '/dashboard',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="7" height="7" rx="1.5" stroke-linecap="round"/>
@@ -38,6 +44,7 @@ const adminNavItems = [
     {
         label: 'Manajemen User',
         route: 'admin.users.index',
+        activeRoute: 'admin.users.*',
         href: '/admin/users',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 100-8 4 4 0 000 8zm6-4a3 3 0 11-6 0 3 3 0 016 0zM3 16a3 3 0 116 0"/>
@@ -45,8 +52,9 @@ const adminNavItems = [
     },
     {
         label: 'Periode Pengecekan',
-        route: null,
-        href: '#',
+        route: 'admin.periods.index',
+        activeRoute: 'admin.periods.*',
+        href: '/admin/periods',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <rect x="3" y="4" width="18" height="18" rx="2" stroke-linecap="round"/>
             <path stroke-linecap="round" stroke-linejoin="round" d="M16 2v4M8 2v4M3 10h18"/>
@@ -55,6 +63,7 @@ const adminNavItems = [
     {
         label: 'Monitoring Layanan',
         route: null,
+        activeRoute: null,
         href: '#',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2a4 4 0 014-4h0a4 4 0 014 4v2"/>
@@ -125,7 +134,7 @@ const navItems = computed(() => {
                     <Link
                         :href="item.href"
                         class="group relative flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-200"
-                        :class="item.route && route().current(item.route)
+                        :class="(item.activeRoute && route().current(item.activeRoute)) || (item.route && route().current(item.route))
                             ? 'bg-white text-blue-900 shadow-lg shadow-blue-950/10'
                             : item.href === '#'
                             ? 'text-blue-100/70 hover:bg-white/10 hover:text-white'
@@ -133,13 +142,13 @@ const navItems = computed(() => {
                     >
                         <!-- Active indicator pill / dot -->
                         <span
-                            v-if="item.route && route().current(item.route)"
+                            v-if="(item.activeRoute && route().current(item.activeRoute)) || (item.route && route().current(item.route))"
                             class="absolute right-3.5 w-2 h-2 rounded-full bg-blue-600 shadow-sm"
                         ></span>
                         <!-- Icon -->
                         <span
                             class="shrink-0 w-5 h-5 transition-transform group-hover:scale-105"
-                            :class="item.route && route().current(item.route) ? 'text-blue-700' : 'text-blue-200/90'"
+                            :class="(item.activeRoute && route().current(item.activeRoute)) || (item.route && route().current(item.route)) ? 'text-blue-700' : 'text-blue-200/90'"
                             v-html="item.icon"
                         ></span>
                         <!-- Label -->
@@ -183,8 +192,8 @@ const navItems = computed(() => {
             <!-- Top bar -->
             <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200/70 h-16 flex items-center justify-between px-8">
                 <div>
-                    <h1 class="text-lg font-bold text-slate-800 leading-none">Dashboard</h1>
-                    <p class="text-xs text-slate-400 mt-1 font-medium">Selamat datang di Majadigi Checker</p>
+                    <h1 class="text-lg font-bold text-slate-800 leading-none">{{ title }}</h1>
+                    <p class="text-xs text-slate-400 mt-1 font-medium">{{ subtitle }}</p>
                 </div>
                 <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-xs font-semibold text-emerald-600 shadow-sm">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>

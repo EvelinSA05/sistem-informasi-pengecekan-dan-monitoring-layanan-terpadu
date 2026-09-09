@@ -40,4 +40,12 @@ class CheckingPeriod extends Model
     {
         return $this->hasMany(PeriodService::class, 'period_id');
     }
+
+    /**
+     * Relasi langsung ke User Tester
+     */
+    public function testers()
+    {
+        return $this->belongsToMany(User::class, 'period_testers', 'period_id', 'tester_id');
+    }
 }
