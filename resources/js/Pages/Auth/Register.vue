@@ -9,10 +9,12 @@ const showConfirmPassword = ref(false);
 const form = useForm({
     name: '',
     email: '',
-    // username: '',
+    nip: '',
+    bidang: '',
     password: '',
     password_confirmation: '',
 });
+
 // Real-time mismatch detection
 const isPasswordMismatch = computed(() => {
     return form.password_confirmation.length > 0 && form.password !== form.password_confirmation;
@@ -45,19 +47,14 @@ const submit = () => {
             
             <!-- Ambient Background Decorative Concentric Circles -->
             <div class="absolute inset-0 pointer-events-none overflow-hidden">
-                <!-- Large decorative circle 1 -->
                 <div class="absolute -left-24 top-1/4 w-[520px] h-[520px] rounded-full border border-white/10 bg-white/[0.02]"></div>
-                <!-- Large decorative circle 2 -->
                 <div class="absolute -left-12 top-1/3 w-[680px] h-[680px] rounded-full border border-white/10 bg-white/[0.01]"></div>
-                <!-- Middle radial glow -->
                 <div class="absolute left-1/4 top-1/2 -translate-y-1/2 w-[420px] h-[420px] rounded-full bg-blue-400/10 blur-3xl"></div>
-                <!-- Bottom subtle ring -->
                 <div class="absolute -right-24 bottom-10 w-[380px] h-[380px] rounded-full border border-white/10 bg-white/[0.015]"></div>
             </div>
 
             <!-- Top Header / Logo & System Sub-title -->
             <div class="relative z-10 flex flex-col items-start gap-2">
-                <!-- Official Logo Card -->
                 <div class="px-3.5 py-1.5 rounded-xl bg-white shadow-md shadow-blue-950/20 border border-white/60 flex items-center justify-center transition-transform hover:scale-[1.01]">
                     <img
                         src="/images/logo_majadigi.png"
@@ -66,7 +63,6 @@ const submit = () => {
                     />
                 </div>
 
-                <!-- Sub-title Badge Below Logo -->
                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white/15 backdrop-blur-md border border-white/20 shadow-sm">
                     <span class="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse"></span>
                     <span class="text-[10px] font-bold tracking-widest text-cyan-200 uppercase">CHECKER SYSTEM</span>
@@ -141,11 +137,11 @@ const submit = () => {
         </div>
 
         <!-- Right Side: Authentication Form Area -->
-        <div class="w-full lg:w-[52%] xl:w-[55%] flex items-center justify-center p-6 sm:p-12 lg:p-16 bg-[#ffffff]">
+        <div class="w-full lg:w-[52%] xl:w-[55%] flex items-center justify-center p-6 sm:p-10 lg:p-14 bg-[#ffffff] overflow-y-auto">
             <div class="w-full max-w-[440px] py-4">
                 
                 <!-- Form Header -->
-                <div class="mb-8">
+                <div class="mb-7">
                     <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                         Buat Akun Baru
                     </h2>
@@ -193,6 +189,46 @@ const submit = () => {
                             />
                         </div>
                         <InputError class="mt-1" :message="form.errors.email" />
+                    </div>
+
+                    <!-- NIP Field -->
+                    <div>
+                        <label for="nip" class="block text-sm font-semibold text-slate-700 mb-1.5">
+                            NIP <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input
+                                id="nip"
+                                v-model="form.nip"
+                                type="text"
+                                placeholder="198501012010011001"
+                                required
+                                maxlength="18"
+                                inputmode="numeric"
+                                pattern="\d{18}"
+                                class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200 shadow-sm"
+                            />
+                        </div>
+                        <p class="mt-1 text-xs text-slate-400">18 digit Nomor Induk Pegawai</p>
+                        <InputError class="mt-1" :message="form.errors.nip" />
+                    </div>
+
+                    <!-- Bidang / Divisi Field -->
+                    <div>
+                        <label for="bidang" class="block text-sm font-semibold text-slate-700 mb-1.5">
+                            Bidang / Divisi <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input
+                                id="bidang"
+                                v-model="form.bidang"
+                                type="text"
+                                placeholder="Infrastruktur Digital"
+                                required
+                                class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200 shadow-sm"
+                            />
+                        </div>
+                        <InputError class="mt-1" :message="form.errors.bidang" />
                     </div>
 
                     <!-- Kata Sandi Field -->
@@ -266,7 +302,6 @@ const submit = () => {
                                 </svg>
                             </button>
                         </div>
-                        <!-- Client-side reactive helper/validation note -->
                         <p v-if="isPasswordMismatch" class="mt-1 text-xs font-medium text-rose-500 flex items-center gap-1.5">
                             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
