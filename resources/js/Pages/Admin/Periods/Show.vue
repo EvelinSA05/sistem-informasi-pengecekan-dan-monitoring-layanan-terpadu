@@ -290,7 +290,7 @@ function getServiceIcon(iconKey) {
                         </div>
                         <div>
                             <p class="text-sm font-bold text-slate-800 leading-tight">{{ group.name }}</p>
-                            <p class="text-xs text-slate-400 font-medium">{{ group.bidang }}</p>
+                            <p class="text-xs text-slate-400 font-medium">{{ group.email }}</p>
                         </div>
                     </div>
                     <div class="text-right">

@@ -289,7 +289,7 @@ class PeriodController extends Controller
             $distribution[] = [
                 'tester_id' => $tester->id,
                 'name' => $tester->name,
-                'bidang' => $tester->bidang ?? 'Layanan Publik',
+                'email' => $tester->email,
                 'initials' => $initials,
                 'total_services' => $assignedServices->count(),
                 'checked_services' => $assignedServices->filter(fn($s) => $s['status'] !== 'pending')->count(),
@@ -472,9 +472,8 @@ class PeriodController extends Controller
                 'No',
                 'ID Layanan',
                 'Nama Layanan',
-                'Kategori / Bidang',
+                'Kategori Layanan',
                 'Tester Penanggung Jawab',
-                'Bidang Tester',
                 'Email Tester',
                 'Status Pengecekan',
                 'Waktu Pengecekan',
@@ -495,7 +494,6 @@ class PeriodController extends Controller
                     $ps->service?->service_name ?? '-',
                     $ps->service?->category ?? 'Umum',
                     $ps->tester?->name ?? '-',
-                    $ps->tester?->bidang ?? '-',
                     $ps->tester?->email ?? '-',
                     $statusLabel,
                     $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d/m/Y H:i') : '-',
@@ -542,7 +540,7 @@ class PeriodController extends Controller
             $tChecked = $tServices->filter(fn($ps) => $ps->status !== 'pending' && !empty($ps->checked_at))->count();
             $testersWorkload[] = [
                 'name' => $t->name,
-                'bidang' => $t->bidang ?? 'Layanan Publik',
+                'email' => $t->email,
                 'total' => $tServices->count(),
                 'checked' => $tChecked,
                 'percent' => $tServices->count() > 0 ? round(($tChecked / $tServices->count()) * 100) : 0,

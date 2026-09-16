@@ -144,7 +144,7 @@ onMounted(() => {
                     >
                         <div>
                             <p class="text-xs font-bold text-slate-800 leading-tight">{{ tw.name }}</p>
-                            <p class="text-[10.5px] text-slate-400 mt-0.5 font-medium">{{ tw.bidang }}</p>
+                            <p class="text-[10.5px] text-slate-400 mt-0.5 font-medium">{{ tw.email }}</p>
                         </div>
                         <div class="text-right">
                             <span class="inline-flex px-2 py-0.5 rounded-lg text-[10.5px] font-extrabold bg-white border border-slate-200 text-slate-700">

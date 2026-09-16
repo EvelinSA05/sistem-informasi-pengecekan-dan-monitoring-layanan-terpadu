@@ -32,91 +32,104 @@ const submit = () => {
 
     <div class="min-h-screen w-full flex flex-col lg:flex-row bg-[#f8fafc] selection:bg-blue-600 selection:text-white font-sans antialiased">
         <!-- Left Side (Desktop) / Top Banner Header (Mobile) -->
-        <div class="relative w-full lg:w-[48%] xl:w-[45%] bg-[#1d4ed8] bg-gradient-to-b from-[#1e40af] via-[#1d4ed8] to-[#2563eb] p-6 sm:p-8 lg:p-14 text-white flex flex-col justify-between overflow-hidden lg:min-h-screen shrink-0">
+        <div class="relative w-full lg:w-[48%] xl:w-[45%] bg-[#1d4ed8] bg-gradient-to-br from-[#1e40af] via-[#1d4ed8] to-[#1e3a8a] p-6 sm:p-8 lg:p-12 xl:p-14 text-white flex flex-col justify-between overflow-hidden lg:min-h-screen shrink-0">
             
-            <!-- Ambient Background Decorative Circles -->
+            <!-- Ambient Background Decorative Circles & Glow -->
             <div class="absolute inset-0 pointer-events-none overflow-hidden">
                 <div class="absolute -left-20 top-10 w-96 h-96 rounded-full border border-white/10 bg-white/[0.02]"></div>
                 <div class="absolute -right-20 bottom-0 w-80 h-80 rounded-full border border-white/10 bg-white/[0.02]"></div>
-                <div class="absolute right-10 top-20 w-64 h-64 rounded-full bg-cyan-400/10 blur-2xl"></div>
+                <div class="absolute right-10 top-20 w-72 h-72 rounded-full bg-cyan-400/10 blur-3xl"></div>
+                <div class="absolute left-1/4 bottom-1/4 w-80 h-80 rounded-full bg-blue-500/20 blur-3xl"></div>
             </div>
 
-            <!-- Top Header: Logo Card & Checker System Pill -->
-            <!-- Desktop: stacked vertikal (logo atas, badge bawah) -->
-            <!-- Mobile: sejajar horizontal (logo kiri, badge kanan) -->
-            <div class="relative z-10 flex flex-row items-center justify-between lg:flex-col lg:items-start lg:gap-3">
-                <!-- Logo Card -->
+            <!-- Mobile Top Header (Logo left, Badge right) -->
+            <div class="relative z-10 flex flex-row items-center justify-between lg:hidden mb-5">
                 <div class="px-3.5 py-1.5 rounded-xl bg-white shadow-md border border-white/80 flex items-center gap-2">
                     <img
                         src="/images/logo_majadigi.png"
                         alt="Majadigi - Majapahit Digital"
-                        class="h-7 sm:h-8 w-auto object-contain"
+                        class="h-7 w-auto object-contain"
                     />
                 </div>
-
-                <!-- Sub-title Badge -->
                 <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 shadow-sm">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span class="text-[11px] font-bold tracking-wider text-white uppercase">CHECKER SYSTEM</span>
                 </div>
             </div>
 
-            <!-- Middle Headline & Description -->
-            <div class="relative z-10 my-4 lg:my-auto max-w-lg">
-                <h1 class="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold text-white tracking-tight leading-tight">
+            <!-- Desktop Top: Logo & Badge Group (Jarak pendek dan rapi) -->
+            <div class="relative z-10 hidden lg:flex flex-col items-start gap-2.5 mb-6 xl:mb-7">
+                <div class="inline-flex px-3.5 py-1.5 rounded-xl bg-white shadow-md border border-white/90 items-center gap-2">
+                    <img
+                        src="/images/logo_majadigi.png"
+                        alt="Majadigi - Majapahit Digital"
+                        class="h-7 w-auto object-contain"
+                    />
+                </div>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 shadow-sm w-fit">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-[10.5px] font-bold tracking-wider text-white uppercase">CHECKER SYSTEM</span>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="relative z-10 max-w-lg my-auto lg:my-0 flex-1 flex flex-col justify-center">
+                <!-- Headline -->
+                <h1 class="text-2xl sm:text-3xl lg:text-[38px] xl:text-[42px] font-extrabold text-white tracking-tight leading-[1.18]">
                     Pantau Layanan Digital<br/>
                     <span class="text-cyan-300">Jawa Timur</span>
                 </h1>
 
-                <p class="mt-3 lg:mt-5 text-blue-100/90 text-xs sm:text-sm lg:text-base font-normal leading-relaxed">
+                <!-- Description -->
+                <p class="mt-3 lg:mt-4 text-blue-100/90 text-xs sm:text-sm lg:text-[14.5px] font-normal leading-relaxed max-w-md">
                     Platform monitoring terpusat untuk mengecek dan memantau kualitas layanan Majadigi secara berkala dan terstruktur.
                 </p>
 
-                <!-- Features: Mobile = 3 kolom horizontal kompak, Desktop = vertikal -->
-                <div class="grid grid-cols-3 lg:grid-cols-1 gap-2 lg:gap-3 mt-3 lg:mt-8">
+                <!-- Features: Shape diperkecil & lebih hemat ruang -->
+                <div class="grid grid-cols-3 lg:grid-cols-1 gap-2 lg:gap-2.5 mt-4 lg:mt-6">
                     <!-- Feature 1: Dashboard Real-time -->
-                    <div class="flex flex-col lg:flex-row items-center lg:items-center gap-1.5 lg:gap-4 p-2 lg:p-4 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-center lg:text-left">
-                        <div class="w-8 h-8 lg:w-10 lg:h-10 shrink-0 rounded-xl bg-white/20 flex items-center justify-center text-white mx-auto lg:mx-0">
-                            <svg class="w-4 h-4 lg:w-5 lg:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <div class="flex flex-col lg:flex-row items-center lg:items-center gap-2 lg:gap-3 p-2 lg:py-2.5 lg:px-3.5 rounded-xl bg-white/[0.12] hover:bg-white/[0.18] transition-all duration-200 border border-white/20 backdrop-blur-md shadow-sm text-center lg:text-left">
+                        <div class="w-7 h-7 lg:w-9 lg:h-9 shrink-0 rounded-lg bg-white/20 flex items-center justify-center text-white mx-auto lg:mx-0 shadow-inner">
+                            <svg class="w-3.5 h-3.5 lg:w-4.5 lg:h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-[10px] lg:text-sm font-bold text-white leading-tight">Dashboard Real-time</p>
-                            <p class="hidden lg:block text-xs text-blue-100/80 mt-1">Pantau status seluruh layanan dalam satu tampilan</p>
+                            <p class="text-[9.5px] sm:text-xs lg:text-[13px] font-bold text-white leading-tight">Dashboard Real-time</p>
+                            <p class="hidden lg:block text-[11px] text-blue-100/80 mt-0.5 leading-snug">Pantau status seluruh layanan dalam satu tampilan</p>
                         </div>
                     </div>
 
                     <!-- Feature 2: Distribusi Otomatis -->
-                    <div class="flex flex-col lg:flex-row items-center lg:items-center gap-1.5 lg:gap-4 p-2 lg:p-4 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-center lg:text-left">
-                        <div class="w-8 h-8 lg:w-10 lg:h-10 shrink-0 rounded-xl bg-white/20 flex items-center justify-center text-white mx-auto lg:mx-0">
-                            <svg class="w-4 h-4 lg:w-5 lg:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <div class="flex flex-col lg:flex-row items-center lg:items-center gap-2 lg:gap-3 p-2 lg:py-2.5 lg:px-3.5 rounded-xl bg-white/[0.12] hover:bg-white/[0.18] transition-all duration-200 border border-white/20 backdrop-blur-md shadow-sm text-center lg:text-left">
+                        <div class="w-7 h-7 lg:w-9 lg:h-9 shrink-0 rounded-lg bg-white/20 flex items-center justify-center text-white mx-auto lg:mx-0 shadow-inner">
+                            <svg class="w-3.5 h-3.5 lg:w-4.5 lg:h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-[10px] lg:text-sm font-bold text-white leading-tight">Distribusi Otomatis</p>
-                            <p class="hidden lg:block text-xs text-blue-100/80 mt-1">Layanan dibagi merata ke semua tester secara cerdas</p>
+                            <p class="text-[9.5px] sm:text-xs lg:text-[13px] font-bold text-white leading-tight">Distribusi Otomatis</p>
+                            <p class="hidden lg:block text-[11px] text-blue-100/80 mt-0.5 leading-snug">Layanan dibagi merata ke semua tester secara cerdas</p>
                         </div>
                     </div>
 
                     <!-- Feature 3: Laporan Lengkap -->
-                    <div class="flex flex-col lg:flex-row items-center lg:items-center gap-1.5 lg:gap-4 p-2 lg:p-4 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-center lg:text-left">
-                        <div class="w-8 h-8 lg:w-10 lg:h-10 shrink-0 rounded-xl bg-white/20 flex items-center justify-center text-white mx-auto lg:mx-0">
-                            <svg class="w-4 h-4 lg:w-5 lg:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <div class="flex flex-col lg:flex-row items-center lg:items-center gap-2 lg:gap-3 p-2 lg:py-2.5 lg:px-3.5 rounded-xl bg-white/[0.12] hover:bg-white/[0.18] transition-all duration-200 border border-white/20 backdrop-blur-md shadow-sm text-center lg:text-left">
+                        <div class="w-7 h-7 lg:w-9 lg:h-9 shrink-0 rounded-lg bg-white/20 flex items-center justify-center text-white mx-auto lg:mx-0 shadow-inner">
+                            <svg class="w-3.5 h-3.5 lg:w-4.5 lg:h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-[10px] lg:text-sm font-bold text-white leading-tight">Laporan Lengkap</p>
-                            <p class="hidden lg:block text-xs text-blue-100/80 mt-1">Ekspor hasil pengecekan ke PDF dan Excel</p>
+                            <p class="text-[9.5px] sm:text-xs lg:text-[13px] font-bold text-white leading-tight">Laporan Lengkap</p>
+                            <p class="hidden lg:block text-[11px] text-blue-100/80 mt-0.5 leading-snug">Ekspor hasil pengecekan ke PDF dan Excel</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Desktop Bottom Footer text / subtle info -->
-            <div class="relative z-10 hidden lg:block pt-4">
+            <!-- Desktop Bottom Footer text -->
+            <div class="relative z-10 hidden lg:block pt-6 lg:pt-8 mt-auto">
                 <p class="text-xs text-blue-200/70">© 2026 Dinas Komunikasi dan Informatika Provinsi Jawa Timur.</p>
             </div>
         </div>

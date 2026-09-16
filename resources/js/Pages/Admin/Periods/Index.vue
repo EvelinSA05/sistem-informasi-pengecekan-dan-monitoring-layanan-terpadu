@@ -229,7 +229,7 @@ function confirmDelete() {
                                     <div
                                         v-for="tester in period.testers"
                                         :key="tester.id"
-                                        :title="`${tester.name} (${tester.bidang || 'Layanan Publik'})`"
+                                        :title="tester.email ? `${tester.name} (${tester.email})` : tester.name"
                                         class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-white shadow-sm cursor-default transition-transform hover:scale-110 hover:z-10"
                                         :class="getTesterAvatarColor(tester.initials, tester.name)"
                                     >

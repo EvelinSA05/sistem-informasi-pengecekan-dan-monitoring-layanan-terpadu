@@ -132,7 +132,10 @@ function confirmDelete() {
 
 <template>
     <Head title="Manajemen User - MAJADIGI CHECKER" />
-    <AdminLayout>
+    <AdminLayout
+        title="Manajemen User"
+        subtitle="Kelola akun tester yang terdaftar"
+    >
 
         <!-- ── Flash Notification ──────────────────────────────── -->
         <Transition
@@ -180,12 +183,6 @@ function confirmDelete() {
             </div>
         </Transition>
 
-        <!-- ── Page Header ────────────────────────────────────── -->
-        <div class="mb-6">
-            <h1 class="text-xl font-bold text-slate-800">Manajemen User</h1>
-            <p class="text-sm text-slate-500 mt-0.5">Kelola akun tester yang terdaftar</p>
-        </div>
-
         <!-- ── Stats Cards ───────────────────────────────────── -->
         <div class="grid grid-cols-3 gap-4 mb-6">
             <!-- Total -->
@@ -215,7 +212,7 @@ function confirmDelete() {
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
 
             <!-- Toolbar -->
-            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                 <!-- Search -->
                 <div class="relative">
                     <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -245,12 +242,10 @@ function confirmDelete() {
             <!-- Table -->
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="border-b border-slate-100 bg-slate-50/50">
-                        <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Tester</th>
-                        <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">NIP</th>
-                        <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Bidang</th>
-                        <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                        <th class="px-5 py-3"></th>
+                    <tr class="border-b border-slate-100 bg-slate-50/60">
+                        <th class="text-left px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Tester</th>
+                        <th class="text-left px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider w-44">Status</th>
+                        <th class="text-right px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider w-28">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -268,7 +263,7 @@ function confirmDelete() {
                         class="hover:bg-slate-50/70 transition-colors group"
                     >
                         <!-- Tester col -->
-                        <td class="px-5 py-3.5 text-left">
+                        <td class="px-6 py-4 text-left">
                             <div class="flex items-center gap-3">
                                 <div :class="['w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm', getAvatarColor(user.name)]">
                                     {{ getInitials(user.name) }}
@@ -279,19 +274,8 @@ function confirmDelete() {
                                 </div>
                             </div>
                         </td>
-                        <!-- NIP col -->
-                        <td class="px-5 py-3.5 text-slate-600 font-mono text-xs">
-                            {{ user.nip ?? '-' }}
-                        </td>
-                        <!-- Bidang col -->
-                        <td class="px-5 py-3.5">
-                            <span v-if="user.bidang" class="inline-flex px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold">
-                                {{ user.bidang }}
-                            </span>
-                            <span v-else class="text-slate-400 text-xs">-</span>
-                        </td>
                         <!-- Status col -->
-                        <td class="px-5 py-3.5 text-center">
+                        <td class="px-6 py-4 text-left w-44">
                             <span
                                 :class="[
                                     'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold',
@@ -305,8 +289,8 @@ function confirmDelete() {
                             </span>
                         </td>
                         <!-- Actions col -->
-                        <td class="px-5 py-3.5 text-center">
-                            <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <td class="px-6 py-4 text-right w-28">
+                            <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <!-- Detail -->
                                 <button
                                     @click="openDetailModal(user)"

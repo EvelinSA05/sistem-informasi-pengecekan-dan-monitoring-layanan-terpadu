@@ -8,17 +8,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('nip', 50)->nullable()->unique();
-            $table->string('bidang', 100)->nullable();
-            $table->enum('status', ['aktif', 'tidak aktif'])->default('aktif');
-        });
+        if (!Schema::hasColumn('users', 'status')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->enum('status', ['aktif', 'tidak aktif'])
+                    ->default('aktif');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['nip', 'bidang', 'status']);
-        });
+        if (Schema::hasColumn('users', 'status')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropColumn('status');
+            });
+        }
     }
 };

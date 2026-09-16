@@ -241,13 +241,13 @@ function submitForm() {
                                         {{ tester.initials }}
                                     </div>
 
-                                    <!-- Name & Bidang -->
+                                    <!-- Name & Email -->
                                     <div>
                                         <p class="text-sm font-bold text-slate-800 leading-tight">
                                             {{ tester.name }}
                                         </p>
                                         <p class="text-xs text-slate-400 mt-0.5 font-medium">
-                                            {{ tester.bidang }}
+                                            {{ tester.email }}
                                         </p>
                                     </div>
                                 </div>
