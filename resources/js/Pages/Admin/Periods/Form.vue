@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
@@ -8,44 +8,14 @@ const props = defineProps({
     period:           { type: Object,  default: null },
     testers:          { type: Array,   default: () => [] },
     services:         { type: Array,   default: () => [] },
-    monthOptions:     { type: Array,   default: () => [] },
-    initialMonth:     { type: Number,  default: 8 },
-    initialYear:      { type: Number,  default: 2026 },
+    initialDate:      { type: String,  default: '' },
     initialTesterIds: { type: Array,   default: () => [] },
 });
 
 // ─── Form State ──────────────────────────────────────────────────
 const form = useForm({
-    month: props.initialMonth,
-    year: props.initialYear,
+    date: props.initialDate || props.period?.date || new Date().toISOString().split('T')[0],
     tester_ids: [...props.initialTesterIds],
-});
-
-// ─── Custom Month Dropdown State ─────────────────────────────────
-const isMonthDropdownOpen = ref(false);
-const dropdownRef = ref(null);
-
-const currentMonthLabel = computed(() => {
-    const found = props.monthOptions.find(m => m.value === form.month);
-    return found ? found.label : 'Pilih Bulan';
-});
-
-function selectMonth(val) {
-    form.month = val;
-    isMonthDropdownOpen.value = false;
-}
-
-function handleClickOutside(event) {
-    if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
-        isMonthDropdownOpen.value = false;
-    }
-}
-
-onMounted(() => {
-    document.addEventListener('click', handleClickOutside);
-});
-onUnmounted(() => {
-    document.removeEventListener('click', handleClickOutside);
 });
 
 // ─── Toggle Tester Selection ─────────────────────────────────────
@@ -194,91 +164,25 @@ function submitForm() {
                         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">
                             INFORMASI PERIODE
                         </h3>
-                        <div class="grid grid-cols-2 gap-4">
-
-                            <!-- Bulan with Sleek Custom Dropdown matching Image 4 -->
-                            <div class="relative" ref="dropdownRef">
-                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                    Bulan <span class="text-rose-500">*</span>
-                                </label>
-
-                                <!-- Trigger Button -->
-                                <button
-                                    type="button"
-                                    @click="isMonthDropdownOpen = !isMonthDropdownOpen"
-                                    class="w-full flex items-center justify-between px-4 py-2.5 bg-white rounded-2xl border text-sm font-semibold text-slate-800 transition-all text-left shadow-2xs"
-                                    :class="isMonthDropdownOpen
-                                        ? 'border-blue-500 ring-3 ring-blue-500/10'
-                                        : 'border-slate-200 hover:border-slate-300'"
-                                >
-                                    <span>{{ currentMonthLabel }}</span>
-                                    <!-- Sleek custom chevron matching Image 4 -->
-                                    <svg
-                                        class="w-4 h-4 text-slate-400 transition-transform duration-200"
-                                        :class="{ 'rotate-180 text-blue-600': isMonthDropdownOpen }"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2.2"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                    >
-                                        <polyline points="6 9 12 15 18 9"></polyline>
-                                    </svg>
-                                </button>
-
-                                <!-- Popover Menu -->
-                                <Transition
-                                    enter-active-class="transition-all duration-150 ease-out"
-                                    enter-from-class="opacity-0 translate-y-1 scale-98"
-                                    enter-to-class="opacity-100 translate-y-0 scale-100"
-                                    leave-active-class="transition-all duration-100 ease-in"
-                                    leave-from-class="opacity-100 translate-y-0 scale-100"
-                                    leave-to-class="opacity-0 translate-y-1 scale-98"
-                                >
-                                    <div
-                                        v-if="isMonthDropdownOpen"
-                                        class="absolute z-50 left-0 right-0 mt-2 bg-white rounded-2xl border border-slate-200 shadow-xl py-1.5 max-h-60 overflow-y-auto"
-                                    >
-                                        <button
-                                            v-for="opt in monthOptions"
-                                            :key="opt.value"
-                                            type="button"
-                                            @click="selectMonth(opt.value)"
-                                            :class="[
-                                                'w-full flex items-center justify-between px-4 py-2 text-xs font-semibold transition-colors text-left',
-                                                form.month === opt.value
-                                                    ? 'bg-blue-50 text-blue-700 font-bold'
-                                                    : 'text-slate-700 hover:bg-slate-50'
-                                            ]"
-                                        >
-                                            <span>{{ opt.label }}</span>
-                                            <span v-if="form.month === opt.value" class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-                                        </button>
-                                    </div>
-                                </Transition>
-
-                                <p v-if="form.errors.month" class="text-xs text-rose-500 mt-1 font-medium">
-                                    {{ form.errors.month }}
-                                </p>
-                            </div>
-
-                            <!-- Tahun -->
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                    Tahun <span class="text-rose-500">*</span>
-                                </label>
+                        <div>
+                            <label for="tanggal_pengecekan" class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Tanggal Pengecekan <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
                                 <input
-                                    v-model.number="form.year"
-                                    type="number"
-                                    min="2020"
-                                    max="2099"
-                                    class="w-full px-4 py-2.5 bg-white rounded-2xl border border-slate-200 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 transition-all shadow-2xs"
+                                    id="tanggal_pengecekan"
+                                    v-model="form.date"
+                                    type="date"
+                                    required
+                                    class="w-full px-4 py-2.5 bg-white rounded-2xl border text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 transition-all shadow-2xs cursor-pointer text-slate-700"
+                                    :class="form.errors.date
+                                        ? 'border-rose-500 ring-2 ring-rose-500/10'
+                                        : 'border-slate-200 hover:border-slate-300'"
                                 />
-                                <p v-if="form.errors.year" class="text-xs text-rose-500 mt-1 font-medium">
-                                    {{ form.errors.year }}
-                                </p>
                             </div>
+                            <p v-if="form.errors.date" class="text-xs text-rose-500 mt-1 font-medium">
+                                {{ form.errors.date }}
+                            </p>
                         </div>
                     </div>
 

@@ -26,6 +26,18 @@ class PeriodController extends Controller
     ];
 
     /**
+     * Format tanggal Carbon ke format bahasa Indonesia, contoh: "16 September 2026"
+     */
+    private function formatIndonesianDate(Carbon $carbonDate): string
+    {
+        $day = $carbonDate->format('d');
+        $month = $this->indonesianMonths[(int) $carbonDate->format('n')] ?? $carbonDate->format('F');
+        $year = $carbonDate->format('Y');
+
+        return "{$day} {$month} {$year}";
+    }
+
+    /**
      * Menampilkan daftar periode pengecekan (Screenshot 1).
      */
     public function index()
@@ -39,9 +51,7 @@ class PeriodController extends Controller
         ->get()
         ->map(function ($period) {
             $carbonDate = Carbon::parse($period->date);
-            $monthNum = (int) $carbonDate->format('n');
-            $year = $carbonDate->format('Y');
-            $monthName = $this->indonesianMonths[$monthNum] ?? $carbonDate->format('F');
+            $periodTitle = $this->formatIndonesianDate($carbonDate);
 
             $totalServices = $period->periodServices->count();
             $checkedServices = $period->periodServices->filter(function ($ps) {
@@ -71,8 +81,8 @@ class PeriodController extends Controller
 
             return [
                 'id' => $period->id,
-                'date' => $period->date,
-                'period_title' => "{$monthName} {$year}",
+                'date' => $carbonDate->format('Y-m-d'),
+                'period_title' => $periodTitle,
                 'created_at_label' => "Dibuat " . Carbon::parse($period->created_at)->format('Y-m-d'),
                 'status' => $period->status,
                 'testers' => $testers,
@@ -120,15 +130,7 @@ class PeriodController extends Controller
             ->orderBy('id')
             ->get(['id', 'source_service_id', 'service_name', 'category', 'icon', 'service_url']);
 
-        $monthOptions = [];
-        foreach ($this->indonesianMonths as $num => $name) {
-            $monthOptions[] = [
-                'value' => $num,
-                'label' => $name,
-            ];
-        }
-
-        return [$testers, $services, $monthOptions];
+        return [$testers, $services];
     }
 
     /**
@@ -136,16 +138,14 @@ class PeriodController extends Controller
      */
     public function create()
     {
-        [$testers, $services, $monthOptions] = $this->getFormData();
+        [$testers, $services] = $this->getFormData();
 
         return Inertia::render('Admin/Periods/Form', [
             'isEdit' => false,
             'period' => null,
             'testers' => $testers,
             'services' => $services,
-            'monthOptions' => $monthOptions,
-            'initialMonth' => (int) date('n'),
-            'initialYear' => (int) date('Y'),
+            'initialDate' => Carbon::now()->format('Y-m-d'),
             'initialTesterIds' => [],
         ]);
     }
@@ -155,11 +155,11 @@ class PeriodController extends Controller
      */
     public function edit(CheckingPeriod $period)
     {
-        [$testers, $services, $monthOptions] = $this->getFormData();
+        [$testers, $services] = $this->getFormData();
 
         $carbonDate = Carbon::parse($period->date);
-        $month = (int) $carbonDate->format('n');
-        $year = (int) $carbonDate->format('Y');
+        $formattedDate = $carbonDate->format('Y-m-d');
+        $title = $this->formatIndonesianDate($carbonDate);
 
         $assignedTesterIds = $period->periodTesters()->pluck('tester_id')->toArray();
 
@@ -167,15 +167,13 @@ class PeriodController extends Controller
             'isEdit' => true,
             'period' => [
                 'id' => $period->id,
-                'title' => ($this->indonesianMonths[$month] ?? '') . ' ' . $year,
-                'date' => $period->date,
+                'title' => $title,
+                'date' => $formattedDate,
                 'status' => $period->status,
             ],
             'testers' => $testers,
             'services' => $services,
-            'monthOptions' => $monthOptions,
-            'initialMonth' => $month,
-            'initialYear' => $year,
+            'initialDate' => $formattedDate,
             'initialTesterIds' => $assignedTesterIds,
         ]);
     }
@@ -185,21 +183,26 @@ class PeriodController extends Controller
      */
     public function store(Request $request)
     {
+        if ($request->has('tanggal_periode') && !$request->has('date')) {
+            $request->merge(['date' => $request->tanggal_periode]);
+        }
+
         $request->validate([
-            'month' => 'required|integer|between:1,12',
-            'year' => 'required|integer|between:2020,2099',
+            'date' => 'required|date',
             'tester_ids' => 'required|array|min:1',
             'tester_ids.*' => 'exists:users,id',
         ], [
+            'date.required' => 'Tanggal pengecekan wajib diisi.',
+            'date.date' => 'Format tanggal tidak valid.',
             'tester_ids.required' => 'Pilih minimal satu tester untuk periode pengecekan.',
             'tester_ids.min' => 'Pilih minimal satu tester untuk periode pengecekan.',
         ]);
 
-        $date = sprintf('%04d-%02d-01', $request->year, $request->month);
+        $date = Carbon::parse($request->date)->format('Y-m-d');
 
         if (CheckingPeriod::where('date', $date)->exists()) {
             return back()->withErrors([
-                'month' => 'Periode untuk ' . ($this->indonesianMonths[$request->month] ?? $request->month) . ' ' . $request->year . ' sudah ada.',
+                'date' => 'Periode untuk tanggal ' . $this->formatIndonesianDate(Carbon::parse($date)) . ' sudah ada.',
             ]);
         }
 
@@ -250,9 +253,7 @@ class PeriodController extends Controller
         ]);
 
         $carbonDate = Carbon::parse($period->date);
-        $monthNum = (int) $carbonDate->format('n');
-        $monthName = $this->indonesianMonths[$monthNum] ?? $carbonDate->format('F');
-        $year = $carbonDate->format('Y');
+        $periodTitle = $this->formatIndonesianDate($carbonDate);
 
         $totalServices = $period->periodServices->count();
         $checkedServices = $period->periodServices->filter(fn($ps) => $ps->status !== 'pending' && !empty($ps->checked_at))->count();
@@ -299,8 +300,8 @@ class PeriodController extends Controller
         return Inertia::render('Admin/Periods/Show', [
             'period' => [
                 'id' => $period->id,
-                'title' => "{$monthName} {$year}",
-                'date' => $period->date,
+                'title' => $periodTitle,
+                'date' => $carbonDate->format('Y-m-d'),
                 'status' => $period->status,
                 'created_at_label' => Carbon::parse($period->created_at)->format('d F Y H:i'),
                 'creator_name' => $period->creator?->name ?? 'Admin',
@@ -321,7 +322,7 @@ class PeriodController extends Controller
     public function update(Request $request, CheckingPeriod $period)
     {
         // Kasus 1: Toggle status dari halaman Show
-        if ($request->has('status') && !$request->has('tester_ids')) {
+        if ($request->has('status') && !$request->has('tester_ids') && !$request->has('date') && !$request->has('tanggal_periode')) {
             $request->validate([
                 'status' => 'required|in:proses,selesai',
             ]);
@@ -333,23 +334,28 @@ class PeriodController extends Controller
             return back()->with('success', 'Status periode berhasil diperbarui.');
         }
 
-        // Kasus 2: Update dari Form Edit Periode (Bulan, Tahun, Tester & Distribusi)
+        // Kasus 2: Update dari Form Edit Periode (Tanggal, Tester & Distribusi)
+        if ($request->has('tanggal_periode') && !$request->has('date')) {
+            $request->merge(['date' => $request->tanggal_periode]);
+        }
+
         $request->validate([
-            'month' => 'required|integer|between:1,12',
-            'year' => 'required|integer|between:2020,2099',
+            'date' => 'required|date',
             'tester_ids' => 'required|array|min:1',
             'tester_ids.*' => 'exists:users,id',
         ], [
+            'date.required' => 'Tanggal pengecekan wajib diisi.',
+            'date.date' => 'Format tanggal tidak valid.',
             'tester_ids.required' => 'Pilih minimal satu tester untuk periode pengecekan.',
             'tester_ids.min' => 'Pilih minimal satu tester untuk periode pengecekan.',
         ]);
 
-        $date = sprintf('%04d-%02d-01', $request->year, $request->month);
+        $date = Carbon::parse($request->date)->format('Y-m-d');
 
         // Cek duplikasi tanggal kecuali untuk periode ini sendiri
         if (CheckingPeriod::where('date', $date)->where('id', '!=', $period->id)->exists()) {
             return back()->withErrors([
-                'month' => 'Periode untuk ' . ($this->indonesianMonths[$request->month] ?? $request->month) . ' ' . $request->year . ' sudah ada.',
+                'date' => 'Periode untuk tanggal ' . $this->formatIndonesianDate(Carbon::parse($date)) . ' sudah ada.',
             ]);
         }
 
@@ -416,11 +422,10 @@ class PeriodController extends Controller
         ]);
 
         $carbonDate = Carbon::parse($period->date);
-        $monthNum = (int) $carbonDate->format('n');
-        $monthName = $this->indonesianMonths[$monthNum] ?? $carbonDate->format('F');
-        $year = $carbonDate->format('Y');
+        $periodTitle = $this->formatIndonesianDate($carbonDate);
+        $fileSafeTitle = str_replace(' ', '_', $periodTitle);
 
-        $filename = "Laporan_Pengecekan_{$monthName}_{$year}.csv";
+        $filename = "Laporan_Pengecekan_{$fileSafeTitle}.csv";
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -430,7 +435,7 @@ class PeriodController extends Controller
             'Expires' => '0',
         ];
 
-        $callback = function () use ($period, $monthName, $year) {
+        $callback = function () use ($period, $periodTitle) {
             $file = fopen('php://output', 'w');
 
             // UTF-8 BOM for Microsoft Excel compatibility
@@ -440,7 +445,7 @@ class PeriodController extends Controller
             fputcsv($file, ['MAJADIGI CHECKER - DINAS KOMUNIKASI DAN INFORMATIKA PROVINSI JAWA TIMUR']);
             fputcsv($file, ['LAPORAN HASIL PENGECEKAN LAYANAN DIGITAL']);
             fputcsv($file, []);
-            fputcsv($file, ['Periode Pengecekan', "{$monthName} {$year}"]);
+            fputcsv($file, ['Periode Pengecekan', $periodTitle]);
             fputcsv($file, ['Status Periode', strtoupper($period->status)]);
             fputcsv($file, ['Dibuat Oleh', $period->creator?->name ?? 'Admin']);
             fputcsv($file, ['Tanggal Laporan', date('d/m/Y H:i:s')]);
@@ -517,8 +522,8 @@ class PeriodController extends Controller
         ]);
 
         $carbonDate = Carbon::parse($period->date);
-        $monthNum = (int) $carbonDate->format('n');
-        $monthName = $this->indonesianMonths[$monthNum] ?? $carbonDate->format('F');
+        $periodTitle = $this->formatIndonesianDate($carbonDate);
+        $monthName = $this->indonesianMonths[(int) $carbonDate->format('n')] ?? $carbonDate->format('F');
         $year = $carbonDate->format('Y');
 
         $totalServices = $period->periodServices->count();
@@ -558,9 +563,11 @@ class PeriodController extends Controller
 
         return Inertia::render('Admin/Periods/ExportReport', [
             'report' => [
-                'title' => "{$monthName} {$year}",
+                'title' => $periodTitle,
                 'month_name' => $monthName,
                 'year' => $year,
+                'period_date' => $carbonDate->format('Y-m-d'),
+                'formatted_date' => $periodTitle,
                 'status' => $period->status,
                 'created_at_label' => Carbon::parse($period->created_at)->format('d F Y H:i'),
                 'creator_name' => $period->creator?->name ?? 'Admin',

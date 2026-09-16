@@ -10,9 +10,30 @@ class CheckingPeriod extends Model
 
     protected $fillable = [
         'date',
+        'tanggal_periode',
         'status',
         'created_by',
     ];
+
+    protected $casts = [
+        'date' => 'date',
+    ];
+
+    /**
+     * Alias accessor untuk tanggal_periode
+     */
+    public function getTanggalPeriodeAttribute()
+    {
+        return $this->date ? $this->date->format('Y-m-d') : null;
+    }
+
+    /**
+     * Alias mutator untuk tanggal_periode
+     */
+    public function setTanggalPeriodeAttribute($value)
+    {
+        $this->attributes['date'] = $value;
+    }
 
     /**
      * Relasi ke User

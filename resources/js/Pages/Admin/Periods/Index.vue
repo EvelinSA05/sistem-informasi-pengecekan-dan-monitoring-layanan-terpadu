@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
@@ -11,12 +11,51 @@ const props = defineProps({
 // ─── Flash Notification ──────────────────────────────────────────
 const flashMsg = ref(props.flash?.success || props.flash?.error || '');
 const flashType = ref(props.flash?.error ? 'error' : 'success');
+let flashTimer = null;
 
-function showFlash(msg, type = 'success') {
+function clearFlashTimer() {
+    if (flashTimer) {
+        clearTimeout(flashTimer);
+        flashTimer = null;
+    }
+}
+
+function closeFlash() {
+    clearFlashTimer();
+    flashMsg.value = '';
+}
+
+function showFlash(msg, type = 'success', duration = 4000) {
+    clearFlashTimer();
     flashMsg.value = msg;
     flashType.value = type;
-    setTimeout(() => { flashMsg.value = ''; }, 3500);
+    flashTimer = setTimeout(() => {
+        flashMsg.value = '';
+        flashTimer = null;
+    }, duration);
 }
+
+// Watch props.flash if updated via Inertia visit / redirect
+watch(() => props.flash, (newFlash) => {
+    if (newFlash?.success) {
+        showFlash(newFlash.success, 'success', 4000);
+    } else if (newFlash?.error) {
+        showFlash(newFlash.error, 'error', 4000);
+    }
+}, { deep: true });
+
+onMounted(() => {
+    if (flashMsg.value) {
+        flashTimer = setTimeout(() => {
+            flashMsg.value = '';
+            flashTimer = null;
+        }, 4000);
+    }
+});
+
+onUnmounted(() => {
+    clearFlashTimer();
+});
 
 // ─── Avatar color helper ─────────────────────────────────────────
 const testerColorPalette = {
@@ -65,28 +104,46 @@ function confirmDelete() {
         <!-- ── Flash Notification ──────────────────────────────── -->
         <Transition
             enter-active-class="transition-all duration-300 ease-out"
-            enter-from-class="opacity-0 -translate-y-2"
-            enter-to-class="opacity-100 translate-y-0"
+            enter-from-class="opacity-0 -translate-y-2 translate-x-1"
+            enter-to-class="opacity-100 translate-y-0 translate-x-0"
             leave-active-class="transition-all duration-200 ease-in"
-            leave-from-class="opacity-100 translate-y-0"
-            leave-to-class="opacity-0 -translate-y-2"
+            leave-from-class="opacity-100 translate-y-0 translate-x-0"
+            leave-to-class="opacity-0 -translate-y-2 translate-x-1"
         >
             <div
                 v-if="flashMsg"
                 :class="[
-                    'fixed top-5 right-5 z-[100] flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold',
+                    'fixed top-5 right-5 z-[100] flex items-center justify-between gap-3 px-4 py-3 rounded-2xl shadow-lg text-sm font-semibold border backdrop-blur-sm transition-all max-w-md',
                     flashType === 'success'
-                        ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
-                        : 'bg-red-50 border border-red-200 text-red-700'
+                        ? 'bg-emerald-50/95 border-emerald-200 text-emerald-800 shadow-emerald-900/10'
+                        : 'bg-red-50/95 border-red-200 text-red-800 shadow-red-900/10'
                 ]"
             >
-                <svg v-if="flashType === 'success'" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                </svg>
-                <svg v-else class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-                {{ flashMsg }}
+                <div class="flex items-center gap-2.5">
+                    <svg v-if="flashType === 'success'" class="w-4 h-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <svg v-else class="w-4 h-4 shrink-0 text-red-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    <span>{{ flashMsg }}</span>
+                </div>
+
+                <!-- Close Button -->
+                <button
+                    type="button"
+                    @click="closeFlash"
+                    class="p-1 rounded-xl transition-colors focus:outline-none shrink-0"
+                    :class="flashType === 'success'
+                        ? 'text-emerald-500 hover:text-emerald-800 hover:bg-emerald-100/70'
+                        : 'text-red-500 hover:text-red-800 hover:bg-red-100/70'"
+                    aria-label="Tutup notifikasi"
+                    title="Tutup"
+                >
+                    <svg class="w-4 h-4 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
         </Transition>
 
