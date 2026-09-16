@@ -24,13 +24,11 @@ class UserController extends Controller
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('nip', 'like', "%{$search}%")
-                      ->orWhere('bidang', 'like', "%{$search}%");
+                      ->orWhere('email', 'like', "%{$search}%");
                 });
             })
             ->orderBy('created_at', 'desc')
-            ->get(['id', 'name', 'email', 'nip', 'bidang', 'status', 'role', 'created_at']);
+            ->get(['id', 'name', 'email', 'status', 'role', 'created_at']);
 
         $stats = [
             'total'    => User::where('role', 'tester')->count(),
@@ -53,8 +51,6 @@ class UserController extends Controller
         $request->validate([
             'name'   => 'required|string|max:100',
             'email'  => 'required|string|lowercase|email|max:150|unique:users,email',
-            'nip'    => 'nullable|string|digits:18|unique:users,nip',
-            'bidang' => 'nullable|string|max:100',
             'status' => 'required|in:aktif,tidak aktif',
         ]);
 
@@ -62,8 +58,6 @@ class UserController extends Controller
             'name'     => $request->name,
             'email'    => $request->email,
             'username' => explode('@', $request->email)[0] . '_' . rand(1000, 9999),
-            'nip'      => $request->nip,
-            'bidang'   => $request->bidang,
             'status'   => $request->status,
             'role'     => 'tester',
             'password' => Hash::make('password123'), // default password
@@ -81,16 +75,12 @@ class UserController extends Controller
         $request->validate([
             'name'   => 'required|string|max:100',
             'email'  => 'required|string|lowercase|email|max:150|unique:users,email,' . $user->id,
-            'nip'    => 'nullable|string|digits:18|unique:users,nip,' . $user->id,
-            'bidang' => 'nullable|string|max:100',
             'status' => 'required|in:aktif,tidak aktif',
         ]);
 
         $user->update([
             'name'   => $request->name,
             'email'  => $request->email,
-            'nip'    => $request->nip,
-            'bidang' => $request->bidang,
             'status' => $request->status,
         ]);
 

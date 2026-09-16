@@ -158,7 +158,7 @@ const navItems = computed(() => {
                         <div class="min-w-0">
                             <p class="text-white text-sm font-bold truncate leading-snug">{{ user?.name }}</p>
                             <p class="text-blue-200/80 text-[11px] font-medium truncate capitalize">
-                                {{ user?.role }} · {{ user?.bidang ?? 'Layanan' }}
+                                {{ user?.role }}
                             </p>
                         </div>
                     </div>

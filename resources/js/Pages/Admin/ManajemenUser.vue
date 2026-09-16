@@ -59,8 +59,6 @@ function getAvatarColor(name) {
 const addForm = useForm({
     name:   '',
     email:  '',
-    nip:    '',
-    bidang: '',
     status: 'aktif',
 });
 function openAddModal() {
@@ -82,16 +80,12 @@ function submitAdd() {
 const editForm = useForm({
     name:   '',
     email:  '',
-    nip:    '',
-    bidang: '',
     status: 'aktif',
 });
 function openEditModal(user) {
     selectedUser.value = user;
     editForm.name   = user.name;
     editForm.email  = user.email;
-    editForm.nip    = user.nip ?? '';
-    editForm.bidang = user.bidang ?? '';
     editForm.status = user.status ?? 'aktif';
     editForm.clearErrors();
     showEditModal.value = true;
@@ -225,15 +219,13 @@ function confirmDelete() {
                 <thead>
                     <tr class="border-b border-slate-100 bg-slate-50/50">
                         <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Tester</th>
-                        <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">NIP</th>
-                        <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Bidang</th>
                         <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
                         <th class="px-5 py-3"></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     <tr v-if="users.length === 0">
-                        <td colspan="5" class="text-center py-16 text-slate-400 text-sm">
+                        <td colspan="3" class="text-center py-16 text-slate-400 text-sm">
                             <svg class="mx-auto w-10 h-10 text-slate-300 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
                             </svg>
@@ -256,17 +248,6 @@ function confirmDelete() {
                                     <p class="text-xs text-slate-400 mt-0.5">{{ user.email }}</p>
                                 </div>
                             </div>
-                        </td>
-                        <!-- NIP col -->
-                        <td class="px-5 py-3.5 text-slate-600 font-mono text-xs">
-                            {{ user.nip ?? '-' }}
-                        </td>
-                        <!-- Bidang col -->
-                        <td class="px-5 py-3.5">
-                            <span v-if="user.bidang" class="inline-flex px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold">
-                                {{ user.bidang }}
-                            </span>
-                            <span v-else class="text-slate-400 text-xs">-</span>
                         </td>
                         <!-- Status col -->
                         <td class="px-5 py-3.5">
@@ -373,23 +354,7 @@ function confirmDelete() {
                                     class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 transition-all"/>
                                 <p v-if="addForm.errors.email" class="mt-1 text-xs text-rose-500">{{ addForm.errors.email }}</p>
                             </div>
-                            <!-- NIP -->
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
-                                    NIP <span class="text-rose-500">*</span>
-                                </label>
-                                <input v-model="addForm.nip" type="text" placeholder="198501012010011001" maxlength="18"
-                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 transition-all"/>
-                                <p class="mt-0.5 text-[11px] text-slate-400">18 digit Nomor Induk Pegawai</p>
-                                <p v-if="addForm.errors.nip" class="mt-1 text-xs text-rose-500">{{ addForm.errors.nip }}</p>
-                            </div>
-                            <!-- Bidang -->
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Bidang / Divisi</label>
-                                <input v-model="addForm.bidang" type="text" placeholder="Infrastruktur Digital"
-                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 transition-all"/>
-                                <p v-if="addForm.errors.bidang" class="mt-1 text-xs text-rose-500">{{ addForm.errors.bidang }}</p>
-                            </div>
+
                             <!-- Status -->
                             <div>
                                 <label class="block text-sm font-semibold text-slate-700 mb-2">Status Akun</label>
@@ -475,21 +440,7 @@ function confirmDelete() {
                                     class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 transition-all"/>
                                 <p v-if="editForm.errors.email" class="mt-1 text-xs text-rose-500">{{ editForm.errors.email }}</p>
                             </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
-                                    NIP <span class="text-rose-500">*</span>
-                                </label>
-                                <input v-model="editForm.nip" type="text" maxlength="18"
-                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 transition-all"/>
-                                <p class="mt-0.5 text-[11px] text-slate-400">18 digit Nomor Induk Pegawai</p>
-                                <p v-if="editForm.errors.nip" class="mt-1 text-xs text-rose-500">{{ editForm.errors.nip }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Bidang / Divisi</label>
-                                <input v-model="editForm.bidang" type="text"
-                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 transition-all"/>
-                                <p v-if="editForm.errors.bidang" class="mt-1 text-xs text-rose-500">{{ editForm.errors.bidang }}</p>
-                            </div>
+
                             <div>
                                 <label class="block text-sm font-semibold text-slate-700 mb-2">Status Akun</label>
                                 <div class="grid grid-cols-2 gap-2">
@@ -574,16 +525,20 @@ function confirmDelete() {
                         <!-- Detail rows -->
                         <div class="space-y-3">
                             <div class="flex items-center justify-between py-2 border-b border-slate-100">
-                                <span class="text-sm text-slate-500">NIP</span>
-                                <span class="text-sm font-semibold text-slate-800 font-mono">{{ selectedUser.nip ?? '-' }}</span>
+                                <span class="text-sm text-slate-500">Nama Lengkap</span>
+                                <span class="text-sm font-semibold text-slate-800">{{ selectedUser.name }}</span>
                             </div>
                             <div class="flex items-center justify-between py-2 border-b border-slate-100">
-                                <span class="text-sm text-slate-500">Bidang</span>
-                                <span class="text-sm font-semibold text-slate-800">{{ selectedUser.bidang ?? '-' }}</span>
+                                <span class="text-sm text-slate-500">Email</span>
+                                <span class="text-sm font-semibold text-slate-800">{{ selectedUser.email }}</span>
                             </div>
-                            <div class="flex items-center justify-between py-2">
+                            <div class="flex items-center justify-between py-2 border-b border-slate-100">
                                 <span class="text-sm text-slate-500">Role</span>
                                 <span class="text-sm font-semibold text-slate-800 capitalize">{{ selectedUser.role }}</span>
+                            </div>
+                            <div class="flex items-center justify-between py-2">
+                                <span class="text-sm text-slate-500">Status Akun</span>
+                                <span class="text-sm font-semibold text-slate-800 capitalize">{{ selectedUser.status }}</span>
                             </div>
                         </div>
                     </div>

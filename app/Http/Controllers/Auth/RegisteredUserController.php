@@ -34,8 +34,6 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name' => 'required|string|max:100',
             'email' => 'required|string|lowercase|email|max:150|unique:users,email',
-            'nip' => 'required|string|digits:18|unique:users,nip',
-            'bidang' => 'required|string|max:100',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -43,8 +41,6 @@ class RegisteredUserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'username' => explode('@', $request->email)[0] . '_' . rand(1000, 9999),
-            'nip' => $request->nip,
-            'bidang' => $request->bidang,
             'role' => 'tester',
             'status' => 'aktif',
             'password' => Hash::make($request->password),
