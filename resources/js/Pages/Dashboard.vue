@@ -44,18 +44,21 @@ const currentMonthYear = new Intl.DateTimeFormat('id-ID', {
                 </Link>
 
                 <!-- Periode Pengecekan Card -->
-                <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 flex items-center gap-4 opacity-65 cursor-not-allowed">
-                    <div class="w-13 h-13 rounded-2xl bg-slate-100 flex items-center justify-center p-3.5">
-                        <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <Link
+                    :href="route('admin.periods.index')"
+                    class="group bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 flex items-center gap-4 hover:shadow-md hover:border-blue-300 transition-all duration-200"
+                >
+                    <div class="w-13 h-13 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-200 p-3.5">
+                        <svg class="w-6 h-6 text-blue-600 group-hover:text-white transition-colors duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <rect x="3" y="4" width="18" height="18" rx="2" stroke-linecap="round"/>
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16 2v4M8 2v4M3 10h18"/>
                         </svg>
                     </div>
                     <div>
-                        <p class="text-base font-bold text-slate-600">Periode Pengecekan</p>
-                        <p class="text-xs text-slate-400 mt-1">Segera hadir</p>
+                        <p class="text-base font-bold text-slate-800 group-hover:text-blue-700 transition-colors">Periode Pengecekan</p>
+                        <p class="text-xs text-slate-400 mt-1">Atur periode dan distribusi layanan</p>
                     </div>
-                </div>
+                </Link>
 
                 <!-- Monitoring Layanan Card -->
                 <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 flex items-center gap-4 opacity-65 cursor-not-allowed">

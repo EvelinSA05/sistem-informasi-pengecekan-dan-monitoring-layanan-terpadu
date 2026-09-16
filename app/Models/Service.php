@@ -11,6 +11,8 @@ class Service extends Model
     protected $fillable = [
         'source_service_id',
         'service_name',
+        'category',
+        'icon',
         'service_url',
         'is_active',
         'synced_at',

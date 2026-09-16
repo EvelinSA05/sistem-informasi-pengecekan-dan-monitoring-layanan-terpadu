@@ -33,10 +33,18 @@ watch(searchQuery, (val) => {
 // ─── Flash message ───────────────────────────────────────────
 const flash = ref('');
 const flashType = ref('success'); // 'success' | 'error'
+let flashTimer = null;
+
+function closeFlash() {
+    if (flashTimer) clearTimeout(flashTimer);
+    flash.value = '';
+}
+
 function showFlash(msg, type = 'success') {
+    if (flashTimer) clearTimeout(flashTimer);
     flash.value = msg;
     flashType.value = type;
-    setTimeout(() => { flash.value = ''; }, 3500);
+    flashTimer = setTimeout(() => { flash.value = ''; }, 4000);
 }
 
 // ─── Avatar helpers ───────────────────────────────────────────
@@ -129,26 +137,46 @@ function confirmDelete() {
         <!-- ── Flash Notification ──────────────────────────────── -->
         <Transition
             enter-active-class="transition-all duration-300 ease-out"
-            enter-from-class="opacity-0 -translate-y-2"
-            enter-to-class="opacity-100 translate-y-0"
+            enter-from-class="opacity-0 -translate-y-2 translate-x-1"
+            enter-to-class="opacity-100 translate-y-0 translate-x-0"
             leave-active-class="transition-all duration-200 ease-in"
-            leave-from-class="opacity-100 translate-y-0"
-            leave-to-class="opacity-0 -translate-y-2"
+            leave-from-class="opacity-100 translate-y-0 translate-x-0"
+            leave-to-class="opacity-0 -translate-y-2 translate-x-1"
         >
             <div
                 v-if="flash"
                 :class="[
-                    'fixed top-5 right-5 z-[100] flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold',
-                    flashType === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-red-50 border border-red-200 text-red-700'
+                    'fixed top-5 right-5 z-[100] flex items-center justify-between gap-3 px-4 py-3 rounded-2xl shadow-lg text-sm font-semibold border backdrop-blur-sm transition-all max-w-md',
+                    flashType === 'success'
+                        ? 'bg-emerald-50/95 border-emerald-200 text-emerald-800 shadow-emerald-900/10'
+                        : 'bg-red-50/95 border-red-200 text-red-800 shadow-red-900/10'
                 ]"
             >
-                <svg v-if="flashType === 'success'" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                </svg>
-                <svg v-else class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-                {{ flash }}
+                <div class="flex items-center gap-2.5">
+                    <svg v-if="flashType === 'success'" class="w-4 h-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <svg v-else class="w-4 h-4 shrink-0 text-red-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    <span>{{ flash }}</span>
+                </div>
+
+                <!-- Close Button -->
+                <button
+                    type="button"
+                    @click="closeFlash"
+                    class="p-1 rounded-xl transition-colors focus:outline-none shrink-0"
+                    :class="flashType === 'success'
+                        ? 'text-emerald-500 hover:text-emerald-800 hover:bg-emerald-100/70'
+                        : 'text-red-500 hover:text-red-800 hover:bg-red-100/70'"
+                    aria-label="Tutup notifikasi"
+                    title="Tutup"
+                >
+                    <svg class="w-4 h-4 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
         </Transition>
 
@@ -219,6 +247,8 @@ function confirmDelete() {
                 <thead>
                     <tr class="border-b border-slate-100 bg-slate-50/50">
                         <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Tester</th>
+                        <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">NIP</th>
+                        <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Bidang</th>
                         <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
                         <th class="px-5 py-3"></th>
                     </tr>
@@ -238,7 +268,7 @@ function confirmDelete() {
                         class="hover:bg-slate-50/70 transition-colors group"
                     >
                         <!-- Tester col -->
-                        <td class="px-5 py-3.5">
+                        <td class="px-5 py-3.5 text-left">
                             <div class="flex items-center gap-3">
                                 <div :class="['w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm', getAvatarColor(user.name)]">
                                     {{ getInitials(user.name) }}
@@ -249,8 +279,19 @@ function confirmDelete() {
                                 </div>
                             </div>
                         </td>
-                        <!-- Status col -->
+                        <!-- NIP col -->
+                        <td class="px-5 py-3.5 text-slate-600 font-mono text-xs">
+                            {{ user.nip ?? '-' }}
+                        </td>
+                        <!-- Bidang col -->
                         <td class="px-5 py-3.5">
+                            <span v-if="user.bidang" class="inline-flex px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold">
+                                {{ user.bidang }}
+                            </span>
+                            <span v-else class="text-slate-400 text-xs">-</span>
+                        </td>
+                        <!-- Status col -->
+                        <td class="px-5 py-3.5 text-center">
                             <span
                                 :class="[
                                     'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold',
@@ -264,8 +305,8 @@ function confirmDelete() {
                             </span>
                         </td>
                         <!-- Actions col -->
-                        <td class="px-5 py-3.5">
-                            <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <td class="px-5 py-3.5 text-center">
+                            <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <!-- Detail -->
                                 <button
                                     @click="openDetailModal(user)"
