@@ -61,7 +61,7 @@ const adminNavItems = [
         </svg>`,
     },
     {
-        label: 'Monitoring Layanan',
+        label: 'Master Layanan',
         route: null,
         activeRoute: null,
         href: '#',
@@ -100,18 +100,42 @@ const testerNavItems = [
 const navItems = computed(() => {
     return user.value?.role === 'admin' ? adminNavItems : testerNavItems;
 });
+
+const isSidebarOpen = ref(false);
 </script>
 
 <template>
     <div class="flex min-h-screen bg-[#f8fafc] font-sans antialiased text-slate-800">
 
+        <!-- ─── Mobile Backdrop Overlay ───────────────────────── -->
+        <div
+            v-if="isSidebarOpen"
+            @click="isSidebarOpen = false"
+            class="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-300 lg:hidden"
+        ></div>
+
         <!-- ─── Sidebar ──────────────────────────────────────── -->
-        <aside class="fixed inset-y-0 left-0 z-30 w-64 flex flex-col
-                       bg-gradient-to-b from-[#1e40af] via-[#1d4ed8] to-[#1e3a8a]
-                       shadow-2xl select-none">
+        <aside
+            class="fixed inset-y-0 left-0 w-64 flex flex-col
+                   bg-gradient-to-b from-[#1e40af] via-[#1d4ed8] to-[#1e3a8a]
+                   shadow-2xl select-none transition-transform duration-300 ease-in-out"
+            :class="isSidebarOpen ? 'translate-x-0 z-50' : '-translate-x-full lg:translate-x-0 z-30'"
+        >
 
             <!-- Logo / Brand identical with Auth Page -->
-            <div class="px-5 pt-6 pb-5 border-b border-white/10 flex flex-col items-start gap-2.5">
+            <div class="px-5 pt-6 pb-5 border-b border-white/10 flex flex-col items-start gap-2.5 relative">
+                <!-- Mobile Close Button -->
+                <button
+                    @click="isSidebarOpen = false"
+                    type="button"
+                    class="lg:hidden absolute top-5 right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white transition-all duration-150 flex items-center justify-center"
+                    aria-label="Tutup sidebar"
+                >
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
                 <!-- Official Logo Card in White Pill -->
                 <div class="px-4 py-2 rounded-2xl bg-white shadow-md shadow-blue-950/20 border border-white/60 flex items-center justify-center">
                     <img
@@ -133,6 +157,7 @@ const navItems = computed(() => {
                 <template v-for="item in navItems" :key="item.label">
                     <Link
                         :href="item.href"
+                        @click="isSidebarOpen = false"
                         class="group relative flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-200"
                         :class="(item.activeRoute && route().current(item.activeRoute)) || (item.route && route().current(item.route))
                             ? 'bg-white text-blue-900 shadow-lg shadow-blue-950/10'
@@ -187,22 +212,38 @@ const navItems = computed(() => {
         </aside>
 
         <!-- ─── Main Content Area ─────────────────────────── -->
-        <div class="flex-1 flex flex-col ml-64 min-w-0">
+        <div class="flex-1 flex flex-col ml-0 lg:ml-64 min-w-0 transition-all duration-300">
 
             <!-- Top bar -->
-            <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200/70 h-16 flex items-center justify-between px-8">
-                <div>
-                    <h1 class="text-lg font-bold text-slate-800 leading-none">{{ title }}</h1>
-                    <p class="text-xs text-slate-400 mt-1 font-medium">{{ subtitle }}</p>
+            <header class="sticky top-0 z-20 bg-white/85 backdrop-blur-md border-b border-slate-200/70 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center gap-3 sm:gap-4">
+                    <!-- Mobile Hamburger / Bar Toggle Button -->
+                    <button
+                        @click="isSidebarOpen = !isSidebarOpen"
+                        type="button"
+                        class="lg:hidden p-2 rounded-xl text-slate-700 bg-slate-100/80 hover:text-blue-600 hover:bg-blue-50 active:scale-95 border border-slate-200/80 transition-all duration-150 shadow-xs flex items-center justify-center"
+                        aria-label="Buka Menu Navigasi"
+                    >
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+
+                    <div>
+                        <h1 class="text-base sm:text-lg font-bold text-slate-800 leading-none truncate">{{ title }}</h1>
+                        <p class="text-[11px] sm:text-xs text-slate-400 mt-1 font-medium truncate">{{ subtitle }}</p>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-xs font-semibold text-emerald-600 shadow-sm">
+
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-xs font-semibold text-emerald-600 shadow-sm shrink-0">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Sistem Aktif
+                    <span class="hidden sm:inline">Sistem Aktif</span>
+                    <span class="sm:hidden text-[10px]">Aktif</span>
                 </div>
             </header>
 
             <!-- Page Content -->
-            <main class="flex-1 p-8 bg-[#f8fafc]">
+            <main class="flex-1 p-4 sm:p-6 lg:p-8 bg-[#f8fafc]">
                 <slot />
             </main>
         </div>

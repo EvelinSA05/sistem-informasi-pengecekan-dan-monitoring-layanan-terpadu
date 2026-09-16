@@ -32,7 +32,7 @@ const submit = () => {
 
     <div class="min-h-screen w-full flex flex-col lg:flex-row bg-[#f8fafc] selection:bg-blue-600 selection:text-white font-sans antialiased">
         <!-- Left Side (Desktop) / Top Banner Header (Mobile) -->
-        <div class="relative w-full lg:w-[48%] xl:w-[45%] bg-[#1d4ed8] bg-gradient-to-br from-[#1e40af] via-[#1d4ed8] to-[#1e3a8a] p-6 sm:p-8 lg:p-12 xl:p-14 text-white flex flex-col justify-between overflow-hidden lg:min-h-screen shrink-0">
+        <div class="fixed top-0 left-0 right-0 z-10 h-[190px] lg:static lg:h-auto lg:min-h-screen w-full lg:w-[48%] xl:w-[45%] bg-[#1d4ed8] bg-gradient-to-br from-[#1e40af] via-[#1d4ed8] to-[#1e3a8a] p-5 sm:p-7 lg:p-12 xl:p-14 text-white flex flex-col justify-between overflow-hidden shrink-0">
             
             <!-- Ambient Background Decorative Circles & Glow -->
             <div class="absolute inset-0 pointer-events-none overflow-hidden">
@@ -43,17 +43,17 @@ const submit = () => {
             </div>
 
             <!-- Mobile Top Header (Logo left, Badge right) -->
-            <div class="relative z-10 flex flex-row items-center justify-between lg:hidden mb-5">
-                <div class="px-3.5 py-1.5 rounded-xl bg-white shadow-md border border-white/80 flex items-center gap-2">
+            <div class="relative z-10 flex flex-row items-center justify-between lg:hidden mb-2.5">
+                <div class="px-3 py-1.5 rounded-xl bg-white shadow-md border border-white/80 flex items-center gap-2">
                     <img
                         src="/images/logo_majadigi.png"
                         alt="Majadigi - Majapahit Digital"
-                        class="h-7 w-auto object-contain"
+                        class="h-6 w-auto object-contain"
                     />
                 </div>
                 <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 shadow-sm">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span class="text-[11px] font-bold tracking-wider text-white uppercase">CHECKER SYSTEM</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-[10px] font-bold tracking-wider text-white uppercase">CHECKER SYSTEM</span>
                 </div>
             </div>
 
@@ -75,18 +75,18 @@ const submit = () => {
             <!-- Main Content Area -->
             <div class="relative z-10 max-w-lg my-auto lg:my-0 flex-1 flex flex-col justify-center">
                 <!-- Headline -->
-                <h1 class="text-2xl sm:text-3xl lg:text-[38px] xl:text-[42px] font-extrabold text-white tracking-tight leading-[1.18]">
-                    Pantau Layanan Digital<br/>
-                    <span class="text-cyan-300">Jawa Timur</span>
+                <h1 class="text-xl sm:text-2xl lg:text-[38px] xl:text-[42px] font-extrabold text-white tracking-tight leading-tight lg:leading-[1.18]">
+                    Pantau Layanan Digital<br class="hidden sm:inline"/>
+                    <span class="text-cyan-300"> Jawa Timur</span>
                 </h1>
 
                 <!-- Description -->
-                <p class="mt-3 lg:mt-4 text-blue-100/90 text-xs sm:text-sm lg:text-[14.5px] font-normal leading-relaxed max-w-md">
+                <p class="mt-1.5 lg:mt-4 text-blue-100/90 text-[11.5px] sm:text-sm lg:text-[14.5px] font-normal leading-relaxed max-w-md line-clamp-2 sm:line-clamp-none">
                     Platform monitoring terpusat untuk mengecek dan memantau kualitas layanan Majadigi secara berkala dan terstruktur.
                 </p>
 
-                <!-- Features: Shape diperkecil & lebih hemat ruang -->
-                <div class="grid grid-cols-3 lg:grid-cols-1 gap-2 lg:gap-2.5 mt-4 lg:mt-6">
+                <!-- Features: Khusus desktop (hidden di mobile untuk menghemat ruang & minimalis) -->
+                <div class="hidden lg:grid lg:grid-cols-1 gap-2.5 mt-6">
                     <!-- Feature 1: Dashboard Real-time -->
                     <div class="flex flex-col lg:flex-row items-center lg:items-center gap-2 lg:gap-3 p-2 lg:py-2.5 lg:px-3.5 rounded-xl bg-white/[0.12] hover:bg-white/[0.18] transition-all duration-200 border border-white/20 backdrop-blur-md shadow-sm text-center lg:text-left">
                         <div class="w-7 h-7 lg:w-9 lg:h-9 shrink-0 rounded-lg bg-white/20 flex items-center justify-center text-white mx-auto lg:mx-0 shadow-inner">
@@ -135,11 +135,11 @@ const submit = () => {
         </div>
 
         <!-- Right Side (Desktop) / Bottom Card Sheet (Mobile): Form Login Area -->
-        <div class="flex-1 flex flex-col justify-center items-center bg-white -mt-6 lg:mt-0 rounded-t-[32px] lg:rounded-none px-6 py-6 sm:px-10 lg:px-14 xl:px-20 z-20 shadow-2xl lg:shadow-none min-h-0">
+        <div class="relative z-20 mt-[175px] lg:mt-0 flex-1 flex flex-col justify-center items-center bg-white rounded-t-[32px] lg:rounded-none px-6 py-6 sm:px-10 lg:px-14 xl:px-20 shadow-[0_-12px_35px_rgba(15,23,42,0.16)] lg:shadow-none min-h-[calc(100vh-175px)] lg:min-h-0">
             <div class="w-full max-w-[420px] my-auto">
                 
                 <!-- Bottom Sheet Handle Bar (khusus mobile) -->
-                <div class="flex justify-center mb-4 lg:hidden">
+                <div class="flex justify-center mb-5 lg:hidden">
                     <div class="w-12 h-1.5 rounded-full bg-slate-200"></div>
                 </div>
 

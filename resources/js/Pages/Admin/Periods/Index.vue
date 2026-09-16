@@ -151,25 +151,25 @@ function confirmDelete() {
         <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
 
             <!-- Card Header / Toolbar -->
-            <div class="px-8 py-6 flex items-center justify-between border-b border-slate-100">
+            <div class="p-4 sm:px-8 sm:py-6 flex items-center justify-between gap-3 border-b border-slate-100">
                 <div>
-                    <h2 class="text-base font-bold text-slate-800">
+                    <h2 class="text-sm sm:text-base font-bold text-slate-800 truncate">
                         {{ periods.length }} Periode terdaftar
                     </h2>
                 </div>
                 <Link
                     :href="route('admin.periods.create')"
                     id="btn-buat-periode"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white font-bold text-sm shadow-md shadow-blue-900/10 hover:shadow-lg hover:shadow-blue-900/20 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+                    class="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white font-bold text-xs sm:text-sm shadow-md shadow-blue-900/10 hover:shadow-lg hover:shadow-blue-900/20 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 shrink-0"
                 >
                     <span class="text-base leading-none font-extrabold">+</span>
-                    Buat Periode
+                    <span>Buat Periode</span>
                 </Link>
             </div>
 
             <!-- Table -->
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+                <table class="w-full text-sm min-w-[620px]">
                     <thead>
                         <tr class="border-b border-slate-100 bg-slate-50/50">
                             <th class="text-center px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Periode</th>
@@ -260,14 +260,15 @@ function confirmDelete() {
                                 </div>
                             </td>
 
-                            <!-- Aksi (Show, Edit, Hapus) - Muncul Hanya Saat Row Di-hover/Dipilih Sesuai Manajemen User -->
+                            <!-- Aksi (Show, Edit, Hapus) -->
                             <td class="px-5 py-3.5 text-center">
-                                <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                                <div class="flex items-center justify-center gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150">
                                     <!-- Detail (Show) -->
                                     <Link
                                         :href="route('admin.periods.show', period.id)"
                                         title="Lihat detail"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+                                        aria-label="Lihat detail"
+                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-blue-600 bg-blue-50/90 sm:bg-transparent sm:text-slate-400 hover:text-blue-600 hover:bg-blue-100/70 transition-all active:scale-95"
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -275,11 +276,12 @@ function confirmDelete() {
                                         </svg>
                                     </Link>
 
-                                    <!-- Edit (Form Penuh Sesuai Mockup Edit) -->
+                                    <!-- Edit -->
                                     <Link
                                         :href="route('admin.periods.edit', period.id)"
                                         title="Edit periode"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-amber-400 hover:text-amber-600 hover:bg-amber-50 transition-all"
+                                        aria-label="Edit periode"
+                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-amber-600 bg-amber-50/90 sm:bg-transparent sm:text-amber-500 hover:text-amber-700 hover:bg-amber-100/70 transition-all active:scale-95"
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 018.586 12z"/>
@@ -290,7 +292,8 @@ function confirmDelete() {
                                     <button
                                         @click="openDeleteModal(period)"
                                         title="Hapus periode"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
+                                        aria-label="Hapus periode"
+                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-rose-600 bg-rose-50/90 sm:bg-transparent sm:text-rose-400 hover:text-rose-600 hover:bg-rose-100/70 transition-all active:scale-95"
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z"/>

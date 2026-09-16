@@ -60,7 +60,7 @@ const currentMonthYear = new Intl.DateTimeFormat('id-ID', {
                     </div>
                 </Link>
 
-                <!-- Monitoring Layanan Card -->
+                <!-- Master Layanan Card -->
                 <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 flex items-center gap-4 opacity-65 cursor-not-allowed">
                     <div class="w-13 h-13 rounded-2xl bg-slate-100 flex items-center justify-center p-3.5">
                         <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -70,7 +70,7 @@ const currentMonthYear = new Intl.DateTimeFormat('id-ID', {
                         </svg>
                     </div>
                     <div>
-                        <p class="text-base font-bold text-slate-600">Monitoring Layanan</p>
+                        <p class="text-base font-bold text-slate-600">Master Layanan</p>
                         <p class="text-xs text-slate-400 mt-1">Segera hadir</p>
                     </div>
                 </div>
