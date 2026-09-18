@@ -42,6 +42,11 @@ if ($dbUrl) {
     $_SERVER['DB_URL'] = $dbUrl;
 }
 
+// Force bcrypt rounds to 10 to prevent Bcrypt hashing not supported error on Vercel
+putenv('BCRYPT_ROUNDS=10');
+$_ENV['BCRYPT_ROUNDS'] = '10';
+$_SERVER['BCRYPT_ROUNDS'] = '10';
+
 // Redirect bootstrap cache to /tmp because Vercel root is read-only
 $bootstrapCacheDirs = ['APP_SERVICES_CACHE' => 'services.php', 'APP_PACKAGES_CACHE' => 'packages.php', 'APP_ROUTES_CACHE' => 'routes.php', 'APP_EVENTS_CACHE' => 'events.php'];
 foreach ($bootstrapCacheDirs as $envKey => $file) {
