@@ -62,9 +62,9 @@ const adminNavItems = [
     },
     {
         label: 'Master Layanan',
-        route: null,
-        activeRoute: null,
-        href: '#',
+        route: 'admin.services.index',
+        activeRoute: 'admin.services.*',
+        href: '/admin/services',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2a4 4 0 014-4h0a4 4 0 014 4v2"/>
             <rect x="2" y="3" width="20" height="14" rx="2"/>
