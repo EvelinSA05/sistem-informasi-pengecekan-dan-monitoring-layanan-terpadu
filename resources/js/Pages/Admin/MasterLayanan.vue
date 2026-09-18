@@ -590,10 +590,25 @@ function confirmDelete() {
                                 <a v-if="selectedService.service_url" :href="selectedService.service_url" target="_blank" class="text-sm text-blue-600 hover:underline break-all">{{ selectedService.service_url }}</a>
                                 <p v-else class="text-sm text-slate-500">-</p>
                             </div>
-                            <div>
+                            <div v-if="selectedService.deskripsi_layanan">
+                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Deskripsi Layanan</p>
+                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                                    <p class="text-sm text-slate-700 whitespace-pre-wrap">{{ selectedService.deskripsi_layanan }}</p>
+                                </div>
+                            </div>
+                            <div v-if="selectedService.tester_instruction">
+                                <p class="text-xs font-semibold text-rose-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                    Instruksi Khusus Tester
+                                </p>
+                                <div class="p-3 bg-rose-50 rounded-xl border border-rose-100">
+                                    <p class="text-sm text-rose-800 whitespace-pre-wrap font-medium">{{ selectedService.tester_instruction }}</p>
+                                </div>
+                            </div>
+                            <div v-if="selectedService.notes">
                                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Keterangan / Notes</p>
                                 <div class="p-3 bg-blue-50/50 rounded-xl border border-blue-100">
-                                    <p class="text-sm text-slate-700 whitespace-pre-wrap">{{ selectedService.notes || 'Tidak ada keterangan khusus.' }}</p>
+                                    <p class="text-sm text-slate-700 whitespace-pre-wrap">{{ selectedService.notes }}</p>
                                 </div>
                             </div>
                             <div>
