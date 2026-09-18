@@ -56,8 +56,18 @@ Route::get('/test-session', function (\Illuminate\Http\Request $request) {
 
 Route::get('/check-session', function (\Illuminate\Http\Request $request) {
     $count = \Illuminate\Support\Facades\DB::table('sessions')->count();
-    $rawCookie = $_COOKIE['raw_test'] ?? 'RAW_COOKIE_MISSING';
-    return 'Session value: ' . $request->session()->get('test_key', 'NOT FOUND') . ' | Raw Cookie: ' . $rawCookie . ' | Total DB: ' . $count;
+    $rawCookie = $_COOKIE['raw_test'] ?? 'MISSING';
+    
+    $cookieName = config('session.cookie');
+    $laravelCookie = $_COOKIE[$cookieName] ?? 'MISSING';
+    
+    $appKey = config('app.key');
+    
+    return "Session: " . $request->session()->get('test_key', 'NOT FOUND') . 
+           " | RawCookie: " . $rawCookie . 
+           " | LaravelCookie: " . substr($laravelCookie, 0, 15) . "... " .
+           " | APP_KEY: " . $appKey .
+           " | DB: " . $count;
 });
 
 require __DIR__.'/auth.php';
