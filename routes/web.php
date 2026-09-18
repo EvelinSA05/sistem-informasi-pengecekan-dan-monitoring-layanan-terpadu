@@ -54,7 +54,8 @@ Route::get('/test-session', function (\Illuminate\Http\Request $request) {
 });
 
 Route::get('/check-session', function (\Illuminate\Http\Request $request) {
-    return 'Session value: ' . $request->session()->get('test_key', 'NOT FOUND');
+    $count = \Illuminate\Support\Facades\DB::table('sessions')->count();
+    return 'Session value: ' . $request->session()->get('test_key', 'NOT FOUND') . ' | Total sessions in DB: ' . $count;
 });
 
 require __DIR__.'/auth.php';

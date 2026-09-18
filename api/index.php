@@ -8,6 +8,10 @@ putenv('VIEW_COMPILED_PATH=/tmp/views');
 $_ENV['VIEW_COMPILED_PATH'] = '/tmp/views';
 $_SERVER['VIEW_COMPILED_PATH'] = '/tmp/views';
 
+putenv('SESSION_DRIVER=database');
+$_ENV['SESSION_DRIVER'] = 'database';
+$_SERVER['SESSION_DRIVER'] = 'database';
+
 putenv('CACHE_STORE=array');
 $_ENV['CACHE_STORE'] = 'array';
 $_SERVER['CACHE_STORE'] = 'array';
