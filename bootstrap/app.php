@@ -20,17 +20,5 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->reportable(function (\Throwable $e) {
-            http_response_code(500);
-            header('Content-Type: text/plain');
-            echo "ORIGINAL EXCEPTION BEFORE RENDER CRASH:\n\n";
-            echo $e->getMessage() . "\n\n";
-            echo $e->getFile() . ":" . $e->getLine() . "\n\n";
-            echo $e->getTraceAsString();
-            die();
-        });
-        
-        $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => true,
-        );
+        // Normal error handling
     })->create();

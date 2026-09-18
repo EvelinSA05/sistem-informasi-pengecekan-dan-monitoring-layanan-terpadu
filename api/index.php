@@ -16,6 +16,14 @@ putenv('CACHE_STORE=array');
 $_ENV['CACHE_STORE'] = 'array';
 $_SERVER['CACHE_STORE'] = 'array';
 
+// Redirect bootstrap cache to /tmp because Vercel root is read-only
+$bootstrapCacheDirs = ['APP_SERVICES_CACHE' => 'services.php', 'APP_PACKAGES_CACHE' => 'packages.php', 'APP_ROUTES_CACHE' => 'routes.php', 'APP_EVENTS_CACHE' => 'events.php'];
+foreach ($bootstrapCacheDirs as $envKey => $file) {
+    putenv("$envKey=/tmp/bootstrap/cache/$file");
+    $_ENV[$envKey] = "/tmp/bootstrap/cache/$file";
+    $_SERVER[$envKey] = "/tmp/bootstrap/cache/$file";
+}
+
 // Force APP_KEY injection to prevent early boot crashes if missing in Vercel Dashboard
 $appKey = 'base64:5YsqYxPWJYwFNajuNIGrofm1+u75dWJ7k8aYcClYP1Q=';
 putenv("APP_KEY=$appKey");
@@ -24,6 +32,7 @@ $_SERVER['APP_KEY'] = $appKey;
 
 // Create necessary temp directories
 $tmpDirs = [
+    '/tmp/bootstrap/cache',
     '/tmp/framework/cache/data',
     '/tmp/framework/sessions',
     '/tmp/framework/testing',
