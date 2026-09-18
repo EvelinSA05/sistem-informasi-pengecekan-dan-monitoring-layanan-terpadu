@@ -45,8 +45,16 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/run-migrations', function () {
     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-    \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
     return 'Migrations and seeders ran successfully! You can now go back and login.';
+});
+
+Route::get('/test-session', function (\Illuminate\Http\Request $request) {
+    $request->session()->put('test_key', 'This is a test session value!');
+    return 'Session set! Now go to /check-session';
+});
+
+Route::get('/check-session', function (\Illuminate\Http\Request $request) {
+    return 'Session value: ' . $request->session()->get('test_key', 'NOT FOUND');
 });
 
 require __DIR__.'/auth.php';
