@@ -16,6 +16,19 @@ putenv('CACHE_STORE=array');
 $_ENV['CACHE_STORE'] = 'array';
 $_SERVER['CACHE_STORE'] = 'array';
 
+// Force maintenance driver to prevent ArgumentCountError
+putenv('APP_MAINTENANCE_DRIVER=file');
+$_ENV['APP_MAINTENANCE_DRIVER'] = 'file';
+$_SERVER['APP_MAINTENANCE_DRIVER'] = 'file';
+
+putenv('BROADCAST_CONNECTION=log');
+$_ENV['BROADCAST_CONNECTION'] = 'log';
+$_SERVER['BROADCAST_CONNECTION'] = 'log';
+
+putenv('QUEUE_CONNECTION=sync');
+$_ENV['QUEUE_CONNECTION'] = 'sync';
+$_SERVER['QUEUE_CONNECTION'] = 'sync';
+
 // Redirect bootstrap cache to /tmp because Vercel root is read-only
 $bootstrapCacheDirs = ['APP_SERVICES_CACHE' => 'services.php', 'APP_PACKAGES_CACHE' => 'packages.php', 'APP_ROUTES_CACHE' => 'routes.php', 'APP_EVENTS_CACHE' => 'events.php'];
 foreach ($bootstrapCacheDirs as $envKey => $file) {
