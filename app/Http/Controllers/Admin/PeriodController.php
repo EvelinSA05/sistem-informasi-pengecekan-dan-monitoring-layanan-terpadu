@@ -417,8 +417,9 @@ class PeriodController extends Controller
     {
         $period->load([
             'creator:id,name',
+            'periodTesters.tester:id,name,email,bidang',
             'periodServices.service',
-            'periodServices.tester',
+            'periodServices.tester:id,name,email',
         ]);
 
         $carbonDate = Carbon::parse($period->date);
@@ -441,39 +442,153 @@ class PeriodController extends Controller
             // UTF-8 BOM for Microsoft Excel compatibility
             fputs($file, "\xEF\xBB\xBF");
 
-            // Header Laporan Eksekutif
-            fputcsv($file, ['MAJADIGI CHECKER - DINAS KOMUNIKASI DAN INFORMATIKA PROVINSI JAWA TIMUR']);
+            // ==========================================
+            // SECTION 1 — IDENTITAS LAPORAN & INFORMASI
+            // ==========================================
+            fputcsv($file, ['MAJADIGI CHECKER']);
             fputcsv($file, ['LAPORAN HASIL PENGECEKAN LAYANAN DIGITAL']);
             fputcsv($file, []);
+
+            fputcsv($file, ['INFORMASI LAPORAN']);
             fputcsv($file, ['Periode Pengecekan', $periodTitle]);
             fputcsv($file, ['Status Periode', strtoupper($period->status)]);
             fputcsv($file, ['Dibuat Oleh', $period->creator?->name ?? 'Admin']);
             fputcsv($file, ['Tanggal Laporan', date('d/m/Y H:i:s')]);
             fputcsv($file, []);
 
-            // Ringkasan Metrik
-            $total = $period->periodServices->count();
-            $normal = $period->periodServices->where('status', 'normal')->count();
-            $issues = $period->periodServices->where('status', 'gangguan')->count();
-            $pending = $period->periodServices->where('status', 'pending')->count();
-            $checked = $total - $pending;
-            $percent = $total > 0 ? round(($checked / $total) * 100) : 0;
+            // Perhitungan metrik aktual
+            $totalServices = $period->periodServices->count();
+            $normalCount   = $period->periodServices->where('status', 'normal')->count();
+            $issuesCount   = $period->periodServices->where('status', 'gangguan')->count();
+            $pendingCount  = $period->periodServices->where('status', 'pending')->count();
+            $checkedCount  = $totalServices - $pendingCount;
+            $readinessPct  = $totalServices > 0 ? round(($checkedCount / $totalServices) * 100) : 0;
 
-            fputcsv($file, ['RINGKASAN METRIK']);
-            fputcsv($file, ['Total Layanan', $total]);
-            fputcsv($file, ['Layanan Normal', $normal]);
-            fputcsv($file, ['Layanan Terkendala', $issues]);
-            fputcsv($file, ['Belum Diperiksa', $pending]);
-            fputcsv($file, ['Tingkat Kesiapan (Progress)', "{$percent}%"]);
+            $categoriesCount = $period->periodServices
+                ->map(fn($ps) => $ps->service?->category ?: 'Umum')
+                ->unique()
+                ->count();
+
+            $testersCount = $period->periodTesters->count() > 0
+                ? $period->periodTesters->count()
+                : $period->periodServices->pluck('tester_id')->filter()->unique()->count();
+
+            // ==========================================
+            // SECTION 2 — RINGKASAN HASIL PENGECEKAN
+            // ==========================================
+            fputcsv($file, ['RINGKASAN HASIL PENGECEKAN']);
+            fputcsv($file, ['Total Layanan', $totalServices]);
+            fputcsv($file, ['Layanan Normal', $normalCount]);
+            fputcsv($file, ['Layanan Terkendala', $issuesCount]);
+            fputcsv($file, ['Belum Diperiksa', $pendingCount]);
+            fputcsv($file, ['Tingkat Kesiapan', "{$readinessPct}%"]);
+            fputcsv($file, ['Jumlah Kategori Layanan', $categoriesCount]);
+            fputcsv($file, ['Jumlah Tester Terlibat', $testersCount]);
             fputcsv($file, []);
 
-            // Tabel Data Detail Layanan
+            // ==========================================
+            // SECTION 3 — REKAP STATUS
+            // ==========================================
+            fputcsv($file, ['REKAP STATUS']);
+            fputcsv($file, ['Status Pengecekan', 'Jumlah']);
+            fputcsv($file, ['NORMAL', $normalCount]);
+            fputcsv($file, ['TERKENDALA', $issuesCount]);
+            fputcsv($file, ['BELUM DIPERIKSA', $pendingCount]);
+            fputcsv($file, []);
+
+            // ==========================================
+            // SECTION 4 — REKAP KATEGORI
+            // ==========================================
+            $categorySummary = $period->periodServices
+                ->groupBy(fn($ps) => $ps->service?->category ?: 'Umum')
+                ->map(fn($group) => $group->count())
+                ->sortDesc();
+
+            fputcsv($file, ['REKAP KATEGORI']);
+            fputcsv($file, ['Kategori Layanan', 'Jumlah Layanan']);
+            foreach ($categorySummary as $catName => $catTotal) {
+                fputcsv($file, [$catName, $catTotal]);
+            }
+            fputcsv($file, []);
+
+            // ==========================================
+            // SECTION 5 — REKAP TESTER
+            // ==========================================
+            $testerSummary = [];
+
+            // Inisialisasi dari tester yang ditugaskan pada periode
+            foreach ($period->periodTesters as $pt) {
+                $tName = $pt->tester?->name ?? ('Tester #' . $pt->tester_id);
+                $testerSummary[$pt->tester_id] = [
+                    'name'       => $tName,
+                    'total'      => 0,
+                    'normal'     => 0,
+                    'terkendala' => 0,
+                    'pending'    => 0,
+                ];
+            }
+
+            // Akumulasi layanan per tester
+            foreach ($period->periodServices as $ps) {
+                $tId = $ps->tester_id;
+                if (!$tId) {
+                    $tKey = 'unassigned';
+                    if (!isset($testerSummary[$tKey])) {
+                        $testerSummary[$tKey] = [
+                            'name'       => 'Belum Ditugaskan',
+                            'total'      => 0,
+                            'normal'     => 0,
+                            'terkendala' => 0,
+                            'pending'    => 0,
+                        ];
+                    }
+                } else {
+                    $tKey = $tId;
+                    if (!isset($testerSummary[$tKey])) {
+                        $testerSummary[$tKey] = [
+                            'name'       => $ps->tester?->name ?? ('Tester #' . $tId),
+                            'total'      => 0,
+                            'normal'     => 0,
+                            'terkendala' => 0,
+                            'pending'    => 0,
+                        ];
+                    }
+                }
+
+                $testerSummary[$tKey]['total']++;
+                if ($ps->status === 'normal') {
+                    $testerSummary[$tKey]['normal']++;
+                } elseif ($ps->status === 'gangguan') {
+                    $testerSummary[$tKey]['terkendala']++;
+                } else {
+                    $testerSummary[$tKey]['pending']++;
+                }
+            }
+
+            fputcsv($file, ['REKAP TESTER']);
+            fputcsv($file, ['Tester', 'Jumlah Layanan', 'Normal', 'Terkendala', 'Belum Diperiksa']);
+            foreach ($testerSummary as $tStat) {
+                fputcsv($file, [
+                    $tStat['name'],
+                    $tStat['total'],
+                    $tStat['normal'],
+                    $tStat['terkendala'],
+                    $tStat['pending'],
+                ]);
+            }
+            fputcsv($file, []);
+
+            // ==========================================
+            // SECTION 6 — DETAIL HASIL PENGECEKAN
+            // ==========================================
+            fputcsv($file, ['DETAIL HASIL PENGECEKAN']);
             fputcsv($file, [
                 'No',
                 'ID Layanan',
                 'Nama Layanan',
-                'Kategori Layanan',
-                'Tester Penanggung Jawab',
+                'Kategori',
+                'Level',
+                'Tester',
                 'Email Tester',
                 'Status Pengecekan',
                 'Waktu Pengecekan',
@@ -483,21 +598,26 @@ class PeriodController extends Controller
             $no = 1;
             foreach ($period->periodServices as $ps) {
                 $statusLabel = match($ps->status) {
-                    'normal' => 'NORMAL',
-                    'gangguan' => 'KENDALA / GANGGUAN',
-                    default => 'BELUM DICEK',
+                    'normal'   => 'NORMAL',
+                    'gangguan' => 'TERKENDALA',
+                    default    => 'BELUM DIPERIKSA',
                 };
+
+                $levelDisplay = !empty($ps->service?->level) ? $ps->service->level : '-';
+                $checkedAtDisplay = $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d/m/Y H:i') : '-';
+                $descDisplay = !empty($ps->description) ? $ps->description : '-';
 
                 fputcsv($file, [
                     $no++,
-                    $ps->service?->source_service_id ?? '-',
+                    $ps->service?->source_service_id ?? ('SRV-' . str_pad($ps->service_id, 3, '0', STR_PAD_LEFT)),
                     $ps->service?->service_name ?? '-',
-                    $ps->service?->category ?? 'Umum',
-                    $ps->tester?->name ?? '-',
+                    $ps->service?->category ?: 'Umum',
+                    $levelDisplay,
+                    $ps->tester?->name ?? 'Belum Ditugaskan',
                     $ps->tester?->email ?? '-',
                     $statusLabel,
-                    $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d/m/Y H:i') : '-',
-                    $ps->description ?? '-',
+                    $checkedAtDisplay,
+                    $descDisplay,
                 ]);
             }
 
