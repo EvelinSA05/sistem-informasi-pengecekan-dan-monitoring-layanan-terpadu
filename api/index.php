@@ -55,9 +55,6 @@ if (isset($_SERVER['HTTP_HOST'])) {
     $_SERVER['APP_URL'] = $appUrl;
 }
 
-// Trust all proxies so Laravel knows it's on HTTPS (fixes Secure cookies and sessions)
-\Illuminate\Http\Request::setTrustedProxies(['*'], \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR | \Illuminate\Http\Request::HEADER_X_FORWARDED_HOST | \Illuminate\Http\Request::HEADER_X_FORWARDED_PORT | \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO | \Illuminate\Http\Request::HEADER_X_FORWARDED_AWS_ELB);
-
 // Redirect bootstrap cache to /tmp because Vercel root is read-only
 $bootstrapCacheDirs = ['APP_SERVICES_CACHE' => 'services.php', 'APP_PACKAGES_CACHE' => 'packages.php', 'APP_ROUTES_CACHE' => 'routes.php', 'APP_EVENTS_CACHE' => 'events.php'];
 foreach ($bootstrapCacheDirs as $envKey => $file) {
@@ -90,6 +87,10 @@ foreach ($tmpDirs as $dir) {
 
 try {
     require __DIR__ . '/../vendor/autoload.php';
+    
+    // Trust all proxies so Laravel knows it's on HTTPS (fixes Secure cookies and sessions)
+    \Illuminate\Http\Request::setTrustedProxies(['*'], \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR | \Illuminate\Http\Request::HEADER_X_FORWARDED_HOST | \Illuminate\Http\Request::HEADER_X_FORWARDED_PORT | \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO | \Illuminate\Http\Request::HEADER_X_FORWARDED_AWS_ELB);
+    
     $app = require_once __DIR__ . '/../bootstrap/app.php';
     $app->useStoragePath('/tmp');
     $request = Illuminate\Http\Request::capture();
