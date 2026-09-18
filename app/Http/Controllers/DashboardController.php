@@ -64,16 +64,34 @@ class DashboardController extends Controller
                 'total'    => (int) $row->total,
             ])->values();
 
-            // --- Distribusi Level Layanan (level 1–5 selalu tampil) ---
-            $levelCounts = Service::selectRaw('level, count(*) as total')
+            // --- Distribusi Level Layanan (Level 1–3 selalu tampil) ---
+            $levelRows = Service::select('level')
+                ->selectRaw('count(*) as total')
                 ->whereNotNull('level')
+                ->where('level', '!=', '')
                 ->groupBy('level')
-                ->pluck('total', 'level');
+                ->get();
 
-            $levelDistribution = collect([1, 2, 3, 4, 5])->map(fn($l) => [
-                'level' => $l,
-                'total' => (int) ($levelCounts[$l] ?? 0),
-            ])->values();
+            $levelMap = [];
+            foreach ($levelRows as $row) {
+                $lvlKey = trim((string) $row->level);
+                $levelMap[$lvlKey] = (int) $row->total;
+            }
+
+            $targetLevels = ['Level 1', 'Level 2', 'Level 3'];
+
+            $levelDistribution = collect($targetLevels)->map(function ($lvlName, $index) use ($levelMap) {
+                $num = (string) ($index + 1);
+                $count = $levelMap[$lvlName]
+                    ?? $levelMap[strtolower($lvlName)]
+                    ?? $levelMap[$num]
+                    ?? 0;
+
+                return [
+                    'level' => $lvlName,
+                    'total' => (int) $count,
+                ];
+            })->values();
 
             // --- Recent Periods dengan Progress (8 terbaru) ---
             $recentPeriods = CheckingPeriod::with([

@@ -77,6 +77,107 @@ const CATEGORY_COLORS = [
     COLORS.orange, COLORS.lime,
 ];
 
+// ─── Pagination Kategori Layanan ──────────────────────────────
+const categoryPage = ref(1);
+const categoryPageSize = 10;
+
+const totalCategories = computed(() => props.categoryDistribution?.length || 0);
+const totalCategoryPages = computed(() => Math.ceil(totalCategories.value / categoryPageSize) || 1);
+
+const categoryFromIndex = computed(() => {
+    if (totalCategories.value === 0) return 0;
+    return (categoryPage.value - 1) * categoryPageSize + 1;
+});
+
+const categoryToIndex = computed(() => {
+    return Math.min(categoryPage.value * categoryPageSize, totalCategories.value);
+});
+
+const paginatedCategories = computed(() => {
+    if (!props.categoryDistribution) return [];
+    const start = (categoryPage.value - 1) * categoryPageSize;
+    return props.categoryDistribution.slice(start, start + categoryPageSize);
+});
+
+const categoryPageNumbers = computed(() => {
+    const pages = [];
+    for (let i = 1; i <= totalCategoryPages.value; i++) {
+        pages.push(i);
+    }
+    return pages;
+});
+
+// Tinggi chart konsisten: tetap sama di semua halaman saat total > 10
+const categoryChartHeight = computed(() => {
+    const itemsCount = Math.min(totalCategories.value, categoryPageSize);
+    return Math.max(200, itemsCount * 36 + 40) + 'px';
+});
+
+function renderCategoryChart() {
+    if (!categoryChartRef.value) return;
+    if (categoryChartInstance) {
+        categoryChartInstance.destroy();
+        categoryChartInstance = null;
+    }
+
+    const currentItems = paginatedCategories.value;
+    if (currentItems.length === 0) return;
+
+    const catLabels = currentItems.map(c => c.category);
+    const catData   = currentItems.map(c => c.total);
+    const startIdx  = (categoryPage.value - 1) * categoryPageSize;
+    const catColors = currentItems.map((_, i) => CATEGORY_COLORS[(startIdx + i) % CATEGORY_COLORS.length]);
+
+    categoryChartInstance = new Chart(categoryChartRef.value, {
+        type: 'bar',
+        data: {
+            labels: catLabels,
+            datasets: [{
+                label: 'Jumlah Layanan',
+                data: catData,
+                backgroundColor: catColors.map(c => c + 'cc'),
+                borderColor: catColors,
+                borderWidth: 1.5,
+                borderRadius: 6,
+                borderSkipped: false,
+                maxBarThickness: 24,
+            }],
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => ` ${ctx.parsed.x} layanan`,
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1, precision: 0 },
+                    grid: { color: '#f1f5f9' },
+                },
+                y: {
+                    grid: { display: false },
+                    ticks: { font: { size: 12 } },
+                },
+            },
+        },
+    });
+}
+
+function setCategoryPage(page) {
+    if (page < 1 || page > totalCategoryPages.value || page === categoryPage.value) return;
+    categoryPage.value = page;
+    nextTick(() => {
+        renderCategoryChart();
+    });
+}
+
 function initCharts() {
     // Chart 1 — Tester Doughnut
     if (testerChartRef.value && props.testerStats.total > 0) {
@@ -146,59 +247,20 @@ function initCharts() {
         });
     }
 
-    // Chart 3 — Kategori Horizontal Bar
+    // Chart 3 — Kategori Horizontal Bar (dengan pagination 10 per halaman)
     if (categoryChartRef.value && props.categoryDistribution.length > 0) {
-        if (categoryChartInstance) categoryChartInstance.destroy();
-        const catLabels = props.categoryDistribution.map(c => c.category);
-        const catData   = props.categoryDistribution.map(c => c.total);
-        const catColors = catLabels.map((_, i) => CATEGORY_COLORS[i % CATEGORY_COLORS.length]);
-
-        categoryChartInstance = new Chart(categoryChartRef.value, {
-            type: 'bar',
-            data: {
-                labels: catLabels,
-                datasets: [{
-                    label: 'Jumlah Layanan',
-                    data: catData,
-                    backgroundColor: catColors.map(c => c + 'cc'),
-                    borderColor: catColors,
-                    borderWidth: 1.5,
-                    borderRadius: 6,
-                    borderSkipped: false,
-                }],
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: (ctx) => ` ${ctx.parsed.x} layanan`,
-                        },
-                    },
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1, precision: 0 },
-                        grid: { color: '#f1f5f9' },
-                    },
-                    y: {
-                        grid: { display: false },
-                        ticks: { font: { size: 12 } },
-                    },
-                },
-            },
-        });
+        renderCategoryChart();
     }
 
     // Chart 4 — Level Bar Chart
     if (levelChartRef.value) {
         if (levelChartInstance) levelChartInstance.destroy();
-        const lvlLabels = props.levelDistribution.map(l => `Level ${l.level}`);
-        const lvlData   = props.levelDistribution.map(l => l.total);
+        const lvlLabels = props.levelDistribution && props.levelDistribution.length > 0
+            ? props.levelDistribution.map(l => String(l.level).startsWith('Level') ? l.level : `Level ${l.level}`)
+            : ['Level 1', 'Level 2', 'Level 3'];
+        const lvlData   = props.levelDistribution && props.levelDistribution.length > 0
+            ? props.levelDistribution.map(l => Number(l.total) || 0)
+            : [0, 0, 0];
 
         levelChartInstance = new Chart(levelChartRef.value, {
             type: 'bar',
@@ -211,10 +273,8 @@ function initCharts() {
                         COLORS.blue + 'cc',
                         COLORS.indigo + 'cc',
                         COLORS.cyan + 'cc',
-                        COLORS.teal + 'cc',
-                        COLORS.violet + 'cc',
                     ],
-                    borderColor: [COLORS.blue, COLORS.indigo, COLORS.cyan, COLORS.teal, COLORS.violet],
+                    borderColor: [COLORS.blue, COLORS.indigo, COLORS.cyan],
                     borderWidth: 1.5,
                     borderRadius: 8,
                     borderSkipped: false,
@@ -485,27 +545,75 @@ function submitCheck() {
             </div>
 
             <!-- ── ROW 3: Distribusi Kategori Layanan ─────────────── -->
-            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <div>
-                        <h3 class="text-sm font-bold text-slate-800">Distribusi Kategori Layanan</h3>
-                        <p class="text-xs text-slate-400 mt-0.5">Jumlah layanan per kategori (dari database)</p>
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col justify-between">
+                <div class="p-6 pb-2">
+                    <div class="flex items-center justify-between mb-5">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800">Distribusi Kategori Layanan</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Jumlah layanan per kategori (dari database)</p>
+                        </div>
+                        <span class="text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">
+                            {{ totalCategories }} kategori
+                        </span>
                     </div>
-                    <span class="text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">
-                        {{ categoryDistribution.length }} kategori
-                    </span>
+                    <div v-if="totalCategories > 0">
+                        <div class="relative" :style="{ height: categoryChartHeight }">
+                            <canvas ref="categoryChartRef"></canvas>
+                        </div>
+                    </div>
+                    <div v-else class="h-40 flex flex-col items-center justify-center text-center">
+                        <div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center mb-3">
+                            <svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path stroke-linecap="round" d="M8 21h8M12 17v4"/></svg>
+                        </div>
+                        <p class="text-sm text-slate-400 font-medium">Belum ada data kategori layanan</p>
+                        <p class="text-xs text-slate-300 mt-1">Tambahkan layanan dengan kategori di Master Layanan</p>
+                    </div>
                 </div>
-                <div v-if="categoryDistribution.length > 0">
-                    <div class="relative" :style="{ height: Math.max(160, categoryDistribution.length * 40) + 'px' }">
-                        <canvas ref="categoryChartRef"></canvas>
-                    </div>
-                </div>
-                <div v-else class="h-40 flex flex-col items-center justify-center text-center">
-                    <div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center mb-3">
-                        <svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path stroke-linecap="round" d="M8 21h8M12 17v4"/></svg>
-                    </div>
-                    <p class="text-sm text-slate-400 font-medium">Belum ada data kategori layanan</p>
-                    <p class="text-xs text-slate-300 mt-1">Tambahkan layanan dengan kategori di Master Layanan</p>
+
+                <!-- ── Pagination Kategori (hanya tampil jika kategori > 10) ── -->
+                <div
+                    v-if="totalCategories > categoryPageSize"
+                    class="px-6 py-3.5 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs"
+                >
+                    <p class="text-slate-500 font-medium">
+                        Menampilkan <span class="font-bold text-slate-700">{{ categoryFromIndex }}</span> sampai <span class="font-bold text-slate-700">{{ categoryToIndex }}</span> dari <span class="font-bold text-slate-700">{{ totalCategories }}</span> data
+                    </p>
+
+                    <nav class="inline-flex shadow-sm rounded-xl overflow-hidden border border-slate-200 bg-white" aria-label="Pagination Kategori">
+                        <!-- Previous Button -->
+                        <button
+                            type="button"
+                            :disabled="categoryPage === 1"
+                            @click="setCategoryPage(categoryPage - 1)"
+                            class="relative inline-flex items-center px-3.5 py-1.5 text-xs font-semibold transition-colors border-r border-slate-200"
+                            :class="categoryPage === 1 ? 'bg-slate-50 text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600 cursor-pointer'"
+                        >
+                            &laquo; Previous
+                        </button>
+
+                        <!-- Page Numbers -->
+                        <button
+                            v-for="p in categoryPageNumbers"
+                            :key="p"
+                            type="button"
+                            @click="setCategoryPage(p)"
+                            class="relative inline-flex items-center px-3.5 py-1.5 text-xs font-semibold transition-colors border-r border-slate-200 last:border-r-0"
+                            :class="p === categoryPage ? 'z-10 bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600 cursor-pointer'"
+                        >
+                            {{ p }}
+                        </button>
+
+                        <!-- Next Button -->
+                        <button
+                            type="button"
+                            :disabled="categoryPage === totalCategoryPages"
+                            @click="setCategoryPage(categoryPage + 1)"
+                            class="relative inline-flex items-center px-3.5 py-1.5 text-xs font-semibold transition-colors"
+                            :class="categoryPage === totalCategoryPages ? 'bg-slate-50 text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600 cursor-pointer'"
+                        >
+                            Next &raquo;
+                        </button>
+                    </nav>
                 </div>
             </div>
 
@@ -516,16 +624,16 @@ function submitCheck() {
                 <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
                     <div class="mb-4">
                         <h3 class="text-sm font-bold text-slate-800">Distribusi Level Layanan</h3>
-                        <p class="text-xs text-slate-400 mt-0.5">Jumlah layanan per level (1–5)</p>
+                        <p class="text-xs text-slate-400 mt-0.5">Jumlah layanan per level (1–3)</p>
                     </div>
                     <div class="relative h-52">
                         <canvas ref="levelChartRef"></canvas>
                     </div>
                     <!-- Level Summary -->
-                    <div class="mt-4 grid grid-cols-5 gap-2">
-                        <div v-for="item in levelDistribution" :key="item.level" class="text-center">
+                    <div class="mt-4 grid grid-cols-3 gap-3">
+                        <div v-for="item in levelDistribution" :key="item.level" class="text-center p-2.5 rounded-xl bg-slate-50/60 border border-slate-100">
                             <p class="text-base font-black text-slate-700">{{ item.total }}</p>
-                            <p class="text-[10px] text-slate-400">Lv{{ item.level }}</p>
+                            <p class="text-xs font-semibold text-slate-500">{{ item.level }}</p>
                         </div>
                     </div>
                 </div>
