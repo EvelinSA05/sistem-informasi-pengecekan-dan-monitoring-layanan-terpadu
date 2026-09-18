@@ -29,6 +29,17 @@ putenv('QUEUE_CONNECTION=sync');
 $_ENV['QUEUE_CONNECTION'] = 'sync';
 $_SERVER['QUEUE_CONNECTION'] = 'sync';
 
+// Force database connection to pgsql and map Vercel Postgres URL if exists
+putenv('DB_CONNECTION=pgsql');
+$_ENV['DB_CONNECTION'] = 'pgsql';
+$_SERVER['DB_CONNECTION'] = 'pgsql';
+
+if (getenv('POSTGRES_URL')) {
+    putenv('DATABASE_URL=' . getenv('POSTGRES_URL'));
+    $_ENV['DATABASE_URL'] = getenv('POSTGRES_URL');
+    $_SERVER['DATABASE_URL'] = getenv('POSTGRES_URL');
+}
+
 // Redirect bootstrap cache to /tmp because Vercel root is read-only
 $bootstrapCacheDirs = ['APP_SERVICES_CACHE' => 'services.php', 'APP_PACKAGES_CACHE' => 'packages.php', 'APP_ROUTES_CACHE' => 'routes.php', 'APP_EVENTS_CACHE' => 'events.php'];
 foreach ($bootstrapCacheDirs as $envKey => $file) {
