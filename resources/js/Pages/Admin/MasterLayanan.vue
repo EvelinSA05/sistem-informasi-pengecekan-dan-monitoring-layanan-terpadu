@@ -575,52 +575,66 @@ function confirmDelete() {
                     </div>
                     <div class="p-6">
                         <div class="space-y-4">
-                            <div>
-                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Nama Layanan</p>
-                                <p class="text-sm font-bold text-slate-800">{{ selectedService.service_name }}</p>
+                            <!-- Hero Section (Nama, URL & Status) -->
+                            <div class="p-4 bg-gradient-to-br from-blue-50 to-indigo-50/50 rounded-2xl border border-blue-100/60 relative overflow-hidden">
+                                <!-- Hiasan Background -->
+                                <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl pointer-events-none"></div>
+                                
+                                <div class="flex justify-between items-start mb-2 relative z-10">
+                                    <div class="pr-3">
+                                        <p class="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-1">Nama Layanan</p>
+                                        <p class="text-lg font-extrabold text-slate-800 leading-tight">{{ selectedService.service_name }}</p>
+                                    </div>
+                                    <span class="inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider" :class="selectedService.is_active ? 'bg-emerald-100 text-emerald-700 border border-emerald-200/50' : 'bg-slate-200 text-slate-600 border border-slate-300/50'">
+                                        <span class="w-1.5 h-1.5 rounded-full" :class="selectedService.is_active ? 'bg-emerald-500' : 'bg-slate-400'"></span>
+                                        {{ selectedService.is_active ? 'Aktif' : 'Non-Aktif' }}
+                                    </span>
+                                </div>
+                                <a v-if="selectedService.service_url" :href="selectedService.service_url" target="_blank" class="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline break-all relative z-10 w-fit">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                    {{ selectedService.service_url }}
+                                </a>
                             </div>
-                            <div>
-                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Kategori</p>
-                                <p class="text-sm text-slate-700">{{ selectedService.category || '-' }}</p>
+
+                            <!-- Meta (Kategori & Level) Grid -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/60 flex flex-col justify-center">
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Kategori</p>
+                                    <p class="text-sm font-bold text-slate-700 truncate">{{ selectedService.category || '-' }}</p>
+                                </div>
+                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/60 flex flex-col justify-center">
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Level</p>
+                                    <p class="text-sm font-bold text-slate-700 truncate">{{ selectedService.level || '-' }}</p>
+                                </div>
                             </div>
+
+                            <!-- Deskripsi -->
                             <div>
-                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Level</p>
-                                <p class="text-sm text-slate-700">{{ selectedService.level || '-' }}</p>
-                            </div>
-                            <div>
-                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">URL Layanan</p>
-                                <a v-if="selectedService.service_url" :href="selectedService.service_url" target="_blank" class="text-sm text-blue-600 hover:underline break-all">{{ selectedService.service_url }}</a>
-                                <p v-else class="text-sm text-slate-500">-</p>
-                            </div>
-                            <div>
-                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Deskripsi Layanan</p>
-                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                                    <p v-if="selectedService.deskripsi_layanan" class="text-sm text-slate-700 whitespace-pre-wrap">{{ selectedService.deskripsi_layanan }}</p>
+                                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Deskripsi Layanan</p>
+                                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                                    <p v-if="selectedService.deskripsi_layanan" class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{{ selectedService.deskripsi_layanan }}</p>
                                     <p v-else class="text-sm text-slate-400 italic">Belum ada deskripsi layanan.</p>
                                 </div>
                             </div>
+
+                            <!-- Instruksi Khusus -->
                             <div>
-                                <p class="text-xs font-semibold text-rose-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                <p class="text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-1.5 ml-1 flex items-center gap-1.5">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                                     Instruksi Khusus Tester
                                 </p>
-                                <div class="p-3 bg-rose-50 rounded-xl border border-rose-100">
-                                    <p v-if="selectedService.tester_instruction" class="text-sm text-rose-800 whitespace-pre-wrap font-medium">{{ selectedService.tester_instruction }}</p>
-                                    <p v-else class="text-sm text-rose-400 italic">Belum ada instruksi khusus untuk tester.</p>
+                                <div class="p-3.5 bg-rose-50/80 rounded-xl border border-rose-100">
+                                    <p v-if="selectedService.tester_instruction" class="text-sm text-rose-800 whitespace-pre-wrap font-medium leading-relaxed">{{ selectedService.tester_instruction }}</p>
+                                    <p v-else class="text-sm text-rose-400/80 italic">Belum ada instruksi khusus untuk tester.</p>
                                 </div>
                             </div>
+
+                            <!-- Notes -->
                             <div v-if="selectedService.notes">
-                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Keterangan / Notes</p>
-                                <div class="p-3 bg-blue-50/50 rounded-xl border border-blue-100">
-                                    <p class="text-sm text-slate-700 whitespace-pre-wrap">{{ selectedService.notes }}</p>
+                                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Keterangan / Notes</p>
+                                <div class="p-3.5 bg-amber-50/40 rounded-xl border border-amber-100/60">
+                                    <p class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{{ selectedService.notes }}</p>
                                 </div>
-                            </div>
-                            <div>
-                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Status</p>
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" :class="selectedService.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'">
-                                    <span class="w-1.5 h-1.5 rounded-full" :class="selectedService.is_active ? 'bg-emerald-500' : 'bg-slate-400'"></span>
-                                    {{ selectedService.is_active ? 'Aktif' : 'Non-Aktif' }}
-                                </span>
                             </div>
                         </div>
                     </div>

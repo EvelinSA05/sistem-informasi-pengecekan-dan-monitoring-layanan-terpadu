@@ -88,8 +88,8 @@ const testerNavItems = [
     },
     {
         label: 'Layanan Ditugaskan',
-        route: null,
-        href: '#',
+        route: 'tester.assigned-services.index',
+        href: '/tester/assigned-services',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="2"/>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
