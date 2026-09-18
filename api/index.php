@@ -29,15 +29,17 @@ putenv('QUEUE_CONNECTION=sync');
 $_ENV['QUEUE_CONNECTION'] = 'sync';
 $_SERVER['QUEUE_CONNECTION'] = 'sync';
 
-// Force database connection to pgsql and map Vercel Postgres URL if exists
+// Force database connection to pgsql
 putenv('DB_CONNECTION=pgsql');
 $_ENV['DB_CONNECTION'] = 'pgsql';
 $_SERVER['DB_CONNECTION'] = 'pgsql';
 
-if (getenv('POSTGRES_URL')) {
-    putenv('DATABASE_URL=' . getenv('POSTGRES_URL'));
-    $_ENV['DATABASE_URL'] = getenv('POSTGRES_URL');
-    $_SERVER['DATABASE_URL'] = getenv('POSTGRES_URL');
+// Map any available Postgres URL to Laravel 11's DB_URL
+$dbUrl = getenv('POSTGRES_URL') ?: getenv('DATABASE_URL') ?: getenv('DB_URL');
+if ($dbUrl) {
+    putenv('DB_URL=' . $dbUrl);
+    $_ENV['DB_URL'] = $dbUrl;
+    $_SERVER['DB_URL'] = $dbUrl;
 }
 
 // Redirect bootstrap cache to /tmp because Vercel root is read-only
