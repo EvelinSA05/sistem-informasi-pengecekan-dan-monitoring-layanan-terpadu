@@ -7,11 +7,10 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::post('/tester/check/{periodService}', [\App\Http\Controllers\DashboardController::class, 'submitCheck'])->name('tester.submit_check');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -23,6 +22,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
+
+        // Master Layanan
+        Route::get('/services', [\App\Http\Controllers\Admin\ServiceController::class, 'index'])->name('services.index');
+        Route::post('/services', [\App\Http\Controllers\Admin\ServiceController::class, 'store'])->name('services.store');
+        Route::get('/services/{service}/history', [\App\Http\Controllers\Admin\ServiceController::class, 'history'])->name('services.history');
+        Route::put('/services/{service}', [\App\Http\Controllers\Admin\ServiceController::class, 'update'])->name('services.update');
+        Route::delete('/services/{service}', [\App\Http\Controllers\Admin\ServiceController::class, 'destroy'])->name('services.destroy');
 
         // Periode Pengecekan
         Route::get('/periods', [AdminPeriodController::class, 'index'])->name('periods.index');
