@@ -26,14 +26,7 @@ onMounted(() => {
     <div class="min-h-screen bg-slate-100 py-8 px-4 font-sans text-slate-800 antialiased print:p-0 print:bg-white">
 
         <!-- ── Action Bar (Hidden when printing) ──────────────── -->
-        <div class="max-w-4xl mx-auto mb-6 flex items-center justify-between print:hidden">
-            <button
-                @click="$window.history ? window.history.back() : null"
-                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs"
-            >
-                ← Kembali
-            </button>
-
+        <div class="max-w-4xl mx-auto mb-6 flex items-center justify-end print:hidden">
             <div class="flex items-center gap-3">
                 <span class="text-xs text-slate-500 font-medium">
                     Gunakan opsi <strong>"Save as PDF"</strong> pada dialog print.
@@ -57,9 +50,11 @@ onMounted(() => {
             <div class="border-b-2 border-slate-900 pb-6 mb-6">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 rounded-2xl bg-blue-800 text-white flex items-center justify-center font-bold text-xl shadow-md">
-                            M
-                        </div>
+                        <img 
+                            src="/images/logo_majadigi.png" 
+                            alt="Logo Majadigi" 
+                            class="h-12 sm:h-14 w-auto object-contain shrink-0"
+                        />
                         <div>
                             <h1 class="text-lg font-black text-slate-900 tracking-tight uppercase leading-none">
                                 MAJADIGI CHECKER SYSTEM
