@@ -102,6 +102,12 @@ const navItems = computed(() => {
 });
 
 const isSidebarOpen = ref(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
+
+function closeSidebarOnMobile() {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+        isSidebarOpen.value = false;
+    }
+}
 </script>
 
 <template>
@@ -157,7 +163,7 @@ const isSidebarOpen = ref(typeof window !== 'undefined' ? window.innerWidth >= 1
                 <template v-for="item in navItems" :key="item.label">
                     <Link
                         :href="item.href"
-                        @click="isSidebarOpen = false"
+                        @click="closeSidebarOnMobile"
                         class="group relative flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-200"
                         :class="(item.activeRoute && route().current(item.activeRoute)) || (item.route && route().current(item.route))
                             ? 'bg-white text-blue-900 shadow-lg shadow-blue-950/10'
