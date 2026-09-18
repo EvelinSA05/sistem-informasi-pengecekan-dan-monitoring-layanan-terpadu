@@ -16,6 +16,12 @@ putenv('CACHE_STORE=array');
 $_ENV['CACHE_STORE'] = 'array';
 $_SERVER['CACHE_STORE'] = 'array';
 
+// Force APP_KEY injection to prevent early boot crashes if missing in Vercel Dashboard
+$appKey = 'base64:5YsqYxPWJYwFNajuNIGrofm1+u75dWJ7k8aYcClYP1Q=';
+putenv("APP_KEY=$appKey");
+$_ENV['APP_KEY'] = $appKey;
+$_SERVER['APP_KEY'] = $appKey;
+
 // Create necessary temp directories
 $tmpDirs = [
     '/tmp/framework/cache/data',
