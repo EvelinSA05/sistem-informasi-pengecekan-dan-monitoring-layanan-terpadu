@@ -25,7 +25,6 @@ class DatabaseSeeder extends Seeder
                 'username' => 'admin_majadigi',
                 'role' => 'admin',
                 'password' => bcrypt('password'), // Set password manually
-                'email_verified_at' => now(),
             ]
         );
 
@@ -37,7 +36,6 @@ class DatabaseSeeder extends Seeder
                 'username' => 'tester_majadigi',
                 'role' => 'tester',
                 'password' => bcrypt('password'), // Set password manually
-                'email_verified_at' => now(),
             ]
         );
     }
