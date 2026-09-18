@@ -20,7 +20,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \Illuminate\Support\Facades\URL::forceScheme('https');
+        if (config('app.env') === 'production') {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
         Vite::prefetch(concurrency: 3);
     }
 }
