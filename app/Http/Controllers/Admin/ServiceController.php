@@ -46,7 +46,10 @@ class ServiceController extends Controller
             'nonaktif' => Service::where('is_active', false)->count(),
         ];
 
-        $levels = Service::select('level')->distinct()->whereNotNull('level')->pluck('level');
+        // Level options: predefined list consistent with deployment.
+        // Previously used DISTINCT query which returned empty on local (all records have level=NULL).
+        // Using a fixed list ensures the dropdown is always available regardless of existing data.
+        $levels = collect(['Level 1', 'Level 2', 'Level 3']);
 
         return Inertia::render('Admin/MasterLayanan', [
             'services' => $services,
