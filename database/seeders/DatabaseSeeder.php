@@ -18,21 +18,27 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         // Akun Admin
-        User::create([
-            'name' => 'Admin Majadigi',
-            'email' => 'admin@majadigi.com',
-            'username' => 'admin_majadigi',
-            'role' => 'admin',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
-        ]);
+        User::updateOrCreate(
+            ['email' => 'admin@majadigi.com'],
+            [
+                'name' => 'Admin Majadigi',
+                'username' => 'admin_majadigi',
+                'role' => 'admin',
+                'password' => bcrypt('password'), // Set password manually
+                'email_verified_at' => now(),
+            ]
+        );
 
         // Akun Tester
-        User::create([
-            'name' => 'Tester Majadigi',
-            'email' => 'tester@majadigi.com',
-            'username' => 'tester_majadigi',
-            'role' => 'tester',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
-        ]);
+        User::updateOrCreate(
+            ['email' => 'tester@majadigi.com'],
+            [
+                'name' => 'Tester Majadigi',
+                'username' => 'tester_majadigi',
+                'role' => 'tester',
+                'password' => bcrypt('password'), // Set password manually
+                'email_verified_at' => now(),
+            ]
+        );
     }
 }
