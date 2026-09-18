@@ -36,6 +36,7 @@ class ServiceController extends Controller
                 $query->where('level', $request->input('level'));
             })
             ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->paginate(10)
             ->withQueryString();
 

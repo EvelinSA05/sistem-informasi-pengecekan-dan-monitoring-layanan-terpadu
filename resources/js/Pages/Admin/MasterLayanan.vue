@@ -376,7 +376,9 @@ function confirmDelete() {
                             <Link
                                 v-if="link.url"
                                 :href="link.url"
-                                v-html="link.label"
+                                v-html="link.label.replace('pagination.previous', '&laquo;').replace('pagination.next', '&raquo;')"
+                                preserve-state
+                                preserve-scroll
                                 :class="[
                                     'relative inline-flex items-center px-4 py-2 border border-slate-200 text-sm font-medium transition-colors',
                                     link.active ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white text-slate-600 hover:bg-slate-50',
@@ -384,7 +386,7 @@ function confirmDelete() {
                             />
                             <span
                                 v-else
-                                v-html="link.label"
+                                v-html="link.label.replace('pagination.previous', '&laquo;').replace('pagination.next', '&raquo;')"
                                 class="relative inline-flex items-center px-4 py-2 border border-slate-200 bg-slate-50 text-sm font-medium text-slate-400"
                             ></span>
                         </template>
