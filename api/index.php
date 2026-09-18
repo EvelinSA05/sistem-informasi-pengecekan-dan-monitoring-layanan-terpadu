@@ -8,10 +8,6 @@ putenv('VIEW_COMPILED_PATH=/tmp/views');
 $_ENV['VIEW_COMPILED_PATH'] = '/tmp/views';
 $_SERVER['VIEW_COMPILED_PATH'] = '/tmp/views';
 
-putenv('SESSION_DRIVER=cookie');
-$_ENV['SESSION_DRIVER'] = 'cookie';
-$_SERVER['SESSION_DRIVER'] = 'cookie';
-
 putenv('CACHE_STORE=array');
 $_ENV['CACHE_STORE'] = 'array';
 $_SERVER['CACHE_STORE'] = 'array';
@@ -53,11 +49,6 @@ if (isset($_SERVER['HTTP_HOST'])) {
     putenv('APP_URL=' . $appUrl);
     $_ENV['APP_URL'] = $appUrl;
     $_SERVER['APP_URL'] = $appUrl;
-
-    $sessionDomain = $_SERVER['HTTP_HOST'];
-    putenv('SESSION_DOMAIN=' . $sessionDomain);
-    $_ENV['SESSION_DOMAIN'] = $sessionDomain;
-    $_SERVER['SESSION_DOMAIN'] = $sessionDomain;
 }
 
 // Redirect bootstrap cache to /tmp because Vercel root is read-only
