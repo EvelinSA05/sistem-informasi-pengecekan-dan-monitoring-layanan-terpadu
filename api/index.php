@@ -47,6 +47,19 @@ putenv('BCRYPT_ROUNDS=10');
 $_ENV['BCRYPT_ROUNDS'] = '10';
 $_SERVER['BCRYPT_ROUNDS'] = '10';
 
+// Force dynamic APP_URL to fix Ziggy route generation
+if (isset($_SERVER['HTTP_HOST'])) {
+    $appUrl = 'https://' . $_SERVER['HTTP_HOST'];
+    putenv('APP_URL=' . $appUrl);
+    $_ENV['APP_URL'] = $appUrl;
+    $_SERVER['APP_URL'] = $appUrl;
+
+    $sessionDomain = $_SERVER['HTTP_HOST'];
+    putenv('SESSION_DOMAIN=' . $sessionDomain);
+    $_ENV['SESSION_DOMAIN'] = $sessionDomain;
+    $_SERVER['SESSION_DOMAIN'] = $sessionDomain;
+}
+
 // Redirect bootstrap cache to /tmp because Vercel root is read-only
 $bootstrapCacheDirs = ['APP_SERVICES_CACHE' => 'services.php', 'APP_PACKAGES_CACHE' => 'packages.php', 'APP_ROUTES_CACHE' => 'routes.php', 'APP_EVENTS_CACHE' => 'events.php'];
 foreach ($bootstrapCacheDirs as $envKey => $file) {
