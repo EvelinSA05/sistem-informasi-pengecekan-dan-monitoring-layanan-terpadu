@@ -34,17 +34,28 @@ watch(searchQuery, (val) => {
 const flash = ref('');
 const flashType = ref('success'); // 'success' | 'error'
 let flashTimer = null;
+const progressWidth = ref(100);
+const flashDuration = ref(4000);
 
 function closeFlash() {
     if (flashTimer) clearTimeout(flashTimer);
     flash.value = '';
 }
 
-function showFlash(msg, type = 'success') {
+function showFlash(msg, type = 'success', duration = 4000) {
     if (flashTimer) clearTimeout(flashTimer);
     flash.value = msg;
     flashType.value = type;
-    flashTimer = setTimeout(() => { flash.value = ''; }, 4000);
+    flashDuration.value = duration;
+    
+    progressWidth.value = 100;
+    setTimeout(() => {
+        if (flash.value === msg) {
+            progressWidth.value = 0;
+        }
+    }, 50);
+
+    flashTimer = setTimeout(() => { flash.value = ''; }, duration);
 }
 
 // ─── Avatar helpers ───────────────────────────────────────────
@@ -140,22 +151,22 @@ function confirmDelete() {
         <!-- ── Flash Notification ──────────────────────────────── -->
         <Transition
             enter-active-class="transition-all duration-300 ease-out"
-            enter-from-class="opacity-0 -translate-y-2 translate-x-1"
-            enter-to-class="opacity-100 translate-y-0 translate-x-0"
+            enter-from-class="opacity-0 translate-y-4"
+            enter-to-class="opacity-100 translate-y-0"
             leave-active-class="transition-all duration-200 ease-in"
-            leave-from-class="opacity-100 translate-y-0 translate-x-0"
-            leave-to-class="opacity-0 -translate-y-2 translate-x-1"
+            leave-from-class="opacity-100 translate-y-0"
+            leave-to-class="opacity-0 translate-y-4"
         >
             <div
                 v-if="flash"
                 :class="[
-                    'fixed top-5 right-5 z-[100] flex items-center justify-between gap-3 px-4 py-3 rounded-2xl shadow-lg text-sm font-semibold border backdrop-blur-sm transition-all max-w-md',
+                    'fixed bottom-[24px] right-[24px] z-[100] flex items-center justify-between gap-3 px-4 py-3 rounded-2xl shadow-lg text-sm font-semibold border backdrop-blur-sm transition-all max-w-md overflow-hidden',
                     flashType === 'success'
                         ? 'bg-emerald-50/95 border-emerald-200 text-emerald-800 shadow-emerald-900/10'
                         : 'bg-red-50/95 border-red-200 text-red-800 shadow-red-900/10'
                 ]"
             >
-                <div class="flex items-center gap-2.5">
+                <div class="flex items-center gap-2.5 relative z-10">
                     <svg v-if="flashType === 'success'" class="w-4 h-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                     </svg>
@@ -169,7 +180,7 @@ function confirmDelete() {
                 <button
                     type="button"
                     @click="closeFlash"
-                    class="p-1 rounded-xl transition-colors focus:outline-none shrink-0"
+                    class="p-1 rounded-xl transition-colors focus:outline-none shrink-0 relative z-10"
                     :class="flashType === 'success'
                         ? 'text-emerald-500 hover:text-emerald-800 hover:bg-emerald-100/70'
                         : 'text-red-500 hover:text-red-800 hover:bg-red-100/70'"
@@ -180,6 +191,16 @@ function confirmDelete() {
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
+
+                <!-- Progress Bar -->
+                <div
+                    class="absolute bottom-0 left-0 h-1 transition-all ease-linear"
+                    :class="flashType === 'success' ? 'bg-emerald-500/40' : 'bg-red-500/40'"
+                    :style="{
+                        width: progressWidth + '%',
+                        transitionDuration: progressWidth === 100 ? '0ms' : `${flashDuration}ms`
+                    }"
+                ></div>
             </div>
         </Transition>
 
