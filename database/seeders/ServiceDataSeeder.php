@@ -1688,6 +1688,7 @@ EOD;
                     'source_service_id' => Str::uuid()->toString(),
                     'service_name'      => substr($name, 0, 255),
                     'category'          => substr($opd, 0, 100),
+                    'level'             => $level ?: null,
                     'icon'              => 'layanan',
                     'service_url'       => $url,
                     'is_active'         => $isActive,
@@ -1701,6 +1702,9 @@ EOD;
                 $i++;
             }
         }
+
+        // Kosongkan tabel sebelum seeding ulang agar tidak terduplikasi
+        Service::truncate();
 
         // Insert in chunks to avoid memory/query issues
         $chunks = array_chunk($records, 50);
