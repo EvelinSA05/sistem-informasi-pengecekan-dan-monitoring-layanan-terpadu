@@ -50,12 +50,14 @@ Route::get('/run-migrations', function () {
 
 Route::get('/test-session', function (\Illuminate\Http\Request $request) {
     $request->session()->put('test_key', 'This is a test session value!');
+    setcookie('raw_test', 'Works!', time() + 3600, '/', '', true, true);
     return 'Session set! Now go to /check-session';
 });
 
 Route::get('/check-session', function (\Illuminate\Http\Request $request) {
     $count = \Illuminate\Support\Facades\DB::table('sessions')->count();
-    return 'Session value: ' . $request->session()->get('test_key', 'NOT FOUND') . ' | Total sessions in DB: ' . $count;
+    $rawCookie = $_COOKIE['raw_test'] ?? 'RAW_COOKIE_MISSING';
+    return 'Session value: ' . $request->session()->get('test_key', 'NOT FOUND') . ' | Raw Cookie: ' . $rawCookie . ' | Total DB: ' . $count;
 });
 
 require __DIR__.'/auth.php';
