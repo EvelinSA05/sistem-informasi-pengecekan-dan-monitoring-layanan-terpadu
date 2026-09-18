@@ -101,7 +101,7 @@ const navItems = computed(() => {
     return user.value?.role === 'admin' ? adminNavItems : testerNavItems;
 });
 
-const isSidebarOpen = ref(false);
+const isSidebarOpen = ref(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
 </script>
 
 <template>
@@ -119,16 +119,16 @@ const isSidebarOpen = ref(false);
             class="fixed inset-y-0 left-0 w-64 flex flex-col
                    bg-gradient-to-b from-[#1e40af] via-[#1d4ed8] to-[#1e3a8a]
                    shadow-2xl select-none transition-transform duration-300 ease-in-out"
-            :class="isSidebarOpen ? 'translate-x-0 z-50' : '-translate-x-full lg:translate-x-0 z-30'"
+            :class="isSidebarOpen ? 'translate-x-0 z-50' : '-translate-x-full z-30'"
         >
 
             <!-- Logo / Brand identical with Auth Page -->
             <div class="px-5 pt-6 pb-5 border-b border-white/10 flex flex-col items-start gap-2.5 relative">
-                <!-- Mobile Close Button -->
+                <!-- Close Button -->
                 <button
                     @click="isSidebarOpen = false"
                     type="button"
-                    class="lg:hidden absolute top-5 right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white transition-all duration-150 flex items-center justify-center"
+                    class="absolute top-5 right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white transition-all duration-150 flex items-center justify-center"
                     aria-label="Tutup sidebar"
                 >
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -212,16 +212,20 @@ const isSidebarOpen = ref(false);
         </aside>
 
         <!-- ─── Main Content Area ─────────────────────────── -->
-        <div class="flex-1 flex flex-col ml-0 lg:ml-64 min-w-0 transition-all duration-300">
+        <div 
+            class="flex-1 flex flex-col min-w-0 transition-all duration-300"
+            :class="isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'"
+        >
 
             <!-- Top bar -->
             <header class="sticky top-0 z-20 bg-white/85 backdrop-blur-md border-b border-slate-200/70 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center gap-3 sm:gap-4">
-                    <!-- Mobile Hamburger / Bar Toggle Button -->
+                    <!-- Hamburger / Bar Toggle Button -->
                     <button
                         @click="isSidebarOpen = !isSidebarOpen"
                         type="button"
-                        class="lg:hidden p-2 rounded-xl text-slate-700 bg-slate-100/80 hover:text-blue-600 hover:bg-blue-50 active:scale-95 border border-slate-200/80 transition-all duration-150 shadow-xs flex items-center justify-center"
+                        class="p-2 rounded-xl text-slate-700 bg-slate-100/80 hover:text-blue-600 hover:bg-blue-50 active:scale-95 border border-slate-200/80 transition-all duration-150 shadow-xs flex items-center justify-center"
+                        :class="isSidebarOpen ? 'lg:hidden' : ''"
                         aria-label="Buka Menu Navigasi"
                     >
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
