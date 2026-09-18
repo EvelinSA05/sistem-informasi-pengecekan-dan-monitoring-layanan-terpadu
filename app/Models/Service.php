@@ -12,9 +12,13 @@ class Service extends Model
         'source_service_id',
         'service_name',
         'category',
+        'level',
         'icon',
         'service_url',
+        'deskripsi_layanan',
+        'tester_instruction',
         'is_active',
+        'notes',
         'synced_at',
     ];
 
