@@ -70,4 +70,16 @@ Route::get('/check-session', function (\Illuminate\Http\Request $request) {
            " | DB: " . $count;
 });
 
+Route::get('/seed-now', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('db:seed', [
+            '--class' => 'ServiceDataSeeder',
+            '--force' => true
+        ]);
+        return 'Seeder berhasil dijalankan! Silakan cek Dashboard.';
+    } catch (\Exception $e) {
+        return 'Gagal menjalankan seeder: ' . $e->getMessage();
+    }
+});
+
 require __DIR__.'/auth.php';
