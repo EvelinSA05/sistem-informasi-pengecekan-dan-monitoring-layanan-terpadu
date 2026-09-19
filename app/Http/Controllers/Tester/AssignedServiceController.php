@@ -5,62 +5,309 @@ namespace App\Http\Controllers\Tester;
 use App\Http\Controllers\Controller;
 use App\Models\CheckingPeriod;
 use App\Models\PeriodService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Carbon\Carbon;
 
 class AssignedServiceController extends Controller
 {
+    private array $indonesianMonths = [
+        1 => 'Januari',
+        2 => 'Februari',
+        3 => 'Maret',
+        4 => 'April',
+        5 => 'Mei',
+        6 => 'Juni',
+        7 => 'Juli',
+        8 => 'Agustus',
+        9 => 'September',
+        10 => 'Oktober',
+        11 => 'November',
+        12 => 'Desember',
+    ];
+
+    private function formatIndonesianDate(Carbon $date): string
+    {
+        $day = $date->format('d');
+        $month = $this->indonesianMonths[(int) $date->format('n')]
+            ?? $date->format('F');
+        $year = $date->format('Y');
+
+        return "{$day} {$month} {$year}";
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
-        
-        $activePeriod = CheckingPeriod::where('status', 'proses')->orderBy('date', 'desc')->first();
 
-        $assignedServices = [];
-        
-        if ($activePeriod) {
-            $services = PeriodService::with('service')
-                ->where('period_id', $activePeriod->id)
-                ->where('tester_id', $user->id)
-                ->get();
+        // ─── Active Checking Period ──────────────────────────────────
+        $activePeriod = CheckingPeriod::where('status', 'proses')
+            ->orderBy('date', 'desc')
+            ->first();
 
-            $assignedServices = $services->map(function ($ps) {
-                return [
-                    'id'               => $ps->id,
-                    'service_id'       => $ps->service->id,
-                    'name'             => $ps->service->service_name,
-                    'category'         => $ps->service->category ?? 'Umum',
-                    'url'              => $ps->service->service_url,
-                    'status'           => $ps->status,
-                    'deskripsi_layanan'=> $ps->service->deskripsi_layanan,
-                    'tester_instruction'=> $ps->service->tester_instruction,
-                    'last_description' => $ps->description,
-                ];
-            })->values();
+        if (!$activePeriod) {
+            $activePeriod = CheckingPeriod::orderBy('date', 'desc')
+                ->first();
         }
 
-        return Inertia::render('Tester/AssignedServices', [
-            'activePeriod'    => $activePeriod
-                ? Carbon::parse($activePeriod->date)->format('F Y')
-                : null,
-            'assignedServices'=> $assignedServices,
+        $periodInfo = null;
+
+        $stats = [
+            'total_assigned' => 0,
+            'checked' => 0,
+            'pending' => 0,
+            'issues' => 0,
+            'normal' => 0,
+            'progress_percent' => 0,
+        ];
+
+        $categories = [];
+        $levels = ['Level 1', 'Level 2', 'Level 3'];
+
+        $search = $request->input('search', '');
+        $statusFilter = $request->input('status', '');
+        $levelFilter = $request->input('level', '');
+        $categoryFilter = $request->input('category', '');
+
+        $paginatedServices = collect([]);
+
+        if ($activePeriod) {
+            $periodCarbon = Carbon::parse($activePeriod->date);
+            $now = Carbon::now()->startOfDay();
+            $targetDate = $periodCarbon->copy()->startOfDay();
+
+            $daysRemaining = (int) $now->diffInDays(
+                $targetDate,
+                false
+            );
+
+            $periodInfo = [
+                'id' => $activePeriod->id,
+                'period_title' => $this->formatIndonesianDate($periodCarbon),
+                'month_year' => (
+                    $this->indonesianMonths[
+                        (int) $periodCarbon->format('n')
+                    ] ?? $periodCarbon->format('F')
+                ) . ' ' . $periodCarbon->format('Y'),
+                'date' => $periodCarbon->format('Y-m-d'),
+                'status' => $activePeriod->status,
+                'days_remaining' => $daysRemaining,
+                'is_overdue' => $daysRemaining < 0
+                    && $activePeriod->status === 'proses',
+            ];
+
+            // Base query for tester assignments in active period
+            $baseTesterQuery = PeriodService::where(
+                'period_id',
+                $activePeriod->id
+            )->where(
+                'tester_id',
+                $user->id
+            );
+
+            $totalAssigned = (clone $baseTesterQuery)->count();
+
+            $normalCount = (clone $baseTesterQuery)
+                ->where('status', 'normal')
+                ->count();
+
+            $issuesCount = (clone $baseTesterQuery)
+                ->where('status', 'gangguan')
+                ->count();
+
+            $pendingCount = (clone $baseTesterQuery)
+                ->where('status', 'pending')
+                ->count();
+
+            $checkedCount = $normalCount + $issuesCount;
+
+            $progressPct = $totalAssigned > 0
+                ? (int) round(
+                    ($checkedCount / $totalAssigned) * 100
+                )
+                : 0;
+
+            $stats = [
+                'total_assigned' => $totalAssigned,
+                'checked' => $checkedCount,
+                'pending' => $pendingCount,
+                'issues' => $issuesCount,
+                'normal' => $normalCount,
+                'progress_percent' => $progressPct,
+            ];
+
+            // Categories available in tester's assigned services
+            $categories = PeriodService::where(
+                'period_id',
+                $activePeriod->id
+            )
+                ->where('tester_id', $user->id)
+                ->join(
+                    'services',
+                    'period_services.service_id',
+                    '=',
+                    'services.id'
+                )
+                ->whereNotNull('services.category')
+                ->where('services.category', '!=', '')
+                ->distinct()
+                ->orderBy('services.category')
+                ->pluck('services.category')
+                ->values()
+                ->all();
+
+            // Filtered and paginated assigned services
+            $servicesQuery = PeriodService::with([
+                'service' => function ($q) {
+                    $q->select(
+                        'id',
+                        'service_name',
+                        'category',
+                        'level',
+                        'icon',
+                        'service_url',
+                        'deskripsi_layanan',
+                        'tester_instruction',
+                        'is_active'
+                    );
+                },
+            ])
+                ->where('period_id', $activePeriod->id)
+                ->where('tester_id', $user->id);
+
+            if (!empty($search)) {
+                $servicesQuery->whereHas(
+                    'service',
+                    function ($q) use ($search) {
+                        $q->where(
+                            'service_name',
+                            'like',
+                            "%{$search}%"
+                        )
+                            ->orWhere(
+                                'category',
+                                'like',
+                                "%{$search}%"
+                            )
+                            ->orWhere(
+                                'service_url',
+                                'like',
+                                "%{$search}%"
+                            );
+                    }
+                );
+            }
+
+            if (!empty($statusFilter)) {
+                $servicesQuery->where(
+                    'status',
+                    $statusFilter
+                );
+            }
+
+            if (!empty($levelFilter)) {
+                $servicesQuery->whereHas(
+                    'service',
+                    function ($q) use ($levelFilter) {
+                        $q->where('level', $levelFilter);
+                    }
+                );
+            }
+
+            if (!empty($categoryFilter)) {
+                $servicesQuery->whereHas(
+                    'service',
+                    function ($q) use ($categoryFilter) {
+                        $q->where(
+                            'category',
+                            $categoryFilter
+                        );
+                    }
+                );
+            }
+
+            $paginatedServices = $servicesQuery
+                ->orderBy('id', 'asc')
+                ->paginate(10)
+                ->withQueryString()
+                ->through(function ($ps) {
+                    return [
+                        'id' => $ps->id,
+                        'service_id' => $ps->service?->id,
+                        'name' => $ps->service?->service_name ?? '-',
+                        'category' => $ps->service?->category ?? 'Umum',
+                        'level' => $ps->service?->level ?? '-',
+                        'icon' => $ps->service?->icon,
+                        'url' => $ps->service?->service_url,
+                        'status' => $ps->status,
+                        'deskripsi_layanan' =>
+                            $ps->service?->deskripsi_layanan,
+                        'tester_instruction' =>
+                            $ps->service?->tester_instruction,
+                        'last_description' => $ps->description,
+                        'checked_at' => $ps->checked_at
+                            ? Carbon::parse(
+                                $ps->checked_at
+                            )->format('d M Y, H:i')
+                            : null,
+                        'checked_at_human' => $ps->checked_at
+                            ? Carbon::parse(
+                                $ps->checked_at
+                            )->diffForHumans()
+                            : null,
+                    ];
+                });
+        }
+
+        return Inertia::render('Tester/Services/Index', [
+            'periodInfo' => $periodInfo,
+            'services' => $paginatedServices,
+            'stats' => $stats,
+            'categories' => $categories,
+            'levels' => $levels,
+            'filters' => [
+                'search' => $search,
+                'status' => $statusFilter,
+                'level' => $levelFilter,
+                'category' => $categoryFilter,
+            ],
+            'flash' => [
+                'success' => session('success'),
+                'error' => session('error'),
+            ],
         ]);
     }
 
-    public function submitCheck(Request $request, PeriodService $periodService)
-    {
+    public function submitCheck(
+        Request $request,
+        PeriodService $periodService
+    ) {
+        $user = $request->user();
+
+        if (
+            $user->role !== 'admin'
+            && $periodService->tester_id !== $user->id
+        ) {
+            abort(
+                403,
+                'Anda tidak memiliki akses untuk mengubah pengujian layanan ini.'
+            );
+        }
+
         $request->validate([
-            'status'      => 'required|in:normal,gangguan',
+            'status' => 'required|in:normal,gangguan',
             'description' => 'nullable|string',
         ]);
 
         $periodService->update([
-            'status'      => $request->status,
+            'status' => $request->status,
             'description' => $request->description,
-            'checked_at'  => now(),
+            'checked_at' => now(),
         ]);
 
-        return back()->with('success', 'Hasil pengecekan berhasil disimpan.');
+        return back()->with(
+            'success',
+            'Hasil pengecekan berhasil disimpan.'
+        );
     }
 }

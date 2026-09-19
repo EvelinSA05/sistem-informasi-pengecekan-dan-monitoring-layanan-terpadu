@@ -10,6 +10,8 @@ use Inertia\Inertia;
 Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    // ─── Tester Routes ─────────────────────────────────────────
+    Route::get('/tester/services', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'index'])->name('tester.services.index');
     Route::get('/tester/assigned-services', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'index'])->name('tester.assigned-services.index');
     Route::post('/tester/check/{periodService}', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'submitCheck'])->name('tester.submit_check');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

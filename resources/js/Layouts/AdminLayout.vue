@@ -78,6 +78,7 @@ const testerNavItems = [
     {
         label: 'Dashboard',
         route: 'dashboard',
+        activeRoute: 'dashboard',
         href: '/dashboard',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="7" height="7" rx="1.5" stroke-linecap="round"/>
@@ -88,8 +89,9 @@ const testerNavItems = [
     },
     {
         label: 'Layanan Ditugaskan',
-        route: 'tester.assigned-services.index',
-        href: '/tester/assigned-services',
+        route: 'tester.services.index',
+        activeRoute: 'tester.*',
+        href: '/tester/services',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="2"/>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
