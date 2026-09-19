@@ -716,7 +716,7 @@ function submitCheck() {
                             <p class="text-xs text-slate-400 mt-0.5">8 periode terakhir</p>
                         </div>
                         <Link :href="route('admin.periods.index')" class="text-xs text-blue-600 hover:text-blue-800 font-semibold transition-colors">
-                            Lihat Semua →
+                            Lihat Semua
                         </Link>
                     </div>
                     <div v-if="recentPeriods.length > 0" class="space-y-3">
@@ -761,7 +761,7 @@ function submitCheck() {
                         <p class="text-xs text-slate-400 mt-0.5">Detail 8 periode pengecekan terakhir</p>
                     </div>
                     <Link :href="route('admin.periods.index')" class="text-xs text-blue-600 hover:text-blue-800 font-semibold transition-colors">
-                        Kelola Periode →
+                        Kelola Periode
                     </Link>
                 </div>
                 <div v-if="recentPeriods.length > 0" class="overflow-x-auto">
@@ -903,7 +903,7 @@ function submitCheck() {
 
                     <!-- Period Info Card -->
                     <div class="shrink-0 flex items-center">
-                        <div class="w-full sm:w-auto px-6 py-4.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-lg text-left sm:text-right">
+                        <div class="w-full sm:w-auto px-6 py-4 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-lg text-left sm:text-right">
                             <div class="flex items-center sm:justify-end gap-2 mb-1">
                                 <span class="w-2 h-2 rounded-full" :class="periodInfo?.status === 'selesai' ? 'bg-emerald-400' : 'bg-amber-300 animate-pulse'"></span>
                                 <p class="text-[11px] font-bold text-cyan-200 tracking-widest uppercase">
