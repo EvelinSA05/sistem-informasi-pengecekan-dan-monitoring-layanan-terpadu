@@ -1140,7 +1140,7 @@ function submitCheck() {
                     <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-500">
                         <span>Total: <strong class="text-slate-700">{{ props.stats.total_assigned }}</strong> layanan</span>
                         <Link :href="route('tester.services.index')" class="text-blue-600 hover:text-blue-800 font-bold inline-flex items-center gap-1">
-                            Ke Workspace →
+                            Ke Workspace
                         </Link>
                     </div>
                 </div>
@@ -1251,7 +1251,7 @@ function submitCheck() {
                     <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                         <span>Workspace: Layanan Ditugaskan</span>
                         <Link :href="route('tester.services.index')" class="text-blue-600 hover:text-blue-800 font-bold inline-flex items-center gap-1">
-                            Buka Lengkap →
+                            Buka Lengkap
                         </Link>
                     </div>
                 </div>
@@ -1272,7 +1272,7 @@ function submitCheck() {
                                 :href="route('tester.services.index')"
                                 class="text-xs text-blue-600 hover:text-blue-800 font-bold inline-flex items-center gap-1 transition-colors"
                             >
-                                Lihat Semua ({{ props.stats.total_assigned }}) →
+                                Lihat Semua ({{ props.stats.total_assigned }})
                             </Link>
                         </div>
 
@@ -1398,7 +1398,7 @@ function submitCheck() {
                     <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                         <span>Pemeriksaan berkala</span>
                         <Link :href="route('tester.services.index', { status: 'normal' })" class="text-blue-600 hover:text-blue-800 font-bold inline-flex items-center gap-1">
-                            Lihat Semua Hasil →
+                            Lihat Semua Hasil
                         </Link>
                     </div>
                 </div>
