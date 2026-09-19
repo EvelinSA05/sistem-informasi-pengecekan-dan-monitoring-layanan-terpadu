@@ -152,7 +152,7 @@ function submitCheck() {
 
             <!-- ── Top Mini Stats Bar ────────────────────────────── -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
-                <div class="bg-white rounded-2xl border border-slate-200/80 p-4.5 shadow-xs flex items-center justify-between">
+                <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between">
                     <div>
                         <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Tugas</p>
                         <p class="text-2xl font-black text-slate-800 mt-0.5 leading-none">{{ props.stats.total_assigned }}</p>
@@ -166,7 +166,7 @@ function submitCheck() {
 
                 <div
                     @click="setQuickStatus('pending')"
-                    class="bg-white rounded-2xl border border-slate-200/80 p-4.5 shadow-xs flex items-center justify-between cursor-pointer hover:border-amber-300 hover:shadow-xs transition-all"
+                    class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between cursor-pointer hover:border-amber-300 hover:shadow-xs transition-all"
                     :class="filterStatus === 'pending' ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/20' : ''"
                 >
                     <div>
@@ -183,7 +183,7 @@ function submitCheck() {
 
                 <div
                     @click="setQuickStatus('normal')"
-                    class="bg-white rounded-2xl border border-slate-200/80 p-4.5 shadow-xs flex items-center justify-between cursor-pointer hover:border-emerald-300 hover:shadow-xs transition-all"
+                    class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between cursor-pointer hover:border-emerald-300 hover:shadow-xs transition-all"
                     :class="filterStatus === 'normal' ? 'ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/20' : ''"
                 >
                     <div>
@@ -199,7 +199,7 @@ function submitCheck() {
 
                 <div
                     @click="setQuickStatus('gangguan')"
-                    class="bg-white rounded-2xl border border-slate-200/80 p-4.5 shadow-xs flex items-center justify-between cursor-pointer hover:border-rose-300 hover:shadow-xs transition-all"
+                    class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between cursor-pointer hover:border-rose-300 hover:shadow-xs transition-all"
                     :class="filterStatus === 'gangguan' ? 'ring-2 ring-rose-500 border-rose-500 bg-rose-50/20' : ''"
                 >
                     <div>
