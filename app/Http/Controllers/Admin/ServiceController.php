@@ -60,6 +60,10 @@ class ServiceController extends Controller
             'status'   => $status,
             'level'    => $level,
             'levels'   => $levels,
+            'flash'    => [
+                'success' => session('success'),
+                'error'   => session('error'),
+            ],
         ]);
     }
 
@@ -141,10 +145,15 @@ class ServiceController extends Controller
      */
     public function destroy(Service $service): RedirectResponse
     {
-        $service->delete();
+        try {
+            $service->delete();
 
-        return redirect()->route('admin.services.index')
-            ->with('success', 'Layanan berhasil dihapus.');
+            return redirect()->route('admin.services.index')
+                ->with('success', 'Layanan berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.services.index')
+                ->with('error', 'Gagal menghapus layanan.');
+        }
     }
 
     /**
