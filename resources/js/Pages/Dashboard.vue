@@ -436,32 +436,41 @@ function submitCheck() {
         <div v-if="user?.role === 'admin'" class="space-y-6">
 
             <!-- ── Header Banner ─────────────────────────────────── -->
-            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1e3a8a] via-[#1d4ed8] to-[#0284c7] px-7 py-6 text-white shadow-lg">
-                <div class="absolute -right-12 -top-12 w-56 h-56 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-                <div class="absolute right-28 bottom-0 w-40 h-40 rounded-full bg-cyan-400/20 blur-xl pointer-events-none"></div>
-                <div class="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 mb-2 text-[11px] font-bold tracking-widest uppercase text-cyan-200">
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1e3a8a] via-[#1d4ed8] to-[#0284c7] text-white p-6 sm:p-8 shadow-xl shadow-blue-900/15 border border-blue-400/20">
+                <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
+                <div class="absolute right-32 bottom-0 w-48 h-48 rounded-full bg-cyan-400/20 blur-xl pointer-events-none"></div>
+                <div class="absolute left-1/3 -bottom-10 w-40 h-40 rounded-full bg-blue-300/10 blur-xl pointer-events-none"></div>
+
+                <div class="relative z-10 flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+                    <div class="max-w-xl">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/25 mb-3 text-[11px] font-bold tracking-wider uppercase text-cyan-200 shadow-xs">
                             <span class="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
-                            Sistem Aktif
+                            Admin Panel
                         </div>
-                        <h1 class="text-2xl font-black tracking-tight">Dashboard</h1>
-                        <p class="text-blue-100/85 text-sm mt-1">Ringkasan monitoring MAJADIGI Checker System</p>
+                        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight leading-tight">
+                            Selamat Datang, {{ user?.name }}!
+                        </h1>
+                        <p class="text-blue-100/90 text-sm sm:text-base mt-2 font-normal leading-relaxed">
+                            Kelola dan pantau seluruh aktivitas pengujian layanan digital MAJADIGI Checker System.
+                        </p>
+                        <!-- Quick Action Buttons -->
+                        <div class="mt-5 flex flex-row flex-wrap gap-2">
+                            <Link :href="route('admin.users.index')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-semibold transition-all backdrop-blur-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 100-8 4 4 0 000 8z"/></svg>
+                                Manajemen User
+                            </Link>
+                            <Link :href="route('admin.periods.index')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-semibold transition-all backdrop-blur-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path stroke-linecap="round" d="M16 2v4M8 2v4M3 10h18"/></svg>
+                                Kelola Periode
+                            </Link>
+                            <Link :href="route('admin.services.index')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-semibold transition-all backdrop-blur-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path stroke-linecap="round" d="M8 21h8M12 17v4"/></svg>
+                                Master Layanan
+                            </Link>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <Link :href="route('admin.users.index')" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-semibold transition-all">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 100-8 4 4 0 000 8z"/></svg>
-                            Manajemen User
-                        </Link>
-                        <Link :href="route('admin.periods.index')" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-semibold transition-all">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path stroke-linecap="round" d="M16 2v4M8 2v4M3 10h18"/></svg>
-                            Periode
-                        </Link>
-                        <Link :href="route('admin.services.index')" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-semibold transition-all">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path stroke-linecap="round" d="M8 21h8M12 17v4"/></svg>
-                            Layanan
-                        </Link>
-                    </div>
+
+
                 </div>
             </div>
 
