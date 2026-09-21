@@ -49,9 +49,10 @@ class UserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name'   => 'required|string|max:100',
-            'email'  => 'required|string|lowercase|email|max:150|unique:users,email',
-            'status' => 'required|in:aktif,tidak aktif',
+            'name'     => 'required|string|max:100',
+            'email'    => 'required|string|lowercase|email|max:150|unique:users,email',
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'status'   => 'required|in:aktif,tidak aktif',
         ]);
 
         User::create([
@@ -60,7 +61,7 @@ class UserController extends Controller
             'username' => explode('@', $request->email)[0] . '_' . rand(1000, 9999),
             'status'   => $request->status,
             'role'     => 'tester',
-            'password' => Hash::make('password123'), // default password
+            'password' => Hash::make($request->password),
         ]);
 
         return redirect()->route('admin.users.index')

@@ -30,9 +30,9 @@ const submit = () => {
 <template>
     <Head title="Masuk - MAJADIGI CHECKER SYSTEM" />
 
-    <div class="min-h-screen w-full flex flex-col lg:flex-row bg-[#f8fafc] selection:bg-blue-600 selection:text-white font-sans antialiased">
+    <div class="min-h-screen w-full flex flex-col md:flex-row bg-[#f8fafc] selection:bg-blue-600 selection:text-white font-sans antialiased">
         <!-- Left Side (Desktop) / Top Banner Header (Mobile) -->
-        <div class="fixed top-0 left-0 right-0 z-10 h-[190px] lg:static lg:h-auto lg:min-h-screen w-full lg:w-[48%] xl:w-[45%] bg-[#1d4ed8] bg-gradient-to-br from-[#1e40af] via-[#1d4ed8] to-[#1e3a8a] p-5 sm:p-7 lg:p-12 xl:p-14 text-white flex flex-col justify-between overflow-hidden shrink-0">
+        <div class="fixed top-0 left-0 right-0 z-10 h-[190px] md:static md:h-auto md:min-h-screen w-full md:w-[48%] xl:w-[45%] bg-[#1d4ed8] bg-gradient-to-br from-[#1e40af] via-[#1d4ed8] to-[#1e3a8a] p-5 sm:p-7 md:p-12 xl:p-14 text-white flex flex-col justify-between overflow-hidden shrink-0">
             
             <!-- Ambient Background Decorative Circles & Glow -->
             <div class="absolute inset-0 pointer-events-none overflow-hidden">
@@ -43,7 +43,7 @@ const submit = () => {
             </div>
 
             <!-- Mobile Top Header (Logo left, Badge right) -->
-            <div class="relative z-10 flex flex-row items-center justify-between lg:hidden mb-2.5">
+            <div class="relative z-10 flex flex-row items-center justify-between md:hidden mb-2.5">
                 <div class="px-3 py-1.5 rounded-xl bg-white shadow-md border border-white/80 flex items-center gap-2">
                     <img
                         src="/images/logo_majadigi.png"
@@ -58,7 +58,7 @@ const submit = () => {
             </div>
 
             <!-- Desktop Top: Logo & Badge Group (Jarak pendek dan rapi) -->
-            <div class="relative z-10 hidden lg:flex flex-col items-start gap-2.5 mb-6 xl:mb-7">
+            <div class="relative z-10 hidden md:flex flex-col items-start gap-2.5 mb-6 xl:mb-7">
                 <div class="inline-flex px-3.5 py-1.5 rounded-xl bg-white shadow-md border border-white/90 items-center gap-2">
                     <img
                         src="/images/logo_majadigi.png"
@@ -73,73 +73,73 @@ const submit = () => {
             </div>
 
             <!-- Main Content Area -->
-            <div class="relative z-10 max-w-lg my-auto lg:my-0 flex-1 flex flex-col justify-center">
+            <div class="relative z-10 max-w-lg my-auto md:my-0 flex-1 flex flex-col justify-center">
                 <!-- Headline -->
-                <h1 class="text-xl sm:text-2xl lg:text-[38px] xl:text-[42px] font-extrabold text-white tracking-tight leading-tight lg:leading-[1.18]">
+                <h1 class="text-xl sm:text-2xl md:text-[38px] xl:text-[42px] font-extrabold text-white tracking-tight leading-tight md:leading-[1.18]">
                     Pantau Layanan Digital<br class="hidden sm:inline"/>
                     <span class="text-cyan-300"> Jawa Timur</span>
                 </h1>
 
                 <!-- Description -->
-                <p class="mt-1.5 lg:mt-4 text-blue-100/90 text-[11.5px] sm:text-sm lg:text-[14.5px] font-normal leading-relaxed max-w-md line-clamp-2 sm:line-clamp-none">
+                <p class="mt-1.5 md:mt-4 text-blue-100/90 text-[11.5px] sm:text-sm md:text-[14.5px] font-normal leading-relaxed max-w-md line-clamp-2 sm:line-clamp-none">
                     Platform monitoring terpusat untuk mengecek dan memantau kualitas layanan Majadigi secara berkala dan terstruktur.
                 </p>
 
                 <!-- Features: Khusus desktop (hidden di mobile untuk menghemat ruang & minimalis) -->
-                <div class="hidden lg:grid lg:grid-cols-1 gap-2.5 mt-6">
+                <div class="hidden md:grid md:grid-cols-1 gap-2.5 mt-6">
                     <!-- Feature 1: Dashboard Real-time -->
-                    <div class="flex flex-col lg:flex-row items-center lg:items-center gap-2 lg:gap-3 p-2 lg:py-2.5 lg:px-3.5 rounded-xl bg-white/[0.12] hover:bg-white/[0.18] transition-all duration-200 border border-white/20 backdrop-blur-md shadow-sm text-center lg:text-left">
-                        <div class="w-7 h-7 lg:w-9 lg:h-9 shrink-0 rounded-lg bg-white/20 flex items-center justify-center text-white mx-auto lg:mx-0 shadow-inner">
-                            <svg class="w-3.5 h-3.5 lg:w-4.5 lg:h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <div class="flex flex-col md:flex-row items-center md:items-center gap-2 md:gap-3 p-2 md:py-2.5 md:px-3.5 rounded-xl bg-white/[0.12] hover:bg-white/[0.18] transition-all duration-200 border border-white/20 backdrop-blur-md shadow-sm text-center md:text-left">
+                        <div class="w-7 h-7 md:w-9 md:h-9 shrink-0 rounded-lg bg-white/20 flex items-center justify-center text-white mx-auto md:mx-0 shadow-inner">
+                            <svg class="w-3.5 h-3.5 md:w-4.5 md:h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-[9.5px] sm:text-xs lg:text-[13px] font-bold text-white leading-tight">Dashboard Real-time</p>
-                            <p class="hidden lg:block text-[11px] text-blue-100/80 mt-0.5 leading-snug">Pantau status seluruh layanan dalam satu tampilan</p>
+                            <p class="text-[9.5px] sm:text-xs md:text-[13px] font-bold text-white leading-tight">Dashboard Real-time</p>
+                            <p class="hidden md:block text-[11px] text-blue-100/80 mt-0.5 leading-snug">Pantau status seluruh layanan dalam satu tampilan</p>
                         </div>
                     </div>
 
                     <!-- Feature 2: Distribusi Otomatis -->
-                    <div class="flex flex-col lg:flex-row items-center lg:items-center gap-2 lg:gap-3 p-2 lg:py-2.5 lg:px-3.5 rounded-xl bg-white/[0.12] hover:bg-white/[0.18] transition-all duration-200 border border-white/20 backdrop-blur-md shadow-sm text-center lg:text-left">
-                        <div class="w-7 h-7 lg:w-9 lg:h-9 shrink-0 rounded-lg bg-white/20 flex items-center justify-center text-white mx-auto lg:mx-0 shadow-inner">
-                            <svg class="w-3.5 h-3.5 lg:w-4.5 lg:h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <div class="flex flex-col md:flex-row items-center md:items-center gap-2 md:gap-3 p-2 md:py-2.5 md:px-3.5 rounded-xl bg-white/[0.12] hover:bg-white/[0.18] transition-all duration-200 border border-white/20 backdrop-blur-md shadow-sm text-center md:text-left">
+                        <div class="w-7 h-7 md:w-9 md:h-9 shrink-0 rounded-lg bg-white/20 flex items-center justify-center text-white mx-auto md:mx-0 shadow-inner">
+                            <svg class="w-3.5 h-3.5 md:w-4.5 md:h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-[9.5px] sm:text-xs lg:text-[13px] font-bold text-white leading-tight">Distribusi Otomatis</p>
-                            <p class="hidden lg:block text-[11px] text-blue-100/80 mt-0.5 leading-snug">Layanan dibagi merata ke semua tester secara cerdas</p>
+                            <p class="text-[9.5px] sm:text-xs md:text-[13px] font-bold text-white leading-tight">Distribusi Otomatis</p>
+                            <p class="hidden md:block text-[11px] text-blue-100/80 mt-0.5 leading-snug">Layanan dibagi merata ke semua tester secara cerdas</p>
                         </div>
                     </div>
 
                     <!-- Feature 3: Laporan Lengkap -->
-                    <div class="flex flex-col lg:flex-row items-center lg:items-center gap-2 lg:gap-3 p-2 lg:py-2.5 lg:px-3.5 rounded-xl bg-white/[0.12] hover:bg-white/[0.18] transition-all duration-200 border border-white/20 backdrop-blur-md shadow-sm text-center lg:text-left">
-                        <div class="w-7 h-7 lg:w-9 lg:h-9 shrink-0 rounded-lg bg-white/20 flex items-center justify-center text-white mx-auto lg:mx-0 shadow-inner">
-                            <svg class="w-3.5 h-3.5 lg:w-4.5 lg:h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <div class="flex flex-col md:flex-row items-center md:items-center gap-2 md:gap-3 p-2 md:py-2.5 md:px-3.5 rounded-xl bg-white/[0.12] hover:bg-white/[0.18] transition-all duration-200 border border-white/20 backdrop-blur-md shadow-sm text-center md:text-left">
+                        <div class="w-7 h-7 md:w-9 md:h-9 shrink-0 rounded-lg bg-white/20 flex items-center justify-center text-white mx-auto md:mx-0 shadow-inner">
+                            <svg class="w-3.5 h-3.5 md:w-4.5 md:h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-[9.5px] sm:text-xs lg:text-[13px] font-bold text-white leading-tight">Laporan Lengkap</p>
-                            <p class="hidden lg:block text-[11px] text-blue-100/80 mt-0.5 leading-snug">Ekspor hasil pengecekan ke PDF dan Excel</p>
+                            <p class="text-[9.5px] sm:text-xs md:text-[13px] font-bold text-white leading-tight">Laporan Lengkap</p>
+                            <p class="hidden md:block text-[11px] text-blue-100/80 mt-0.5 leading-snug">Ekspor hasil pengecekan ke PDF dan Excel</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Desktop Bottom Footer text -->
-            <div class="relative z-10 hidden lg:block pt-6 lg:pt-8 mt-auto">
+            <div class="relative z-10 hidden md:block pt-6 md:pt-8 mt-auto">
                 <p class="text-xs text-blue-200/70">© 2026 Dinas Komunikasi dan Informatika Provinsi Jawa Timur.</p>
             </div>
         </div>
 
         <!-- Right Side (Desktop) / Bottom Card Sheet (Mobile): Form Login Area -->
-        <div class="relative z-20 mt-[175px] lg:mt-0 flex-1 flex flex-col justify-center items-center bg-white rounded-t-[32px] lg:rounded-none px-6 py-6 sm:px-10 lg:px-14 xl:px-20 shadow-[0_-12px_35px_rgba(15,23,42,0.16)] lg:shadow-none min-h-[calc(100vh-175px)] lg:min-h-0">
-            <div class="w-full max-w-[420px] my-auto">
+        <div class="relative z-20 mt-[175px] md:mt-0 flex-1 flex flex-col justify-start md:justify-center items-center bg-white rounded-t-[32px] md:rounded-none px-6 pt-8 pb-10 sm:px-10 md:px-14 xl:px-20 shadow-[0_-12px_35px_rgba(15,23,42,0.16)] md:shadow-none min-h-[calc(100vh-175px)] md:min-h-0">
+            <div class="w-full max-w-[420px] mt-0 md:my-auto">
                 
                 <!-- Bottom Sheet Handle Bar (khusus mobile) -->
-                <div class="flex justify-center mb-5 lg:hidden">
+                <div class="flex justify-center mb-6 md:hidden">
                     <div class="w-12 h-1.5 rounded-full bg-slate-200"></div>
                 </div>
 

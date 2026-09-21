@@ -894,7 +894,7 @@ function submitCheck() {
                             Monitoring Center Tester
                         </div>
                         <h2 class="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight leading-tight">
-                            Selamat Datang, {{ user?.name }}! 👋
+                            Selamat Datang, {{ user?.name }}!
                         </h2>
                         <p class="text-blue-100/90 text-sm sm:text-base mt-2 font-normal leading-relaxed">
                             Pantau ringkasan progres, status, dan peringatan pengujian layanan digital yang ditugaskan kepada Anda.

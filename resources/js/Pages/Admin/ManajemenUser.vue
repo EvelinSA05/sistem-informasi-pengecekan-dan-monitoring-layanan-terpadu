@@ -78,6 +78,8 @@ function getAvatarColor(name) {
 const addForm = useForm({
     name:   '',
     email:  '',
+    password: '',
+    password_confirmation: '',
     status: 'aktif',
 });
 function openAddModal() {
@@ -404,6 +406,26 @@ function confirmDelete() {
                                 <input v-model="addForm.email" type="email" placeholder="email@kominfo.jatim.go.id"
                                     class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 transition-all"/>
                                 <p v-if="addForm.errors.email" class="mt-1 text-xs text-rose-500">{{ addForm.errors.email }}</p>
+                            </div>
+                            
+                            <!-- Password -->
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                                    Password <span class="text-rose-500">*</span>
+                                </label>
+                                <input v-model="addForm.password" type="password" placeholder="Masukkan password"
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 transition-all"/>
+                                <p v-if="addForm.errors.password" class="mt-1 text-xs text-rose-500">{{ addForm.errors.password }}</p>
+                            </div>
+                            
+                            <!-- Konfirmasi Password -->
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                                    Konfirmasi Password <span class="text-rose-500">*</span>
+                                </label>
+                                <input v-model="addForm.password_confirmation" type="password" placeholder="Ulangi password"
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 transition-all"/>
+                                <p v-if="addForm.errors.password_confirmation" class="mt-1 text-xs text-rose-500">{{ addForm.errors.password_confirmation }}</p>
                             </div>
 
                             <!-- Status -->
