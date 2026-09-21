@@ -59,9 +59,10 @@ class DashboardController extends Controller
             $periodSelesai = CheckingPeriod::where('status', 'selesai')->count();
 
             // --- Service Stats ---
-            $serviceTotal = Service::count();
-            $serviceAktif = Service::where('is_active', true)->count();
-            $serviceNonaktif = Service::where('is_active', false)->count();
+            $serviceTotal         = Service::count();
+            $serviceAktif         = Service::where('status', 'aktif')->count();
+            $serviceNonaktif      = Service::where('status', 'tidak_aktif')->count();
+            $serviceBtuhKonfirmasi = Service::where('status', 'butuh_konfirmasi')->count();
 
             // --- Distribusi Kategori Layanan ---
             $categoryRows = Service::selectRaw('category, count(*) as total')
@@ -158,9 +159,10 @@ class DashboardController extends Controller
                 ],
 
                 'serviceStats' => [
-                    'total' => $serviceTotal,
-                    'aktif' => $serviceAktif,
-                    'nonaktif' => $serviceNonaktif,
+                    'total'             => $serviceTotal,
+                    'aktif'             => $serviceAktif,
+                    'nonaktif'          => $serviceNonaktif,
+                    'butuhkonfirmasi'   => $serviceBtuhKonfirmasi,
                 ],
 
                 'categoryDistribution' => $categoryDistribution,

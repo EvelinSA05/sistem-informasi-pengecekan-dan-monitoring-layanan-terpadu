@@ -7,7 +7,7 @@ import axios from 'axios';
 // ─── Props dari controller ────────────────────────────────────
 const props = defineProps({
     services: { type: Object, default: () => ({ data: [] }) },
-    stats:    { type: Object, default: () => ({ total: 0, aktif: 0, nonaktif: 0 }) },
+    stats:    { type: Object, default: () => ({ total: 0, aktif: 0, nonaktif: 0, butuhkonfirmasi: 0 }) },
     search:   { type: String, default: '' },
     status:   { type: String, default: '' },
     level:    { type: String, default: '' },
@@ -61,7 +61,7 @@ const addForm = useForm({
     category:     '',
     level:        '',
     service_url:  '',
-    is_active:    true,
+    status:       'aktif',
     notes:        '',
     deskripsi_layanan: '',
     tester_instruction: '',
@@ -87,7 +87,7 @@ const editForm = useForm({
     category:     '',
     level:        '',
     service_url:  '',
-    is_active:    true,
+    status:       'aktif',
     notes:        '',
     deskripsi_layanan: '',
     tester_instruction: '',
@@ -98,7 +98,12 @@ function openEditModal(service) {
     editForm.category     = service.category;
     editForm.level        = service.level ?? '';
     editForm.service_url  = service.service_url;
-    editForm.is_active    = !!service.is_active;
+    // Load status — jika masih boolean (data lama), fallback ke mapping
+    if (service.status && ['aktif', 'tidak_aktif', 'butuh_konfirmasi'].includes(service.status)) {
+        editForm.status = service.status;
+    } else {
+        editForm.status = service.is_active ? 'aktif' : 'tidak_aktif';
+    }
     editForm.notes        = service.notes;
     editForm.deskripsi_layanan = service.deskripsi_layanan ?? '';
     editForm.tester_instruction = service.tester_instruction ?? '';
@@ -210,7 +215,7 @@ function confirmDelete() {
         </Transition>
 
         <!-- ── Stats Cards ───────────────────────────────────── -->
-        <div class="grid grid-cols-3 gap-2.5 sm:gap-4 mb-6">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mb-6">
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                 <div>
                     <p class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Total Layanan</p>
@@ -225,9 +230,15 @@ function confirmDelete() {
             </div>
             <div class="bg-rose-50 rounded-2xl border border-rose-100 shadow-sm p-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                 <div>
-                    <p class="text-[10px] sm:text-xs font-bold text-rose-600 uppercase tracking-wider truncate">Non-Aktif</p>
+                    <p class="text-[10px] sm:text-xs font-bold text-rose-600 uppercase tracking-wider truncate">Tidak Aktif</p>
                 </div>
                 <span class="text-xl sm:text-3xl font-extrabold text-rose-700">{{ stats.nonaktif }}</span>
+            </div>
+            <div class="bg-amber-50 rounded-2xl border border-amber-100 shadow-sm p-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <div>
+                    <p class="text-[10px] sm:text-xs font-bold text-amber-600 uppercase tracking-wider truncate">Butuh Konfirmasi</p>
+                </div>
+                <span class="text-xl sm:text-3xl font-extrabold text-amber-700">{{ stats.butuhkonfirmasi }}</span>
             </div>
         </div>
 
@@ -258,10 +269,11 @@ function confirmDelete() {
                         </svg>
                     </button>
                 </div>
-                <select v-model="filterStatus" class="w-full sm:w-36 py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-slate-700">
+                <select v-model="filterStatus" class="w-full sm:w-44 py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-slate-700">
                     <option value="">Semua Status</option>
-                    <option value="1">Aktif</option>
-                    <option value="0">Non-Aktif</option>
+                    <option value="aktif">Aktif</option>
+                    <option value="tidak_aktif">Tidak Aktif</option>
+                    <option value="butuh_konfirmasi">Butuh Konfirmasi</option>
                 </select>
                 <select v-model="filterLevel" class="w-full sm:w-36 py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-slate-700">
                     <option value="">Semua Level</option>
@@ -335,11 +347,26 @@ function confirmDelete() {
                             </td>
                             <td class="py-3.5 px-5 align-middle">
                                 <span
-                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
-                                    :class="svc.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
+                                    :class="{
+                                        'bg-emerald-50 text-emerald-700 border border-emerald-200': svc.status === 'aktif',
+                                        'bg-rose-50 text-rose-700 border border-rose-200': svc.status === 'tidak_aktif',
+                                        'bg-amber-50 text-amber-700 border border-amber-200': svc.status === 'butuh_konfirmasi',
+                                        'bg-slate-100 text-slate-600 border border-slate-200': !svc.status,
+                                    }"
                                 >
-                                    <span class="w-1.5 h-1.5 rounded-full" :class="svc.is_active ? 'bg-emerald-500' : 'bg-slate-400'"></span>
-                                    {{ svc.is_active ? 'Aktif' : 'Non-Aktif' }}
+                                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                                        :class="{
+                                            'bg-emerald-500': svc.status === 'aktif',
+                                            'bg-rose-500': svc.status === 'tidak_aktif',
+                                            'bg-amber-500': svc.status === 'butuh_konfirmasi',
+                                            'bg-slate-400': !svc.status,
+                                        }"
+                                    ></span>
+                                    <span v-if="svc.status === 'aktif'">Aktif</span>
+                                    <span v-else-if="svc.status === 'tidak_aktif'">Tidak Aktif</span>
+                                    <span v-else-if="svc.status === 'butuh_konfirmasi'">Butuh Konfirmasi</span>
+                                    <span v-else>-</span>
                                 </span>
                             </td>
                             <td class="py-3.5 px-5 text-center align-middle">
@@ -463,12 +490,14 @@ function confirmDelete() {
                                 <textarea v-model="addForm.notes" rows="2" class="w-full rounded-xl border-slate-200 text-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
                                 <p v-if="addForm.errors.notes" class="mt-1 text-xs text-rose-500">{{ addForm.errors.notes }}</p>
                             </div>
-                            <div class="flex items-center gap-3 mt-2">
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" v-model="addForm.is_active" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                    <span class="ml-3 text-sm font-semibold text-slate-700">Status Aktif</span>
-                                </label>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Status <span class="text-rose-500">*</span></label>
+                                <select v-model="addForm.status" class="w-full rounded-xl border border-slate-200 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-700 bg-white py-2.5 px-3 outline-none">
+                                    <option value="aktif">Aktif</option>
+                                    <option value="tidak_aktif">Tidak Aktif</option>
+                                    <option value="butuh_konfirmasi">Butuh Konfirmasi</option>
+                                </select>
+                                <p v-if="addForm.errors.status" class="mt-1 text-xs text-rose-500">{{ addForm.errors.status }}</p>
                             </div>
                         </form>
                     </div>
@@ -538,12 +567,14 @@ function confirmDelete() {
                                 <textarea v-model="editForm.notes" rows="2" class="w-full rounded-xl border-slate-200 text-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
                                 <p v-if="editForm.errors.notes" class="mt-1 text-xs text-rose-500">{{ editForm.errors.notes }}</p>
                             </div>
-                            <div class="flex items-center gap-3 mt-2">
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" v-model="editForm.is_active" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                    <span class="ml-3 text-sm font-semibold text-slate-700">Status Aktif</span>
-                                </label>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Status <span class="text-rose-500">*</span></label>
+                                <select v-model="editForm.status" class="w-full rounded-xl border border-slate-200 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-700 bg-white py-2.5 px-3 outline-none">
+                                    <option value="aktif">Aktif</option>
+                                    <option value="tidak_aktif">Tidak Aktif</option>
+                                    <option value="butuh_konfirmasi">Butuh Konfirmasi</option>
+                                </select>
+                                <p v-if="editForm.errors.status" class="mt-1 text-xs text-rose-500">{{ editForm.errors.status }}</p>
                             </div>
                         </form>
                     </div>
@@ -585,9 +616,28 @@ function confirmDelete() {
                                         <p class="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-1">Nama Layanan</p>
                                         <p class="text-lg font-extrabold text-slate-800 leading-tight">{{ selectedService.service_name }}</p>
                                     </div>
-                                    <span class="inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider" :class="selectedService.is_active ? 'bg-emerald-100 text-emerald-700 border border-emerald-200/50' : 'bg-slate-200 text-slate-600 border border-slate-300/50'">
-                                        <span class="w-1.5 h-1.5 rounded-full" :class="selectedService.is_active ? 'bg-emerald-500' : 'bg-slate-400'"></span>
-                                        {{ selectedService.is_active ? 'Aktif' : 'Non-Aktif' }}
+                                    <span
+                                        class="inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
+                                        :class="{
+                                            'bg-emerald-100 text-emerald-700 border border-emerald-200/50': selectedService.status === 'aktif',
+                                            'bg-rose-100 text-rose-700 border border-rose-200/50': selectedService.status === 'tidak_aktif',
+                                            'bg-amber-100 text-amber-700 border border-amber-200/50': selectedService.status === 'butuh_konfirmasi',
+                                            'bg-slate-200 text-slate-600 border border-slate-300/50': !selectedService.status,
+                                        }"
+                                    >
+                                        <span
+                                            class="w-1.5 h-1.5 rounded-full"
+                                            :class="{
+                                                'bg-emerald-500': selectedService.status === 'aktif',
+                                                'bg-rose-500': selectedService.status === 'tidak_aktif',
+                                                'bg-amber-500': selectedService.status === 'butuh_konfirmasi',
+                                                'bg-slate-400': !selectedService.status,
+                                            }"
+                                        ></span>
+                                        <span v-if="selectedService.status === 'aktif'">Aktif</span>
+                                        <span v-else-if="selectedService.status === 'tidak_aktif'">Tidak Aktif</span>
+                                        <span v-else-if="selectedService.status === 'butuh_konfirmasi'">Butuh Konfirmasi</span>
+                                        <span v-else>-</span>
                                     </span>
                                 </div>
                                 <a v-if="selectedService.service_url" :href="selectedService.service_url" target="_blank" class="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline break-all relative z-10 w-fit">

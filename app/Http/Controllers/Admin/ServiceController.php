@@ -30,7 +30,8 @@ class ServiceController extends Controller
                 });
             })
             ->when($request->filled('status'), function ($query) use ($request) {
-                $query->where('is_active', $request->input('status') === '1');
+                // Filter menggunakan kolom status (string 3 nilai)
+                $query->where('status', $request->input('status'));
             })
             ->when($request->filled('level'), function ($query) use ($request) {
                 $query->where('level', $request->input('level'));
@@ -41,9 +42,10 @@ class ServiceController extends Controller
             ->withQueryString();
 
         $stats = [
-            'total'    => Service::count(),
-            'aktif'    => Service::where('is_active', true)->count(),
-            'nonaktif' => Service::where('is_active', false)->count(),
+            'total'              => Service::count(),
+            'aktif'              => Service::where('status', 'aktif')->count(),
+            'nonaktif'           => Service::where('status', 'tidak_aktif')->count(),
+            'butuhkonfirmasi'    => Service::where('status', 'butuh_konfirmasi')->count(),
         ];
 
         // Level options: predefined list consistent with deployment.
@@ -71,11 +73,15 @@ class ServiceController extends Controller
             'category'     => 'nullable|string|max:100',
             'level'        => 'nullable|string|max:50',
             'service_url'  => 'nullable|url',
-            'is_active'    => 'required|boolean',
+            'status'       => 'required|in:aktif,tidak_aktif,butuh_konfirmasi',
             'notes'        => 'nullable|string',
             'deskripsi_layanan'  => 'nullable|string',
             'tester_instruction' => 'nullable|string',
         ]);
+
+        // Sinkronisasi is_active dari status untuk backward compatibility
+        // (PeriodController menggunakan is_active untuk daftar layanan aktif)
+        $isActive = $request->status === 'aktif';
 
         Service::create([
             'source_service_id' => Str::uuid()->toString(), // Auto generate external ID for manual entries
@@ -83,7 +89,8 @@ class ServiceController extends Controller
             'category'          => $request->category,
             'level'             => $request->level,
             'service_url'       => $request->service_url,
-            'is_active'         => $request->is_active,
+            'status'            => $request->status,
+            'is_active'         => $isActive,
             'notes'             => $request->notes,
             'deskripsi_layanan'  => $request->deskripsi_layanan,
             'tester_instruction' => $request->tester_instruction,
@@ -104,18 +111,22 @@ class ServiceController extends Controller
             'category'     => 'nullable|string|max:100',
             'level'        => 'nullable|string|max:50',
             'service_url'  => 'nullable|url',
-            'is_active'    => 'required|boolean',
+            'status'       => 'required|in:aktif,tidak_aktif,butuh_konfirmasi',
             'notes'        => 'nullable|string',
             'deskripsi_layanan'  => 'nullable|string',
             'tester_instruction' => 'nullable|string',
         ]);
+
+        // Sinkronisasi is_active dari status untuk backward compatibility
+        $isActive = $request->status === 'aktif';
 
         $service->update([
             'service_name' => $request->service_name,
             'category'     => $request->category,
             'level'        => $request->level,
             'service_url'  => $request->service_url,
-            'is_active'    => $request->is_active,
+            'status'       => $request->status,
+            'is_active'    => $isActive,
             'notes'        => $request->notes,
             'deskripsi_layanan'  => $request->deskripsi_layanan,
             'tester_instruction' => $request->tester_instruction,
