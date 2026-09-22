@@ -93,8 +93,9 @@ function getServiceIcon(iconKey) {
     return serviceIcons[iconKey] || serviceIcons['globe'];
 }
 
-// ─── Reactive Automatic Distribution Calculation ─────────────────
-const selectedTestersCount = computed(() => form.tester_ids.length);
+// ─── Reactive Automatic Distribution Calculation ───────────────
+const selectedTestersList = computed(() => props.testers.filter(t => form.tester_ids.includes(t.id)));
+const selectedTestersCount = computed(() => selectedTestersList.value.length);
 
 const perTesterEstimate = computed(() => {
     if (selectedTestersCount.value === 0) return 0;
@@ -104,8 +105,7 @@ const perTesterEstimate = computed(() => {
 const distributedGroups = computed(() => {
     if (selectedTestersCount.value === 0) return [];
 
-    const selectedTestersList = props.testers.filter(t => form.tester_ids.includes(t.id));
-    const groups = selectedTestersList.map(tester => ({
+    const groups = selectedTestersList.value.map(tester => ({
         tester,
         services: [],
     }));
