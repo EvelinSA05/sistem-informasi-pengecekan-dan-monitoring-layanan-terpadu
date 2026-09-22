@@ -109,6 +109,26 @@ function confirmDelete() {
         },
     });
 }
+
+// ─── Status Toggle (Aktif / Nonaktif) ─────────────────────────────
+const updatingPeriodId = ref(null);
+
+function togglePeriodStatus(period) {
+    const nextStatus = period.status === 'proses' ? 'selesai' : 'proses';
+    updatingPeriodId.value = period.id;
+    router.put(route('admin.periods.update', period.id), {
+        status: nextStatus,
+    }, {
+        preserveScroll: true,
+        onError: (errors) => {
+            const err = errors.status || Object.values(errors)[0] || 'Gagal mengubah status periode.';
+            showFlash(err, 'error');
+        },
+        onFinish: () => {
+            updatingPeriodId.value = null;
+        }
+    });
+}
 </script>
 
 <template>
@@ -227,26 +247,21 @@ function confirmDelete() {
                                 </Link>
                             </td>
 
-                            <!-- Status -->
+                            <!-- Status Badge -->
                             <td class="px-5 py-3.5 text-center">
-                                <!-- Status PROSES -->
                                 <span
-                                    v-if="period.status === 'proses'"
-                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold uppercase bg-[#1e3a8a] text-white shadow-xs"
+                                    :class="[
+                                        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider',
+                                        period.status === 'proses'
+                                            ? 'bg-blue-50 text-[#1e3a8a] border border-blue-200/80 shadow-2xs'
+                                            : 'bg-slate-100 text-slate-500 border border-slate-200/80'
+                                    ]"
                                 >
-                                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse"></span>
-                                    PROSES
-                                </span>
-
-                                <!-- Status SELESAI -->
-                                <span
-                                    v-else
-                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold uppercase bg-slate-100 border border-slate-200 text-slate-600"
-                                >
-                                    <svg class="w-3 h-3 text-slate-500 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                                    </svg>
-                                    SELESAI
+                                    <span
+                                        class="w-1.5 h-1.5 rounded-full"
+                                        :class="period.status === 'proses' ? 'bg-[#1e3a8a] animate-pulse' : 'bg-slate-400'"
+                                    ></span>
+                                    {{ period.status === 'proses' ? 'Aktif' : 'Nonaktif' }}
                                 </span>
                             </td>
 
@@ -287,15 +302,35 @@ function confirmDelete() {
                                 </div>
                             </td>
 
-                            <!-- Aksi (Show, Edit, Hapus) -->
+                            <!-- Aksi (Toggle Aktif/Nonaktif, Show, Edit, Hapus) -->
                             <td class="px-5 py-3.5 text-center">
-                                <div class="flex items-center justify-center gap-1.5">
+                                <div class="flex items-center justify-center gap-2">
+                                    <!-- Toggle Switch Status (Aktif / Nonaktif) -->
+                                    <button
+                                        type="button"
+                                        role="switch"
+                                        :aria-checked="period.status === 'proses'"
+                                        @click="togglePeriodStatus(period)"
+                                        :disabled="updatingPeriodId === period.id"
+                                        :title="period.status === 'proses' ? 'Klik untuk menonaktifkan periode' : 'Klik untuk mengaktifkan periode'"
+                                        class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:ring-offset-1 disabled:opacity-50"
+                                        :class="period.status === 'proses' ? 'bg-[#1e3a8a]' : 'bg-slate-300'"
+                                    >
+                                        <span
+                                            class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out"
+                                            :class="period.status === 'proses' ? 'translate-x-4' : 'translate-x-0'"
+                                        />
+                                    </button>
+
+                                    <!-- Divider Halus -->
+                                    <div class="h-4 w-px bg-slate-200"></div>
+
                                     <!-- Detail (Show) -->
                                     <Link
                                         :href="route('admin.periods.show', period.id)"
                                         title="Lihat detail"
                                         aria-label="Lihat detail"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-blue-600 bg-blue-50/90 hover:bg-blue-100/70 transition-all active:scale-95"
+                                        class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all active:scale-95"
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -308,7 +343,7 @@ function confirmDelete() {
                                         :href="route('admin.periods.edit', period.id)"
                                         title="Edit periode"
                                         aria-label="Edit periode"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-amber-600 bg-amber-50/90 hover:text-amber-700 hover:bg-amber-100/70 transition-all active:scale-95"
+                                        class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-all active:scale-95"
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 018.586 12z"/>
@@ -320,7 +355,7 @@ function confirmDelete() {
                                         @click="openDeleteModal(period)"
                                         title="Hapus periode"
                                         aria-label="Hapus periode"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-rose-600 bg-rose-50/90 hover:text-rose-700 hover:bg-rose-100/70 transition-all active:scale-95"
+                                        class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all active:scale-95 cursor-pointer"
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z"/>
@@ -364,32 +399,86 @@ function confirmDelete() {
             >
                 <div v-if="showDeleteModal && periodToDelete" class="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showDeleteModal = false"></div>
-                    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 z-10">
-                        <div class="flex flex-col items-center text-center mb-5">
-                            <div class="w-14 h-14 rounded-2xl bg-rose-100 flex items-center justify-center mb-4 text-rose-500">
-                                <svg class="w-7 h-7 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 sm:p-7 z-10 text-center">
+                        
+                        <!-- KONDISI 3: Periode yang sudah memiliki HASIL pengecekan -> TIDAK BISA DIHAPUS -->
+                        <template v-if="periodToDelete.checked_services > 0 || periodToDelete.has_results">
+                            <div class="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4 border border-rose-200 shadow-xs">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-800">Tidak Bisa Dihapus</h3>
+                            <p class="text-sm text-slate-500 mt-2 leading-relaxed mb-6">
+                                Periode <span class="font-semibold text-slate-700">"{{ periodToDelete.period_title }}"</span> sudah memiliki <span class="font-bold text-slate-700">{{ periodToDelete.checked_services }} hasil pengecekan</span>. Periode ini tidak dapat dihapus karena sudah menjadi histori dan rekap pengecekan.
+                            </p>
+                            <button
+                                type="button"
+                                @click="showDeleteModal = false"
+                                class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
+                            >
+                                Tutup
+                            </button>
+                        </template>
+
+                        <!-- KONDISI 2: Periode yang sudah ada tester tapi BELUM melakukan pengecekan -> MASIH BISA DIHAPUS DENGAN CONFIRMATION WARNING -->
+                        <template v-else-if="periodToDelete.testers && periodToDelete.testers.length > 0">
+                            <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-200 shadow-xs">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-800">Hapus Periode?</h3>
+                            <p class="text-sm text-slate-500 mt-2 leading-relaxed mb-6">
+                                Periode ini sudah memiliki <span class="font-bold text-slate-700">{{ periodToDelete.testers.length }} tester</span> yang ditugaskan. Apakah Anda yakin ingin menghapus periode? Seluruh penugasan layanan di dalamnya akan ikut dihapus.
+                            </p>
+                            <div class="flex gap-3">
+                                <button
+                                    type="button"
+                                    @click="showDeleteModal = false"
+                                    class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="confirmDelete"
+                                    class="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold shadow-sm transition-all cursor-pointer"
+                                >
+                                    Ya, Hapus
+                                </button>
+                            </div>
+                        </template>
+
+                        <!-- KONDISI STANDAR: Belum ada tester dan belum ada hasil -->
+                        <template v-else>
+                            <div class="w-16 h-16 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-4 border border-rose-100 shadow-xs">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z"/>
                                 </svg>
                             </div>
-                            <h3 class="text-base font-bold text-slate-800">Hapus Periode?</h3>
-                            <p class="text-sm text-slate-500 mt-1.5 leading-relaxed">
-                                Periode <span class="font-semibold text-slate-700">{{ periodToDelete.period_title }}</span> dan seluruh penugasan layanan di dalamnya akan dihapus permanen.
+                            <h3 class="text-lg font-bold text-slate-800">Hapus Periode?</h3>
+                            <p class="text-sm text-slate-500 mt-2 leading-relaxed mb-6">
+                                Periode <span class="font-semibold text-slate-700">"{{ periodToDelete.period_title }}"</span> dan seluruh penugasan layanan di dalamnya akan dihapus permanen.
                             </p>
-                        </div>
-                        <div class="flex gap-3">
-                            <button
-                                @click="showDeleteModal = false"
-                                class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                @click="confirmDelete"
-                                class="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold shadow-sm transition-all"
-                            >
-                                Ya, Hapus
-                            </button>
-                        </div>
+                            <div class="flex gap-3">
+                                <button
+                                    type="button"
+                                    @click="showDeleteModal = false"
+                                    class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="confirmDelete"
+                                    class="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold shadow-sm transition-all cursor-pointer"
+                                >
+                                    Ya, Hapus
+                                </button>
+                            </div>
+                        </template>
+
                     </div>
                 </div>
             </Transition>

@@ -341,6 +341,8 @@ class PeriodController extends Controller
                 'issues_services'  => $issuesServices,
                 'pending_services' => $pendingServices,
                 'progress_percent' => $totalServices > 0 ? round(($checkedServices / $totalServices) * 100) : 0,
+                'has_results'      => $checkedServices > 0,
+                'has_testers'      => $period->periodTesters->count() > 0,
             ],
             'distribution' => $distribution,
         ]);
@@ -354,10 +356,16 @@ class PeriodController extends Controller
         // Kasus 1: Toggle status dari halaman Show
         if ($request->has('status') && !$request->has('tester_ids') && !$request->has('date') && !$request->has('tanggal_periode')) {
             $request->validate([
-                'status' => 'required|in:proses,selesai',
+                'status' => 'required|in:proses,selesai,aktif,nonaktif',
             ]);
+
+            $statusVal = match($request->status) {
+                'aktif' => 'proses',
+                'nonaktif' => 'selesai',
+                default => $request->status,
+            };
             
-            if ($request->status === 'proses') {
+            if ($statusVal === 'proses') {
                 $testerIds = $period->periodTesters()->pluck('tester_id')->toArray();
                 
                 $busyTesters = User::whereIn('id', $testerIds)
@@ -368,16 +376,17 @@ class PeriodController extends Controller
                     
                 if ($busyTesters->isNotEmpty()) {
                     $names = $busyTesters->pluck('name')->implode(', ');
-                    return back()->withErrors(['status' => "Gagal membuka kembali! Tester berikut masih memiliki tugas di periode aktif lain: {$names}."]);
+                    return back()->with('error', "Gagal mengaktifkan periode! Tester berikut masih memiliki penugasan di periode aktif lain: {$names}.");
                 }
             }
 
             try {
                 $period->update([
-                    'status' => $request->status,
+                    'status' => $statusVal,
                 ]);
 
-                return back()->with('success', 'Status periode berhasil diperbarui.');
+                $label = $statusVal === 'proses' ? 'diaktifkan' : 'dinonaktifkan';
+                return back()->with('success', "Periode berhasil {$label}.");
             } catch (\Throwable $e) {
                 Log::error('Gagal memperbarui status periode: ' . $e->getMessage(), [
                     'period_id' => $period->id,
@@ -486,8 +495,29 @@ class PeriodController extends Controller
      */
     public function destroy(CheckingPeriod $period)
     {
+        // Cek apakah ada layanan yang sudah memiliki hasil pengecekan
+        $hasResults = $period->periodServices()
+            ->where(function ($q) {
+                $q->where('status', '!=', 'pending')
+                  ->orWhereNotNull('checked_at');
+            })
+            ->exists()
+            || \App\Models\ServiceCheckLog::whereIn(
+                'period_service_id',
+                $period->periodServices()->pluck('id')
+            )->exists();
+
+        if ($hasResults) {
+            return redirect()->route('admin.periods.index')
+                ->with('error', 'Periode tidak dapat dihapus karena sudah memiliki hasil pengecekan.');
+        }
+
         try {
-            $period->delete();
+            DB::transaction(function () use ($period) {
+                $period->periodServices()->delete();
+                $period->periodTesters()->delete();
+                $period->delete();
+            });
 
             return redirect()->route('admin.periods.index')->with('success', 'Periode pengecekan berhasil dihapus.');
         } catch (\Throwable $e) {

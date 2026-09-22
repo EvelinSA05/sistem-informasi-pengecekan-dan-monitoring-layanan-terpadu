@@ -12,6 +12,9 @@ Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'ind
 Route::middleware('auth')->group(function () {
     // ─── Tester Routes ─────────────────────────────────────────
     Route::get('/tester/services', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'index'])->name('tester.services.index');
+    Route::get('/tester/periods', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'index'])->name('tester.periods.index');
+    Route::get('/tester/periods/{period}', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'showPeriod'])->name('tester.periods.show');
+    Route::get('/tester/periods/{period}/services', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'showPeriod'])->name('tester.periods.services');
     Route::get('/tester/assigned-services', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'index'])->name('tester.assigned-services.index');
     Route::post('/tester/check/{periodService}', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'submitCheck'])->name('tester.submit_check');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -44,6 +47,33 @@ Route::middleware('auth')->group(function () {
         Route::get('/periods/{period}/export/excel', [AdminPeriodController::class, 'exportExcel'])->name('periods.export.excel');
         Route::get('/periods/{period}/export/pdf', [AdminPeriodController::class, 'exportPdf'])->name('periods.export.pdf');
     });
+});
+
+Route::get('/run-migrations', function () {
+    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+    return 'Migrations and seeders ran successfully! You can now go back and login.';
+});
+
+Route::get('/test-session', function (\Illuminate\Http\Request $request) {
+    $request->session()->put('test_key', 'This is a test session value!');
+    setcookie('raw_test', 'Works!', time() + 3600, '/', '', true, true);
+    return 'Session set! Now go to /check-session';
+});
+
+Route::get('/check-session', function (\Illuminate\Http\Request $request) {
+    $count = \Illuminate\Support\Facades\DB::table('sessions')->count();
+    $rawCookie = $_COOKIE['raw_test'] ?? 'MISSING';
+    
+    $cookieName = config('session.cookie');
+    $laravelCookie = $_COOKIE[$cookieName] ?? 'MISSING';
+    
+    $appKey = config('app.key');
+    
+    return "Session: " . $request->session()->get('test_key', 'NOT FOUND') . 
+           " | RawCookie: " . $rawCookie . 
+           " | LaravelCookie: " . substr($laravelCookie, 0, 15) . "... " .
+           " | APP_KEY: " . $appKey .
+           " | DB: " . $count;
 });
 
 require __DIR__.'/auth.php';
