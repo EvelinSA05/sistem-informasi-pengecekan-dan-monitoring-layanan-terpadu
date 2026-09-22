@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Tester;
 use App\Http\Controllers\Controller;
 use App\Models\CheckingPeriod;
 use App\Models\PeriodService;
+use App\Models\ServiceCheckLog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -40,15 +41,13 @@ class AssignedServiceController extends Controller
     {
         $user = $request->user();
 
-        // ─── Active Checking Period ──────────────────────────────────
+        // ─── Active Checking Period ─────────────────────────────────────────
         $activePeriod = CheckingPeriod::where('status', 'proses')
+            ->whereHas('periodTesters', function ($q) use ($user) {
+                $q->where('tester_id', $user->id);
+            })
             ->orderBy('date', 'desc')
             ->first();
-
-        if (!$activePeriod) {
-            $activePeriod = CheckingPeriod::orderBy('date', 'desc')
-                ->first();
-        }
 
         $periodInfo = null;
 
@@ -73,13 +72,21 @@ class AssignedServiceController extends Controller
 
         if ($activePeriod) {
             $periodCarbon = Carbon::parse($activePeriod->date);
-            $now = Carbon::now()->startOfDay();
-            $targetDate = $periodCarbon->copy()->startOfDay();
-
-            $daysRemaining = (int) $now->diffInDays(
-                $targetDate,
-                false
-            );
+            
+            $daysRemaining = null;
+            $isOverdue = false;
+            $deadlineDate = null;
+            
+            if ($activePeriod->deadline_date) {
+                $deadlineCarbon = Carbon::parse($activePeriod->deadline_date)->endOfDay();
+                $now = Carbon::now();
+                $deadlineDate = $deadlineCarbon->format('Y-m-d');
+                
+                // Jika deadline besok malam, dan sekarang hari ini, maka sisa 1 hari
+                // Jika sudah lewat, akan negatif
+                $daysRemaining = (int) $now->startOfDay()->diffInDays($deadlineCarbon->startOfDay(), false);
+                $isOverdue = $now->isAfter($deadlineCarbon) && $activePeriod->status === 'proses';
+            }
 
             $periodInfo = [
                 'id' => $activePeriod->id,
@@ -91,9 +98,9 @@ class AssignedServiceController extends Controller
                 ) . ' ' . $periodCarbon->format('Y'),
                 'date' => $periodCarbon->format('Y-m-d'),
                 'status' => $activePeriod->status,
+                'deadline_date' => $deadlineDate,
                 'days_remaining' => $daysRemaining,
-                'is_overdue' => $daysRemaining < 0
-                    && $activePeriod->status === 'proses',
+                'is_overdue' => $isOverdue,
             ];
 
             // Base query for tester assignments in active period
@@ -294,15 +301,30 @@ class AssignedServiceController extends Controller
             );
         }
 
+        // Jangan izinkan pengecekan jika periode sudah selesai (hanya untuk tester, admin bebas jika perlu)
+        if ($user->role !== 'admin' && $periodService->period->status === 'selesai') {
+            abort(403, 'Periode pengecekan sudah selesai dan dikunci.');
+        }
+
         $request->validate([
             'status' => 'required|in:normal,gangguan',
-            'description' => 'nullable|string',
+            'description' => 'required_if:status,gangguan|nullable|string|max:5000',
+        ], [
+            'description.required_if' => 'Catatan / Keterangan kendala wajib diisi jika layanan berstatus kendala.',
+            'description.max' => 'Catatan tidak boleh lebih dari 5000 karakter.'
         ]);
 
         $periodService->update([
             'status' => $request->status,
             'description' => $request->description,
             'checked_at' => now(),
+        ]);
+
+        ServiceCheckLog::create([
+            'period_service_id' => $periodService->id,
+            'tester_id' => $user->id,
+            'status' => $request->status,
+            'description' => $request->description,
         ]);
 
         return back()->with(

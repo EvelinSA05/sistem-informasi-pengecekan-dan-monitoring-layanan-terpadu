@@ -208,8 +208,12 @@ const filteredServices = computed(() => {
                             </div>
 
                             <div>
-                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Catatan / Keterangan Kendala</label>
-                                <textarea v-model="checkForm.description" rows="3" class="w-full rounded-xl border-slate-200 text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Jelaskan secara singkat kendala yang ditemukan, jika ada..."></textarea>
+                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                                    Catatan / Keterangan Kendala
+                                    <span v-if="checkForm.status === 'gangguan'" class="text-rose-600 font-bold text-xs lowercase ml-1">(wajib)</span>
+                                    <span v-else class="text-slate-400 font-normal text-xs lowercase ml-1">(opsional)</span>
+                                </label>
+                                <textarea v-model="checkForm.description" rows="3" maxlength="5000" class="w-full rounded-xl border-slate-200 text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Jelaskan secara singkat kendala yang ditemukan, jika ada..."></textarea>
                                 <p v-if="checkForm.errors.description" class="mt-1 text-xs text-rose-500">{{ checkForm.errors.description }}</p>
                             </div>
                         </form>

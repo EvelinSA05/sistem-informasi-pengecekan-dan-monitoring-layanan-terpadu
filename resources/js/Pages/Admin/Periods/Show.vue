@@ -12,6 +12,18 @@ const isUpdatingStatus = ref(false);
 const statusFilter = ref('all');
 const searchQuery = ref('');
 
+// ✨ Toast Notification ✨
+const toast = ref('');
+const toastType = ref('success');
+let toastTimer = null;
+
+function showToast(msg, type = 'success') {
+    if (toastTimer) clearTimeout(toastTimer);
+    toast.value = msg;
+    toastType.value = type;
+    toastTimer = setTimeout(() => { toast.value = ''; }, 4000);
+}
+
 function toggleStatus() {
     const nextStatus = props.period.status === 'proses' ? 'selesai' : 'proses';
     isUpdatingStatus.value = true;
@@ -19,6 +31,11 @@ function toggleStatus() {
         status: nextStatus,
     }, {
         preserveScroll: true,
+        onError: (errors) => {
+            if (errors.status) {
+                showToast(errors.status, 'error');
+            }
+        },
         onFinish: () => {
             isUpdatingStatus.value = false;
         }
@@ -120,6 +137,50 @@ function getServiceIcon(iconKey) {
         title="Periode Pengecekan"
         subtitle="Atur periode dan distribusi layanan"
     >
+        <!-- ✨ Toast Flash Notification ✨ -->
+        <Transition
+            enter-active-class="transition duration-300 ease-out"
+            enter-from-class="transform translate-y-4 opacity-0 sm:translate-y-0 sm:translate-x-4"
+            enter-to-class="transform translate-y-0 opacity-100 sm:translate-x-0"
+            leave-active-class="transition duration-200 ease-in"
+            leave-from-class="transform translate-y-0 opacity-100 sm:translate-x-0"
+            leave-to-class="transform translate-y-4 opacity-0 sm:translate-y-0 sm:translate-x-4"
+        >
+            <div
+                v-if="toast"
+                :class="[
+                    'fixed top-5 right-5 z-[120] flex items-center justify-between gap-3 px-4.5 py-3 rounded-2xl shadow-xl text-sm font-semibold border backdrop-blur-md max-w-md',
+                    toastType === 'success'
+                        ? 'bg-emerald-50/95 border-emerald-200 text-emerald-800 shadow-emerald-900/10'
+                        : 'bg-rose-50/95 border-rose-200 text-rose-800 shadow-rose-900/10'
+                ]"
+            >
+                <div class="flex items-center gap-3">
+                    <div 
+                        class="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+                        :class="toastType === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'"
+                    >
+                        <svg v-if="toastType === 'success'" class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <svg v-else class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </div>
+                    <span>{{ toast }}</span>
+                </div>
+                <button 
+                    type="button"
+                    @click="toast = ''" 
+                    class="p-1 rounded-xl transition-colors hover:bg-black/5 text-slate-500 cursor-pointer"
+                >
+                    <svg class="w-4 h-4 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </Transition>
+
         <!-- ── Top Header Navigation & Action Toolbar ──────────── -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div class="flex items-center gap-4">
@@ -155,6 +216,7 @@ function getServiceIcon(iconKey) {
                     </div>
                     <p class="text-xs text-slate-400 mt-1 font-medium">
                         Dibuat pada {{ period.created_at_label }} oleh {{ period.creator_name }}
+                        <span v-if="period.deadline_date"> &bull; <span class="text-rose-500">Tenggat Waktu: {{ period.deadline_date }}</span></span>
                     </p>
                 </div>
             </div>

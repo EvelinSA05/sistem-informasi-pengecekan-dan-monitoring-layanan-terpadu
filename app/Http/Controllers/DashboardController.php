@@ -171,14 +171,13 @@ class DashboardController extends Controller
             ]);
         }
 
-        // ─── TESTER DASHBOARD (MONITORING CENTER) ─────────────────────────
+        // ─── TESTER DASHBOARD (MONITORING CENTER) ──────────────────────────
         $activePeriod = CheckingPeriod::where('status', 'proses')
+            ->whereHas('periodTesters', function ($q) use ($user) {
+                $q->where('tester_id', $user->id);
+            })
             ->orderBy('date', 'desc')
             ->first();
-
-        if (!$activePeriod) {
-            $activePeriod = CheckingPeriod::orderBy('date', 'desc')->first();
-        }
 
         $periodInfo = null;
 

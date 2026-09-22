@@ -10,6 +10,7 @@ class CheckingPeriod extends Model
 
     protected $fillable = [
         'date',
+        'deadline_date',
         'tanggal_periode',
         'status',
         'created_by',
@@ -17,6 +18,7 @@ class CheckingPeriod extends Model
 
     protected $casts = [
         'date' => 'date',
+        'deadline_date' => 'date',
     ];
 
     /**
