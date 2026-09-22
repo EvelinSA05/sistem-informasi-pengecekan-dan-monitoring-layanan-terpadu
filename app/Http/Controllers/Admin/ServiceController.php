@@ -23,6 +23,7 @@ class ServiceController extends Controller
         $level  = $request->get('level', '');
 
         $services = Service::query()
+            ->withCount('periodServices')
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = strtolower($request->input('search'));
                 $query->where(function($q) use ($search) {
@@ -154,6 +155,13 @@ class ServiceController extends Controller
      */
     public function destroy(Service $service): RedirectResponse
     {
+        // 1. Layanan yang sudah masuk periode pengecekan -> TIDAK BISA DIHAPUS
+        $isInPeriod = \App\Models\PeriodService::where('service_id', $service->id)->exists();
+        if ($isInPeriod) {
+            return redirect()->route('admin.services.index')
+                ->with('error', 'Layanan tidak dapat dihapus karena sudah masuk ke dalam periode pengecekan.');
+        }
+
         try {
             $service->delete();
 
@@ -161,7 +169,7 @@ class ServiceController extends Controller
                 ->with('success', 'Layanan berhasil dihapus.');
         } catch (\Exception $e) {
             return redirect()->route('admin.services.index')
-                ->with('error', 'Gagal menghapus layanan.');
+                ->with('error', 'Gagal menghapus layanan: ' . $e->getMessage());
         }
     }
 

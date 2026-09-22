@@ -89,6 +89,8 @@ class PeriodController extends Controller
                 'checked_services' => $checkedServices,
                 'total_services' => $totalServices,
                 'progress_percent' => $progressPercent,
+                'has_results' => $checkedServices > 0,
+                'has_testers' => $testers->count() > 0,
             ];
         });
 
@@ -468,12 +470,41 @@ class PeriodController extends Controller
 
     /**
      * Menghapus periode pengecekan (Hapus).
+     * 2. Periode yang sudah ada tester tapi BELUM melakukan pengecekan -> MASIH BISA DIHAPUS
+     * 3. Periode yang sudah memiliki HASIL pengecekan -> TIDAK BISA DIHAPUS
      */
     public function destroy(CheckingPeriod $period)
     {
-        $period->delete();
+        // Cek apakah ada layanan yang sudah memiliki hasil pengecekan
+        $hasResults = $period->periodServices()
+            ->where(function ($q) {
+                $q->where('status', '!=', 'pending')
+                  ->orWhereNotNull('checked_at');
+            })
+            ->exists()
+            || \App\Models\ServiceCheckLog::whereIn(
+                'period_service_id',
+                $period->periodServices()->pluck('id')
+            )->exists();
 
-        return redirect()->route('admin.periods.index')->with('success', 'Periode pengecekan berhasil dihapus.');
+        if ($hasResults) {
+            return redirect()->route('admin.periods.index')
+                ->with('error', 'Periode tidak dapat dihapus karena sudah memiliki hasil pengecekan.');
+        }
+
+        try {
+            DB::transaction(function () use ($period) {
+                $period->periodServices()->delete();
+                $period->periodTesters()->delete();
+                $period->delete();
+            });
+
+            return redirect()->route('admin.periods.index')
+                ->with('success', 'Periode pengecekan berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.periods.index')
+                ->with('error', 'Gagal menghapus periode: ' . $e->getMessage());
+        }
     }
 
     /**
