@@ -169,6 +169,7 @@ class PeriodController extends Controller
                 'id' => $period->id,
                 'title' => $title,
                 'date' => $formattedDate,
+                'deadline_date' => $period->deadline_date ? Carbon::parse($period->deadline_date)->format('Y-m-d') : null,
                 'status' => $period->status,
             ],
             'testers' => $testers,
@@ -189,11 +190,14 @@ class PeriodController extends Controller
 
         $request->validate([
             'date' => 'required|date',
+            'deadline_date' => 'nullable|date|after_or_equal:date',
             'tester_ids' => 'required|array|min:1',
             'tester_ids.*' => 'exists:users,id',
         ], [
             'date.required' => 'Tanggal pengecekan wajib diisi.',
             'date.date' => 'Format tanggal tidak valid.',
+            'deadline_date.date' => 'Format tenggat waktu tidak valid.',
+            'deadline_date.after_or_equal' => 'Tenggat waktu tidak boleh lebih awal dari tanggal periode.',
             'tester_ids.required' => 'Pilih minimal satu tester untuk periode pengecekan.',
             'tester_ids.min' => 'Pilih minimal satu tester untuk periode pengecekan.',
         ]);
@@ -206,9 +210,30 @@ class PeriodController extends Controller
             ]);
         }
 
+        $testerIds = array_values(array_unique($request->tester_ids));
+        
+        $busyTesters = \App\Models\User::whereIn('id', $testerIds)
+            ->whereHas('periodTesters.period', function ($q) {
+                $q->where('status', 'proses');
+            })
+            ->get();
+            
+        \Log::info('PeriodController Store validation', [
+            'tester_ids' => $testerIds,
+            'busy' => $busyTesters->pluck('name')
+        ]);
+
+        if ($busyTesters->isNotEmpty()) {
+            $names = $busyTesters->pluck('name')->implode(', ');
+            return back()->withErrors([
+                'tester_ids' => "Pembuatan dibatalkan! Tester berikut masih memiliki tugas di periode aktif yang belum selesai: {$names}. Silakan tutup periode lama terlebih dahulu."
+            ]);
+        }
+
         DB::transaction(function () use ($date, $request) {
             $period = CheckingPeriod::create([
                 'date' => $date,
+                'deadline_date' => $request->deadline_date ? Carbon::parse($request->deadline_date)->format('Y-m-d') : null,
                 'status' => 'proses',
                 'created_by' => $request->user()->id,
             ]);
@@ -302,6 +327,7 @@ class PeriodController extends Controller
                 'id' => $period->id,
                 'title' => $periodTitle,
                 'date' => $carbonDate->format('Y-m-d'),
+                'deadline_date' => $period->deadline_date ? Carbon::parse($period->deadline_date)->format('d F Y') : null,
                 'status' => $period->status,
                 'created_at_label' => Carbon::parse($period->created_at)->format('d F Y H:i'),
                 'creator_name' => $period->creator?->name ?? 'Admin',
@@ -326,6 +352,21 @@ class PeriodController extends Controller
             $request->validate([
                 'status' => 'required|in:proses,selesai',
             ]);
+            
+            if ($request->status === 'proses') {
+                $testerIds = $period->periodTesters()->pluck('tester_id')->toArray();
+                
+                $busyTesters = \App\Models\User::whereIn('id', $testerIds)
+                    ->whereHas('periodTesters.period', function ($q) use ($period) {
+                        $q->where('status', 'proses')->where('checking_periods.id', '!=', $period->id);
+                    })
+                    ->get();
+                    
+                if ($busyTesters->isNotEmpty()) {
+                    $names = $busyTesters->pluck('name')->implode(', ');
+                    return back()->withErrors(['status' => "Gagal membuka kembali! Tester berikut masih memiliki tugas di periode aktif lain: {$names}."]);
+                }
+            }
 
             $period->update([
                 'status' => $request->status,
@@ -341,11 +382,14 @@ class PeriodController extends Controller
 
         $request->validate([
             'date' => 'required|date',
+            'deadline_date' => 'nullable|date|after_or_equal:date',
             'tester_ids' => 'required|array|min:1',
             'tester_ids.*' => 'exists:users,id',
         ], [
             'date.required' => 'Tanggal pengecekan wajib diisi.',
             'date.date' => 'Format tanggal tidak valid.',
+            'deadline_date.date' => 'Format tenggat waktu tidak valid.',
+            'deadline_date.after_or_equal' => 'Tenggat waktu tidak boleh lebih awal dari tanggal periode.',
             'tester_ids.required' => 'Pilih minimal satu tester untuk periode pengecekan.',
             'tester_ids.min' => 'Pilih minimal satu tester untuk periode pengecekan.',
         ]);
@@ -359,9 +403,31 @@ class PeriodController extends Controller
             ]);
         }
 
+        $testerIds = array_values(array_unique($request->tester_ids));
+        
+        $busyTesters = \App\Models\User::whereIn('id', $testerIds)
+            ->whereHas('periodTesters.period', function ($q) use ($period) {
+                $q->where('status', 'proses')->where('checking_periods.id', '!=', $period->id);
+            })
+            ->get();
+            
+        \Log::info('PeriodController Update validation', [
+            'period_id' => $period->id,
+            'tester_ids' => $testerIds,
+            'busy' => $busyTesters->pluck('name')
+        ]);
+
+        if ($busyTesters->isNotEmpty()) {
+            $names = $busyTesters->pluck('name')->implode(', ');
+            return back()->withErrors([
+                'tester_ids' => "Pembaruan dibatalkan! Tester berikut masih memiliki tugas di periode aktif yang belum selesai: {$names}. Silakan tutup periode lama terlebih dahulu."
+            ]);
+        }
+
         DB::transaction(function () use ($period, $date, $request) {
             $period->update([
                 'date' => $date,
+                'deadline_date' => $request->deadline_date ? Carbon::parse($request->deadline_date)->format('Y-m-d') : null,
             ]);
 
             // Simpan status cek yang sudah ada sebelum redistribusi agar catatan tidak hilang
