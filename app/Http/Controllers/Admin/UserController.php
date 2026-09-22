@@ -7,6 +7,8 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,13 +20,18 @@ class UserController extends Controller
      */
     public function index(Request $request): Response
     {
-        $search = $request->get('search', '');
+        $request->validate([
+            'search' => 'nullable|string|max:255',
+        ]);
+
+        $search = (string) $request->get('search', '');
 
         $users = User::where('role', 'tester')
-            ->when($search, function ($query, $search) {
+            ->when(!empty($search), function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('username', 'like', "%{$search}%");
                 });
             })
             ->orderBy('created_at', 'desc')
@@ -40,6 +47,10 @@ class UserController extends Controller
             'users'  => $users,
             'stats'  => $stats,
             'search' => $search,
+            'flash'  => [
+                'success' => session('success'),
+                'error'   => session('error'),
+            ],
         ]);
     }
 
@@ -48,24 +59,33 @@ class UserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'name'     => 'required|string|max:100',
             'email'    => 'required|string|lowercase|email|max:150|unique:users,email',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'status'   => 'required|in:aktif,tidak aktif',
         ]);
 
-        User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'username' => explode('@', $request->email)[0] . '_' . rand(1000, 9999),
-            'status'   => $request->status,
-            'role'     => 'tester',
-            'password' => Hash::make($request->password),
-        ]);
+        try {
+            User::create([
+                'name'     => $validated['name'],
+                'email'    => $validated['email'],
+                'username' => explode('@', $validated['email'])[0] . '_' . rand(1000, 9999),
+                'status'   => $validated['status'],
+                'role'     => 'tester',
+                'password' => Hash::make($validated['password']),
+            ]);
 
-        return redirect()->route('admin.users.index')
-            ->with('success', 'Tester berhasil ditambahkan.');
+            return redirect()->route('admin.users.index')
+                ->with('success', 'Tester berhasil ditambahkan.');
+        } catch (\Throwable $e) {
+            Log::error('Gagal menambahkan tester baru: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Terjadi kesalahan saat menambahkan tester. Silakan periksa kembali input Anda.');
+        }
     }
 
     /**
@@ -73,20 +93,37 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): RedirectResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'name'   => 'required|string|max:100',
-            'email'  => 'required|string|lowercase|email|max:150|unique:users,email,' . $user->id,
+            'email'  => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:150',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
             'status' => 'required|in:aktif,tidak aktif',
         ]);
 
-        $user->update([
-            'name'   => $request->name,
-            'email'  => $request->email,
-            'status' => $request->status,
-        ]);
+        try {
+            $user->update([
+                'name'   => $validated['name'],
+                'email'  => $validated['email'],
+                'status' => $validated['status'],
+            ]);
 
-        return redirect()->route('admin.users.index')
-            ->with('success', 'Data tester berhasil diperbarui.');
+            return redirect()->route('admin.users.index')
+                ->with('success', 'Data tester berhasil diperbarui.');
+        } catch (\Throwable $e) {
+            Log::error('Gagal memperbarui data tester: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'trace'   => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Terjadi kesalahan saat memperbarui data tester. Silakan coba lagi.');
+        }
     }
 
     /**
@@ -100,9 +137,19 @@ class UserController extends Controller
                 ->with('error', 'Akun admin tidak dapat dihapus.');
         }
 
-        $user->delete();
+        try {
+            $user->delete();
 
-        return redirect()->route('admin.users.index')
-            ->with('success', 'Tester berhasil dihapus.');
+            return redirect()->route('admin.users.index')
+                ->with('success', 'Tester berhasil dihapus.');
+        } catch (\Throwable $e) {
+            Log::error('Gagal menghapus tester: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'trace'   => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Gagal menghapus tester. Akun mungkin masih memiliki riwayat tugas atau pengecekan.');
+        }
     }
 }
