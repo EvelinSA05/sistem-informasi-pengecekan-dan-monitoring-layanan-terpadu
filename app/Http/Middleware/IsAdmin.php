@@ -15,7 +15,10 @@ class IsAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->check() && auth()->user()->role === 'admin') {
+        /** @var \App\Models\User|null $user */
+        $user = $request->user();
+
+        if ($user && method_exists($user, 'isAdmin') && $user->isAdmin()) {
             return $next($request);
         }
 
