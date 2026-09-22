@@ -8,6 +8,7 @@ use App\Models\PeriodService;
 use App\Models\ServiceCheckLog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class AssignedServiceController extends Controller
@@ -357,7 +358,7 @@ class AssignedServiceController extends Controller
             abort(403, 'Periode pengecekan sedang dinonaktifkan.');
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'status' => 'required|in:normal,gangguan',
             'description' => 'required_if:status,gangguan|nullable|string|max:5000',
         ], [
@@ -365,22 +366,30 @@ class AssignedServiceController extends Controller
             'description.max' => 'Catatan tidak boleh lebih dari 5000 karakter.'
         ]);
 
-        $periodService->update([
-            'status' => $request->status,
-            'description' => $request->description,
-            'checked_at' => now(),
-        ]);
+        try {
+            $periodService->update([
+                'status' => $validated['status'],
+                'description' => $validated['description'] ?? null,
+                'checked_at' => now(),
+            ]);
 
-        ServiceCheckLog::create([
-            'period_service_id' => $periodService->id,
-            'tester_id' => $user->id,
-            'status' => $request->status,
-            'description' => $request->description,
-        ]);
+            ServiceCheckLog::create([
+                'period_service_id' => $periodService->id,
+                'tester_id' => $user->id,
+                'status' => $validated['status'],
+                'description' => $validated['description'] ?? null,
+            ]);
 
-        return back()->with(
-            'success',
-            'Hasil pengecekan berhasil disimpan.'
-        );
+            return back()->with(
+                'success',
+                'Hasil pengecekan berhasil disimpan.'
+            );
+        } catch (\Throwable $e) {
+            Log::error('Gagal menyimpan hasil pengecekan (Tester): ' . $e->getMessage(), [
+                'period_service_id' => $periodService->id,
+            ]);
+
+            return back()->with('error', 'Terjadi kesalahan saat menyimpan hasil pengecekan.');
+        }
     }
 }

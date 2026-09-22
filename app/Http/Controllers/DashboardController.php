@@ -301,7 +301,8 @@ class DashboardController extends Controller
                     'title' => "{$pendingCount} layanan belum diuji",
                     'description' => 'Layanan masih menunggu verifikasi dan pengecekan aksesibilitas.',
                     'action_label' => 'Uji Sekarang',
-                    'action_url' => route('tester.services.index', [
+                    'action_url' => route('tester.periods.services', [
+                        'period' => $activePeriod->id,
                         'status' => 'pending',
                     ]),
                     'severity' => 'warning',
@@ -316,7 +317,8 @@ class DashboardController extends Controller
                     'title' => "{$issuesCount} pengujian memiliki kendala",
                     'description' => 'Terdapat kendala/error yang telah dilaporkan dan memerlukan perhatian.',
                     'action_label' => 'Lihat Kendala',
-                    'action_url' => route('tester.services.index', [
+                    'action_url' => route('tester.periods.services', [
+                        'period' => $activePeriod->id,
                         'status' => 'gangguan',
                     ]),
                     'severity' => 'danger',
@@ -331,7 +333,8 @@ class DashboardController extends Controller
                     'title' => "{$needConfirm} hasil membutuhkan konfirmasi",
                     'description' => 'Pengujian menunggu konfirmasi lebih lanjut dari admin.',
                     'action_label' => 'Lihat Hasil',
-                    'action_url' => route('tester.services.index', [
+                    'action_url' => route('tester.periods.services', [
+                        'period' => $activePeriod->id,
                         'status' => 'need_confirmation',
                     ]),
                     'severity' => 'info',
@@ -352,7 +355,8 @@ class DashboardController extends Controller
                         : "Tersisa {$daysRemaining} hari sebelum periode berakhir",
                     'description' => "Segera tuntaskan {$pendingCount} penugasan yang belum selesai diuji.",
                     'action_label' => 'Selesaikan Tugas',
-                    'action_url' => route('tester.services.index', [
+                    'action_url' => route('tester.periods.services', [
+                        'period' => $activePeriod->id,
                         'status' => 'pending',
                     ]),
                     'severity' => 'urgent',
@@ -444,34 +448,39 @@ class DashboardController extends Controller
                 'title' => 'Mulai Pengujian',
                 'subtitle' => 'Kerjakan layanan belum dicek',
                 'count' => $stats['pending'],
-                'url' => route('tester.services.index', [
+                'url' => $activePeriod ? route('tester.periods.services', [
+                    'period' => $activePeriod->id,
                     'status' => 'pending',
-                ]),
+                ]) : route('tester.services.index'),
                 'color' => 'blue',
             ],
             [
                 'title' => 'Layanan Terkendala',
                 'subtitle' => 'Daftar layanan ada error',
                 'count' => $stats['issues'],
-                'url' => route('tester.services.index', [
+                'url' => $activePeriod ? route('tester.periods.services', [
+                    'period' => $activePeriod->id,
                     'status' => 'gangguan',
-                ]),
+                ]) : route('tester.services.index'),
                 'color' => 'rose',
             ],
             [
                 'title' => 'Sudah Selesai',
                 'subtitle' => 'Layanan berhasil diuji',
                 'count' => $stats['checked'],
-                'url' => route('tester.services.index', [
+                'url' => $activePeriod ? route('tester.periods.services', [
+                    'period' => $activePeriod->id,
                     'status' => 'normal',
-                ]),
+                ]) : route('tester.services.index'),
                 'color' => 'emerald',
             ],
             [
                 'title' => 'Semua Penugasan',
                 'subtitle' => 'Workspace seluruh layanan',
                 'count' => $stats['total_assigned'],
-                'url' => route('tester.services.index'),
+                'url' => $activePeriod ? route('tester.periods.services', [
+                    'period' => $activePeriod->id,
+                ]) : route('tester.services.index'),
                 'color' => 'indigo',
             ],
         ];
