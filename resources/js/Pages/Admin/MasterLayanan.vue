@@ -106,7 +106,7 @@ onUnmounted(() => {
 });
 
 // ─── Add Form ─────────────────────────────────────────────────
-const addForm = useForm({
+const defaultAddFormData = {
     service_name: '',
     category:     '',
     level:        '',
@@ -115,17 +115,34 @@ const addForm = useForm({
     notes:        '',
     deskripsi_layanan: '',
     tester_instruction: '',
-});
-function openAddModal() {
-    addForm.reset();
+};
+
+const addForm = useForm({ ...defaultAddFormData });
+
+function resetAddForm() {
     addForm.clearErrors();
+    addForm.defaults({ ...defaultAddFormData });
+    addForm.reset();
+    Object.keys(defaultAddFormData).forEach((key) => {
+        addForm[key] = defaultAddFormData[key];
+    });
+}
+
+function openAddModal() {
+    resetAddForm();
     showAddModal.value = true;
 }
+
+function closeAddModal() {
+    showAddModal.value = false;
+    resetAddForm();
+}
+
 function submitAdd() {
     addForm.post(route('admin.services.store'), {
         preserveScroll: true,
         onSuccess: () => {
-            showAddModal.value = false;
+            closeAddModal();
             showFlash('Layanan berhasil ditambahkan.');
         },
     });
@@ -514,7 +531,7 @@ function confirmDelete() {
                 <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
                     <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
                         <h3 class="text-lg font-bold text-slate-800">Tambah Layanan</h3>
-                        <button @click="showAddModal = false" class="text-slate-400 hover:text-slate-600 transition-colors p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                        <button @click="closeAddModal" class="text-slate-400 hover:text-slate-600 transition-colors p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
                     </div>
                     <div class="p-6 overflow-y-auto">
                         <form @submit.prevent="submitAdd" class="space-y-4">
@@ -568,7 +585,7 @@ function confirmDelete() {
                         </form>
                     </div>
                     <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
-                        <button type="button" @click="showAddModal = false" class="px-5 py-2.5 rounded-xl font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors">Batal</button>
+                        <button type="button" @click="closeAddModal" class="px-5 py-2.5 rounded-xl font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors">Batal</button>
                         <button type="button" @click="submitAdd" :disabled="addForm.processing" class="px-5 py-2.5 rounded-xl font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-all disabled:opacity-70 flex items-center gap-2">
                             <svg v-if="addForm.processing" class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                             Simpan

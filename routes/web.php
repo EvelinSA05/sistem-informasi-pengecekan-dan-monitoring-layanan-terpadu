@@ -46,31 +46,4 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-Route::get('/run-migrations', function () {
-    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-    return 'Migrations and seeders ran successfully! You can now go back and login.';
-});
-
-Route::get('/test-session', function (\Illuminate\Http\Request $request) {
-    $request->session()->put('test_key', 'This is a test session value!');
-    setcookie('raw_test', 'Works!', time() + 3600, '/', '', true, true);
-    return 'Session set! Now go to /check-session';
-});
-
-Route::get('/check-session', function (\Illuminate\Http\Request $request) {
-    $count = \Illuminate\Support\Facades\DB::table('sessions')->count();
-    $rawCookie = $_COOKIE['raw_test'] ?? 'MISSING';
-    
-    $cookieName = config('session.cookie');
-    $laravelCookie = $_COOKIE[$cookieName] ?? 'MISSING';
-    
-    $appKey = config('app.key');
-    
-    return "Session: " . $request->session()->get('test_key', 'NOT FOUND') . 
-           " | RawCookie: " . $rawCookie . 
-           " | LaravelCookie: " . substr($laravelCookie, 0, 15) . "... " .
-           " | APP_KEY: " . $appKey .
-           " | DB: " . $count;
-});
-
 require __DIR__.'/auth.php';
