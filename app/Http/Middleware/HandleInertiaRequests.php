@@ -34,6 +34,13 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            // Flash messages dibagikan ke semua halaman Inertia secara otomatis
+            'flash' => [
+                'session_expired' => $request->session()->get('session_expired'),
+                'status'          => $request->session()->get('status'),
+                'error'           => $request->session()->get('error'),
+                'success'         => $request->session()->get('success'),
+            ],
         ];
     }
 }

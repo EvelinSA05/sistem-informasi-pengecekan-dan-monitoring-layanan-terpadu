@@ -20,7 +20,8 @@ class AuthenticatedSessionController extends Controller
     {
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
-            'status' => session('status'),
+            'status'          => session('status'),
+            'sessionExpired'  => session('session_expired'),
         ]);
     }
 
@@ -32,6 +33,7 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
+        $request->session()->put('last_activity_time', time());
 
         return redirect()->intended(route('dashboard', absolute: false));
     }
@@ -43,8 +45,8 @@ class AuthenticatedSessionController extends Controller
     {
         Auth::guard('web')->logout();
 
+        $request->session()->forget('last_activity_time');
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
         return redirect('/');
