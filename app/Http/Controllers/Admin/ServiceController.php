@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Service;
+use App\Models\PeriodService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -121,6 +122,14 @@ class ServiceController extends Controller
             'tester_instruction' => $request->tester_instruction,
         ]);
 
+        // Jika layanan dinonaktifkan, cabut layanan tersebut dari semua periode yang masih dalam proses
+        if (!$request->is_active) {
+            PeriodService::where('service_id', $service->id)
+                ->whereHas('period', function ($query) {
+                    $query->where('status', 'proses');
+                })->delete();
+        }
+
         return redirect()->route('admin.services.index')
             ->with('success', 'Layanan berhasil diperbarui.');
     }
@@ -141,19 +150,20 @@ class ServiceController extends Controller
      */
     public function history(Service $service)
     {
-        $history = \App\Models\PeriodService::with(['period', 'tester'])
-            ->where('service_id', $service->id)
-            ->whereNotNull('checked_at')
-            ->orderByDesc('checked_at')
+        $history = \App\Models\ServiceCheckLog::with(['periodService.period', 'tester'])
+            ->whereHas('periodService', function ($query) use ($service) {
+                $query->where('service_id', $service->id);
+            })
+            ->orderByDesc('created_at')
             ->get()
             ->map(function ($log) {
                 return [
                     'id'          => $log->id,
-                    'period_date' => \Carbon\Carbon::parse($log->period->date)->format('d M Y'),
+                    'period_date' => \Carbon\Carbon::parse($log->periodService->period->date)->format('d M Y'),
                     'tester'      => $log->tester ? $log->tester->name : 'Unknown',
                     'status'      => $log->status,
                     'description' => $log->description,
-                    'checked_at'  => \Carbon\Carbon::parse($log->checked_at)->format('d M Y H:i'),
+                    'checked_at'  => \Carbon\Carbon::parse($log->created_at)->format('d M Y H:i:s'),
                 ];
             });
 
