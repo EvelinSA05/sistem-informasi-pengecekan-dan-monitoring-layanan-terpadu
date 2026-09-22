@@ -349,13 +349,19 @@ class PeriodController extends Controller
      */
     public function update(Request $request, CheckingPeriod $period)
     {
-        // Kasus 1: Toggle status dari halaman Show
+        // Kasus 1: Toggle status dari tabel Index atau halaman Show
         if ($request->has('status') && !$request->has('tester_ids') && !$request->has('date') && !$request->has('tanggal_periode')) {
             $request->validate([
-                'status' => 'required|in:proses,selesai',
+                'status' => 'required|in:proses,selesai,aktif,nonaktif',
             ]);
+
+            $statusVal = match($request->status) {
+                'aktif' => 'proses',
+                'nonaktif' => 'selesai',
+                default => $request->status,
+            };
             
-            if ($request->status === 'proses') {
+            if ($statusVal === 'proses') {
                 $testerIds = $period->periodTesters()->pluck('tester_id')->toArray();
                 
                 $busyTesters = \App\Models\User::whereIn('id', $testerIds)
@@ -366,15 +372,16 @@ class PeriodController extends Controller
                     
                 if ($busyTesters->isNotEmpty()) {
                     $names = $busyTesters->pluck('name')->implode(', ');
-                    return back()->withErrors(['status' => "Gagal membuka kembali! Tester berikut masih memiliki tugas di periode aktif lain: {$names}."]);
+                    return back()->with('error', "Gagal mengaktifkan periode! Tester berikut masih memiliki penugasan di periode aktif lain: {$names}.");
                 }
             }
 
             $period->update([
-                'status' => $request->status,
+                'status' => $statusVal,
             ]);
 
-            return back()->with('success', 'Status periode berhasil diperbarui.');
+            $label = $statusVal === 'proses' ? 'diaktifkan' : 'dinonaktifkan';
+            return back()->with('success', "Periode berhasil {$label}.");
         }
 
         // Kasus 2: Update dari Form Edit Periode (Tanggal, Tester & Distribusi)

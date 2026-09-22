@@ -39,13 +39,16 @@ class AssignedServiceController extends Controller
 
     public function index(Request $request)
     {
+        $user = $request->user();
+
         // Jika ada parameter period_id, langsung alihkan atau tampilkan periode terkait
         if ($request->filled('period_id')) {
             $period = CheckingPeriod::findOrFail($request->input('period_id'));
+            if ($user->role !== 'admin' && $period->status !== 'proses') {
+                return redirect()->route('tester.services.index')->with('error', 'Periode pengecekan ini sedang dinonaktifkan.');
+            }
             return $this->showPeriod($request, $period);
         }
-
-        $user = $request->user();
 
         $periods = CheckingPeriod::with([
             'periodTesters.tester:id,name,bidang,email',
@@ -64,6 +67,9 @@ class AssignedServiceController extends Controller
             })->orWhereHas('periodServices', function ($sq) use ($user) {
                 $sq->where('tester_id', $user->id);
             });
+        })
+        ->when($user->role !== 'admin', function ($q) {
+            $q->where('status', 'proses');
         })
         ->orderBy('date', 'desc')
         ->get()
@@ -139,6 +145,10 @@ class AssignedServiceController extends Controller
 
         // Validasi hak akses penugasan periode jika tester
         if ($user->role !== 'admin') {
+            if ($period->status !== 'proses') {
+                return redirect()->route('tester.services.index')->with('error', 'Periode pengecekan ini sedang dinonaktifkan.');
+            }
+
             $isAssigned = $period->periodTesters()->where('tester_id', $user->id)->exists()
                 || $period->periodServices()->where('tester_id', $user->id)->exists();
 
@@ -342,9 +352,9 @@ class AssignedServiceController extends Controller
             );
         }
 
-        // Jangan izinkan pengecekan jika periode sudah selesai (hanya untuk tester, admin bebas jika perlu)
-        if ($user->role !== 'admin' && $periodService->period->status === 'selesai') {
-            abort(403, 'Periode pengecekan sudah selesai dan dikunci.');
+        // Jangan izinkan pengecekan jika periode dinonaktifkan (hanya untuk tester, admin bebas jika perlu)
+        if ($user->role !== 'admin' && $periodService->period->status !== 'proses') {
+            abort(403, 'Periode pengecekan sedang dinonaktifkan.');
         }
 
         $request->validate([

@@ -197,16 +197,16 @@ onUnmounted(() => {
 
                             <!-- Status -->
                             <td class="px-5 py-3.5 text-center">
-                                <!-- Status PROSES -->
+                                <!-- Status AKTIF -->
                                 <span
                                     v-if="period.status === 'proses'"
                                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold uppercase bg-[#1e3a8a] text-white shadow-xs"
                                 >
                                     <span class="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse"></span>
-                                    PROSES
+                                    AKTIF
                                 </span>
 
-                                <!-- Status SELESAI -->
+                                <!-- Status NONAKTIF -->
                                 <span
                                     v-else
                                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold uppercase bg-slate-100 border border-slate-200 text-slate-600"
@@ -214,7 +214,7 @@ onUnmounted(() => {
                                     <svg class="w-3 h-3 text-slate-500 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                                     </svg>
-                                    SELESAI
+                                    NONAKTIF
                                 </span>
                             </td>
 
@@ -268,8 +268,8 @@ onUnmounted(() => {
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M16 2v4M8 2v4M3 10h18"/>
                                         </svg>
                                     </div>
-                                    <p class="font-semibold text-slate-600 text-sm">Belum ada periode penugasan</p>
-                                    <p class="text-xs text-slate-400 mt-0.5">Anda belum ditugaskan pada periode pengecekan manapun oleh Admin.</p>
+                                    <p class="font-semibold text-slate-600 text-sm">Belum ada periode penugasan aktif</p>
+                                    <p class="text-xs text-slate-400 mt-0.5">Tidak ada periode aktif yang ditugaskan kepada Anda saat ini.</p>
                                 </div>
                             </td>
                         </tr>

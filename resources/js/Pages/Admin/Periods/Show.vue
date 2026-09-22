@@ -8,7 +8,6 @@ const props = defineProps({
     distribution: { type: Array,  default: () => [] },
 });
 
-const isUpdatingStatus = ref(false);
 const statusFilter = ref('all');
 const searchQuery = ref('');
 
@@ -22,24 +21,6 @@ function showToast(msg, type = 'success') {
     toast.value = msg;
     toastType.value = type;
     toastTimer = setTimeout(() => { toast.value = ''; }, 4000);
-}
-
-function toggleStatus() {
-    const nextStatus = props.period.status === 'proses' ? 'selesai' : 'proses';
-    isUpdatingStatus.value = true;
-    router.put(route('admin.periods.update', props.period.id), {
-        status: nextStatus,
-    }, {
-        preserveScroll: true,
-        onError: (errors) => {
-            if (errors.status) {
-                showToast(errors.status, 'error');
-            }
-        },
-        onFinish: () => {
-            isUpdatingStatus.value = false;
-        }
-    });
 }
 
 // ─── Filtered Services ───────────────────────────────────────────
@@ -202,16 +183,14 @@ function getServiceIcon(iconKey) {
                             class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-[#1e3a8a] text-white shadow-xs"
                         >
                             <span class="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse"></span>
-                            PROSES
+                            AKTIF
                         </span>
                         <span
                             v-else
-                            class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-slate-100 border border-slate-200/80 text-slate-600"
+                            class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-slate-100 border border-slate-200/80 text-slate-500"
                         >
-                            <svg class="w-3 h-3 text-slate-500 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            SELESAI
+                            <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                            NONAKTIF
                         </span>
                     </div>
                     <p class="text-xs text-slate-400 mt-1 font-medium">
@@ -257,15 +236,6 @@ function getServiceIcon(iconKey) {
                     </svg>
                     <span>Edit Periode</span>
                 </Link>
-
-                <!-- Quick Toggle Status -->
-                <button
-                    @click="toggleStatus"
-                    :disabled="isUpdatingStatus"
-                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white text-xs font-bold shadow-xs hover:shadow-sm transition-all duration-150"
-                >
-                    <span>{{ period.status === 'proses' ? 'Tandai Selesai' : 'Buka Kembali' }}</span>
-                </button>
             </div>
         </div>
 
