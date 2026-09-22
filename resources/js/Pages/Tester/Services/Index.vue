@@ -26,7 +26,10 @@ let filterTimer = null;
 watch([searchQuery, filterStatus, filterLevel, filterCategory], ([newSearch, newStatus, newLevel, newCat]) => {
     clearTimeout(filterTimer);
     filterTimer = setTimeout(() => {
-        router.get(route('tester.services.index'), {
+        const routeName = props.periodInfo ? 'tester.periods.services' : 'tester.services.index';
+        const routeParam = props.periodInfo ? props.periodInfo.id : undefined;
+
+        router.get(route(routeName, routeParam), {
             search: newSearch,
             status: newStatus,
             level: newLevel,
@@ -149,6 +152,38 @@ function submitCheck() {
         </Transition>
 
         <div class="space-y-6 max-w-7xl mx-auto">
+
+            <!-- ── Top Action Bar (Back to Periods List) ──────────────── -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+                <Link
+                    :href="route('tester.services.index')"
+                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-[#1e3a8a] text-xs sm:text-sm font-bold transition-all active:scale-95 group w-fit"
+                >
+                    <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5 text-slate-500 group-hover:text-[#1e3a8a]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                    </svg>
+                    <span>Kembali ke Daftar Periode</span>
+                </Link>
+
+                <div v-if="periodInfo" class="flex items-center gap-2">
+                    <span
+                        v-if="periodInfo.status === 'proses'"
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold uppercase bg-[#1e3a8a] text-white shadow-xs"
+                    >
+                        <span class="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
+                        Status: Proses
+                    </span>
+                    <span
+                        v-else
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold uppercase bg-slate-100 border border-slate-200 text-slate-600"
+                    >
+                        <svg class="w-3.5 h-3.5 text-slate-500 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Status: Selesai (Terkunci)
+                    </span>
+                </div>
+            </div>
             
             <template v-if="periodInfo">
                 <!-- ── Deadline Banner ─────────────────────────────────── -->

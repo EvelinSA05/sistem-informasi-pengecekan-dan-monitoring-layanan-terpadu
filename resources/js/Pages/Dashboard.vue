@@ -1060,7 +1060,7 @@ function submitCheck() {
 
                 <!-- 1. Total Ditugaskan -->
                 <Link
-                    :href="route('tester.services.index')"
+                    :href="route('tester.periods.services', { period: periodInfo.id })"
                     class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-indigo-300 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                 >
                     <div class="flex items-center justify-between">
@@ -1079,7 +1079,7 @@ function submitCheck() {
 
                 <!-- 2. Sudah Dicek -->
                 <Link
-                    :href="route('tester.services.index', { status: 'normal' })"
+                    :href="route('tester.periods.services', { period: periodInfo.id, status: 'normal' })"
                     class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-emerald-300 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                 >
                     <div class="flex items-center justify-between">
@@ -1099,7 +1099,7 @@ function submitCheck() {
 
                 <!-- 3. Belum Dicek -->
                 <Link
-                    :href="route('tester.services.index', { status: 'pending' })"
+                    :href="route('tester.periods.services', { period: periodInfo.id, status: 'pending' })"
                     class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-blue-300 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                 >
                     <div class="flex items-center justify-between">
@@ -1119,7 +1119,7 @@ function submitCheck() {
 
                 <!-- 4. Terkendala -->
                 <Link
-                    :href="route('tester.services.index', { status: 'gangguan' })"
+                    :href="route('tester.periods.services', { period: periodInfo.id, status: 'gangguan' })"
                     class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-rose-300 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                 >
                     <div class="flex items-center justify-between">
@@ -1523,7 +1523,7 @@ function submitCheck() {
 
                     <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                         <span>Pemeriksaan berkala</span>
-                        <Link :href="route('tester.services.index', { status: 'normal' })" class="text-blue-600 hover:text-blue-800 font-bold inline-flex items-center gap-1">
+                        <Link :href="route('tester.periods.services', { period: periodInfo.id, status: 'normal' })" class="text-blue-600 hover:text-blue-800 font-bold inline-flex items-center gap-1">
                             Lihat Semua Hasil
                         </Link>
                     </div>
