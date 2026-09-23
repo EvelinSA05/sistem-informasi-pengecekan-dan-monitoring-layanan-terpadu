@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -116,6 +116,33 @@ const showLogoutModal = ref(false);
 function confirmLogout() {
     router.post(route('logout'));
 }
+
+// ─── Real-Time Inactivity Timeout ────────────────────────────────
+let inactivityTimeout;
+
+const resetInactivityTimeout = () => {
+    clearTimeout(inactivityTimeout);
+    inactivityTimeout = setTimeout(() => {
+        // Trigger logout otomatis dengan indikator timeout
+        router.post(route('logout'), { timeout: true });
+    }, 5 * 60 * 1000); // 5 Menit
+};
+
+onMounted(() => {
+    window.addEventListener('mousemove', resetInactivityTimeout);
+    window.addEventListener('keydown', resetInactivityTimeout);
+    window.addEventListener('click', resetInactivityTimeout);
+    window.addEventListener('scroll', resetInactivityTimeout);
+    resetInactivityTimeout();
+});
+
+onUnmounted(() => {
+    window.removeEventListener('mousemove', resetInactivityTimeout);
+    window.removeEventListener('keydown', resetInactivityTimeout);
+    window.removeEventListener('click', resetInactivityTimeout);
+    window.removeEventListener('scroll', resetInactivityTimeout);
+    clearTimeout(inactivityTimeout);
+});
 </script>
 
 <template>

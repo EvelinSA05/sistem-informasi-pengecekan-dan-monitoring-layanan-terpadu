@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
@@ -8,6 +8,35 @@ import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import { Link } from '@inertiajs/vue3';
 
 const showingNavigationDropdown = ref(false);
+
+// ─── Real-Time Inactivity Timeout ────────────────────────────────
+import { router } from '@inertiajs/vue3';
+
+let inactivityTimeout;
+
+const resetInactivityTimeout = () => {
+    clearTimeout(inactivityTimeout);
+    inactivityTimeout = setTimeout(() => {
+        // Trigger logout otomatis dengan indikator timeout
+        router.post(route('logout'), { timeout: true });
+    }, 5 * 60 * 1000); // 5 Menit
+};
+
+onMounted(() => {
+    window.addEventListener('mousemove', resetInactivityTimeout);
+    window.addEventListener('keydown', resetInactivityTimeout);
+    window.addEventListener('click', resetInactivityTimeout);
+    window.addEventListener('scroll', resetInactivityTimeout);
+    resetInactivityTimeout();
+});
+
+onUnmounted(() => {
+    window.removeEventListener('mousemove', resetInactivityTimeout);
+    window.removeEventListener('keydown', resetInactivityTimeout);
+    window.removeEventListener('click', resetInactivityTimeout);
+    window.removeEventListener('scroll', resetInactivityTimeout);
+    clearTimeout(inactivityTimeout);
+});
 </script>
 
 <template>

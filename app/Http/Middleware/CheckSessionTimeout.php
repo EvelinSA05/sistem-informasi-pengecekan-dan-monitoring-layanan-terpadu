@@ -20,8 +20,8 @@ class CheckSessionTimeout
         // Hanya periksa jika user sedang terautentikasi (Admin maupun Tester)
         if (Auth::check()) {
             $lastActivity = $request->session()->get('last_activity_time');
-            // Timeout dalam detik (default 5 menit = 300 detik sesuai config('session.lifetime') * 60)
-            $timeoutSeconds = (int) config('session.lifetime', 5) * 60;
+            // Timeout di-hardcode ke 5 menit (300 detik) secara eksplisit agar selalu aktif di menit ke-5
+            $timeoutSeconds = 5 * 60;
 
             if ($lastActivity && (time() - $lastActivity > $timeoutSeconds)) {
                 $message = 'Sesi Anda telah berakhir karena tidak ada aktivitas. Silakan login kembali.';

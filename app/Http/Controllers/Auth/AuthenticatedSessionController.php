@@ -49,6 +49,10 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
+        if ($request->has('timeout') || $request->input('timeout')) {
+            $request->session()->flash('session_expired', 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit. Silakan login kembali.');
+        }
+
         return redirect('/');
     }
 }
