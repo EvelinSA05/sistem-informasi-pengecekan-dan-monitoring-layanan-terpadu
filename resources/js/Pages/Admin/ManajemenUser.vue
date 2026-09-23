@@ -312,9 +312,9 @@ function confirmDelete() {
                                     {{ user.status === 'aktif' ? 'Aktif' : 'Nonaktif' }}
                                 </span>
                             </td>
-                            <!-- Actions col (Selalu terlihat di mobile / touch devices) -->
+                            <!-- Actions col -->
                             <td class="px-4 sm:px-6 py-4 text-right w-32">
-                                <div class="flex items-center justify-end gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                <div class="flex items-center justify-end gap-1.5">
                                     <!-- Detail / Read -->
                                     <button
                                         @click="openDetailModal(user)"
@@ -332,7 +332,7 @@ function confirmDelete() {
                                         @click="openEditModal(user)"
                                         title="Edit data"
                                         aria-label="Edit data"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-amber-600 bg-amber-50/90 sm:bg-transparent sm:text-amber-500 hover:text-amber-700 hover:bg-amber-100/70 active:scale-95 transition-all"
+                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-amber-600 bg-amber-50/90 sm:bg-transparent sm:text-slate-400 hover:text-amber-600 hover:bg-amber-100/70 active:scale-95 transition-all"
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 018.586 12z"/>
@@ -343,7 +343,7 @@ function confirmDelete() {
                                         @click="openDeleteModal(user)"
                                         title="Hapus"
                                         aria-label="Hapus user"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-rose-600 bg-rose-50/90 sm:bg-transparent sm:text-rose-400 hover:text-rose-600 hover:bg-rose-100/70 active:scale-95 transition-all"
+                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-rose-600 bg-rose-50/90 sm:bg-transparent sm:text-slate-400 hover:text-rose-600 hover:bg-rose-100/70 active:scale-95 transition-all"
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z"/>
