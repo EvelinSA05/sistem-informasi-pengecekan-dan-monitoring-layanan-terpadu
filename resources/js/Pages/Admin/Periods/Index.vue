@@ -74,6 +74,36 @@ onUnmounted(() => {
     clearFlashTimer();
 });
 
+// ─── Indonesian Date Helper ───────────────────────────────────────
+const indonesianMonths = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
+function formatIndonesianDate(val) {
+    if (!val) return '';
+    if (typeof val === 'string' && /^[0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4}$/.test(val.trim())) {
+        return val.trim();
+    }
+    if (typeof val === 'string') {
+        const datePart = val.split('T')[0];
+        const parts = datePart.split('-');
+        if (parts.length === 3) {
+            const y = parts[0];
+            const m = parseInt(parts[1], 10) - 1;
+            const d = parseInt(parts[2], 10);
+            if (indonesianMonths[m]) {
+                return `${d} ${indonesianMonths[m]} ${y}`;
+            }
+        }
+    }
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) {
+        return `${d.getDate()} ${indonesianMonths[d.getMonth()]} ${d.getFullYear()}`;
+    }
+    return val;
+}
+
 // ─── Avatar color helper ─────────────────────────────────────────
 const testerColorPalette = {
     'SD': 'bg-pink-600',
@@ -233,17 +263,27 @@ function togglePeriodStatus(period) {
                             class="hover:bg-slate-50/70 transition-colors group"
                         >
                             <!-- Periode -->
-                            <td class="px-5 py-3.5 text-left">
+                            <td class="px-5 py-3 text-left">
                                 <Link
                                     :href="route('admin.periods.show', period.id)"
-                                    class="inline-block text-left group-hover:text-blue-600 transition-colors"
+                                    class="inline-flex flex-col text-left group-hover:text-blue-600 transition-colors"
                                 >
-                                    <p class="font-semibold text-slate-800 leading-tight group-hover:text-blue-700">
+                                    <p class="font-bold text-slate-800 leading-tight group-hover:text-blue-700">
                                         {{ period.period_title }}
                                     </p>
-                                    <p class="text-xs text-slate-400 mt-0.5 font-normal">
-                                        {{ period.created_at_label }}
-                                    </p>
+                                    <div class="mt-1 space-y-0.5 text-xs text-slate-500 whitespace-nowrap">
+                                        <div class="flex items-center gap-2 leading-tight">
+                                            <span class="w-16 shrink-0 font-medium text-slate-500">Dibuat</span>
+                                            <span class="font-normal text-slate-400">{{ formatIndonesianDate(period.created_date_formatted || period.created_at) }}</span>
+                                        </div>
+                                        <div
+                                            v-if="period.deadline_formatted || period.deadline_date_formatted || period.deadline_date || period.deadline"
+                                            class="flex items-center gap-2 leading-tight"
+                                        >
+                                            <span class="w-16 shrink-0 font-medium text-slate-500">Deadline</span>
+                                            <span class="font-normal text-slate-400">{{ formatIndonesianDate(period.deadline_formatted || period.deadline_date_formatted || period.deadline_date || period.deadline) }}</span>
+                                        </div>
+                                    </div>
                                 </Link>
                             </td>
 

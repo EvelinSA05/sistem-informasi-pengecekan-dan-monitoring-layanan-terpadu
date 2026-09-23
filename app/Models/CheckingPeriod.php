@@ -11,6 +11,7 @@ class CheckingPeriod extends Model
     protected $fillable = [
         'date',
         'deadline_date',
+        'deadline',
         'tanggal_periode',
         'status',
         'created_by',
@@ -35,6 +36,22 @@ class CheckingPeriod extends Model
     public function setTanggalPeriodeAttribute($value)
     {
         $this->attributes['date'] = $value;
+    }
+
+    /**
+     * Alias accessor untuk deadline
+     */
+    public function getDeadlineAttribute()
+    {
+        return $this->deadline_date ? $this->deadline_date->format('Y-m-d') : null;
+    }
+
+    /**
+     * Alias mutator untuk deadline
+     */
+    public function setDeadlineAttribute($value)
+    {
+        $this->attributes['deadline_date'] = $value;
     }
 
     /**

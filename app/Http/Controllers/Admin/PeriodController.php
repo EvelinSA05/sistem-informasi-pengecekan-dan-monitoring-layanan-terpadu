@@ -80,11 +80,19 @@ class PeriodController extends Controller
                 ];
             })->filter()->values();
 
+            $createdDateFormatted = $period->created_at ? $this->formatIndonesianDate(Carbon::parse($period->created_at)) : null;
+            $deadlineDateFormatted = $period->deadline_date ? $this->formatIndonesianDate(Carbon::parse($period->deadline_date)) : null;
+
             return [
                 'id' => $period->id,
                 'date' => $carbonDate->format('Y-m-d'),
                 'period_title' => $periodTitle,
-                'created_at_label' => "Dibuat " . Carbon::parse($period->created_at)->format('Y-m-d'),
+                'created_at_label' => "Dibuat " . ($createdDateFormatted ?? Carbon::parse($period->created_at)->format('Y-m-d')),
+                'created_date_formatted' => $createdDateFormatted,
+                'deadline_date' => $period->deadline_date ? Carbon::parse($period->deadline_date)->format('Y-m-d') : null,
+                'deadline_date_formatted' => $deadlineDateFormatted,
+                'deadline' => $period->deadline_date ? Carbon::parse($period->deadline_date)->format('Y-m-d') : null,
+                'deadline_formatted' => $deadlineDateFormatted,
                 'status' => $period->status,
                 'testers' => $testers,
                 'checked_services' => $checkedServices,
@@ -206,6 +214,9 @@ class PeriodController extends Controller
     {
         if ($request->has('tanggal_periode') && !$request->has('date')) {
             $request->merge(['date' => $request->tanggal_periode]);
+        }
+        if ($request->has('deadline') && !$request->has('deadline_date')) {
+            $request->merge(['deadline_date' => $request->deadline]);
         }
 
         $request->validate([
@@ -424,6 +435,9 @@ class PeriodController extends Controller
         // Kasus 2: Update dari Form Edit Periode (Tanggal, Tester & Distribusi)
         if ($request->has('tanggal_periode') && !$request->has('date')) {
             $request->merge(['date' => $request->tanggal_periode]);
+        }
+        if ($request->has('deadline') && !$request->has('deadline_date')) {
+            $request->merge(['deadline_date' => $request->deadline]);
         }
 
         $request->validate([

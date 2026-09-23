@@ -165,6 +165,9 @@ function submitForm() {
             if (errors.deadline_date) {
                 validationErrorMessage.value = errors.deadline_date;
                 showValidationErrorModal.value = true;
+            } else if (errors.deadline) {
+                validationErrorMessage.value = errors.deadline;
+                showValidationErrorModal.value = true;
             } else if (errors.date) {
                 validationErrorMessage.value = errors.date;
                 showValidationErrorModal.value = true;
@@ -239,7 +242,7 @@ function submitForm() {
 
                         <div class="mt-4">
                             <label for="deadline_date" class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                Tenggat Waktu (Opsional)
+                                Deadline <span class="text-xs font-normal text-slate-400">(Opsional)</span>
                             </label>
                             <div class="relative">
                                 <input
