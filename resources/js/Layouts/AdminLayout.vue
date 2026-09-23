@@ -279,8 +279,8 @@ onUnmounted(() => {
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-xs font-semibold text-emerald-600 shadow-sm shrink-0">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 text-xs font-semibold text-blue-600 shadow-xs shrink-0">
+                    <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
                     <span class="hidden sm:inline">Sistem Aktif</span>
                     <span class="sm:hidden text-[10px]">Aktif</span>
                 </div>

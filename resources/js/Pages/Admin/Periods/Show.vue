@@ -89,6 +89,19 @@ const filteredServices = computed(() => {
     });
 });
 
+// ─── Tester Workload Helpers ─────────────────────────────────────
+function getTesterProgress(group) {
+    if (!group.total_services || group.total_services === 0) return 0;
+    return Math.round((group.checked_services / group.total_services) * 100);
+}
+
+function getTesterStatusLabel(group) {
+    const pct = getTesterProgress(group);
+    if (pct === 100) return 'Selesai';
+    if (pct > 0) return 'Proses';
+    return 'Menunggu';
+}
+
 // ─── Avatar & Icon Helpers ───────────────────────────────────────
 const testerColorPalette = {
     'SD': 'bg-pink-600',
@@ -200,246 +213,334 @@ function getServiceIcon(iconKey) {
             </div>
         </Transition>
 
-        <!-- ── Top Header Navigation & Action Toolbar ──────────── -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div class="flex items-center gap-4">
+        <!-- ── Top Header Card (Clean & Minimal Redesign) ──────── -->
+        <div class="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs mb-6">
+            <!-- Back Navigation -->
+            <div class="mb-4">
                 <Link
                     :href="route('admin.periods.index')"
-                    class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-blue-700 transition-colors group"
+                    class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-blue-600 transition-colors group cursor-pointer"
                 >
-                    <span class="text-sm transition-transform group-hover:-translate-x-0.5">←</span>
+                    <span class="text-sm transition-transform group-hover:-translate-x-0.5">&larr;</span>
                     <span>Kembali</span>
                 </Link>
+            </div>
+
+            <!-- Title & Action Toolbar -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                 <div>
-                    <div class="flex items-center gap-3">
-                        <h2 class="text-xl font-bold text-slate-900 tracking-tight">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
                             Detail Periode: {{ period.title }}
                         </h2>
-                        <!-- Status Badge -->
+                        <!-- Soft Blue Badge for AKTIF / Slate for NONAKTIF -->
                         <span
                             v-if="period.status === 'proses'"
-                            class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-[#1e3a8a] text-white shadow-xs"
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-blue-50 border border-blue-200/60 text-blue-600"
                         >
-                            <span class="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse"></span>
                             AKTIF
                         </span>
                         <span
                             v-else
-                            class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-slate-100 border border-slate-200/80 text-slate-500"
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-slate-100 border border-slate-200 text-slate-500"
                         >
-                            <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                             NONAKTIF
                         </span>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1 font-medium">
+                    <p class="text-xs text-slate-500 mt-2 font-normal">
                         Dibuat pada {{ period.created_at_label }} oleh {{ period.creator_name }}
-                        <span v-if="period.deadline_date"> &bull; <span class="text-rose-500">Tenggat Waktu: {{ period.deadline_date }}</span></span>
+                        <span v-if="period.deadline_date">
+                            &bull; <span class="text-amber-600 font-semibold">Tenggat Waktu: {{ period.deadline_date }}</span>
+                        </span>
                     </p>
                 </div>
-            </div>
 
-            <!-- Export Buttons & Actions Toolbar -->
-            <div class="flex items-center gap-2.5 flex-wrap">
-                <!-- Export Excel -->
-                <a
-                    :href="route('admin.periods.export.excel', period.id)"
-                    target="_blank"
-                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs hover:shadow-sm transition-all duration-150"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <span>Export Excel</span>
-                </a>
+                <!-- Export & Action Buttons -->
+                <div class="flex items-center gap-2.5 flex-wrap">
+                    <!-- Edit Periode (Outlined Minimal) -->
+                    <Link
+                        :href="route('admin.periods.edit', period.id)"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all duration-150 cursor-pointer"
+                    >
+                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 018.586 12z"/>
+                        </svg>
+                        <span>Edit Periode</span>
+                    </Link>
 
-                <!-- Export PDF / Cetak Laporan -->
-                <a
-                    :href="route('admin.periods.export.pdf', period.id)"
-                    target="_blank"
-                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs hover:shadow-sm transition-all duration-150"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-                    </svg>
-                    <span>Export PDF</span>
-                </a>
+                    <!-- Export Excel (Outlined Minimal) -->
+                    <a
+                        :href="route('admin.periods.export.excel', period.id)"
+                        target="_blank"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all duration-150 cursor-pointer"
+                    >
+                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        <span>Export Excel</span>
+                    </a>
 
-                <!-- Toggle Status Action (Selesaikan / Buka Kembali Periode) -->
-                <button
-                    type="button"
-                    @click="togglePeriodStatus"
-                    :disabled="isUpdatingStatus"
-                    :class="[
-                        'inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer shadow-xs',
-                        period.status === 'proses'
-                            ? 'bg-amber-500 hover:bg-amber-600 text-white'
-                            : 'bg-[#1e3a8a] hover:bg-blue-900 text-white'
-                    ]"
-                >
-                    <svg v-if="period.status === 'proses'" class="w-4 h-4 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <svg v-else class="w-4 h-4 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
-                    <span>{{ isUpdatingStatus ? 'Memproses...' : (period.status === 'proses' ? 'Selesaikan Periode' : 'Buka Kembali Periode') }}</span>
-                </button>
+                    <!-- Export PDF (Outlined Minimal) -->
+                    <a
+                        :href="route('admin.periods.export.pdf', period.id)"
+                        target="_blank"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all duration-150 cursor-pointer"
+                    >
+                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span>Export PDF</span>
+                    </a>
 
-                <!-- Edit Periode Button -->
-                <Link
-                    :href="route('admin.periods.edit', period.id)"
-                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all duration-150"
-                >
-                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 018.586 12z"/>
-                    </svg>
-                    <span>Edit Periode</span>
-                </Link>
+                    <!-- Toggle Status (Primary Solid Blue Button) -->
+                    <button
+                        type="button"
+                        @click="togglePeriodStatus"
+                        :disabled="isUpdatingStatus"
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-sm shadow-blue-600/20 transition-all duration-150 cursor-pointer disabled:opacity-60"
+                    >
+                        <svg v-if="period.status === 'proses'" class="w-4 h-4 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <svg v-else class="w-4 h-4 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        <span>{{ isUpdatingStatus ? 'Memproses...' : (period.status === 'proses' ? 'Selesaikan Periode' : 'Buka Kembali Periode') }}</span>
+                    </button>
+                </div>
             </div>
         </div>
 
         <!-- ── Infographic Executive KPI Cards ──────────────────── -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <!-- Total Layanan -->
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs relative overflow-hidden">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <!-- TOTAL LAYANAN -->
+            <div class="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between">
                 <div class="flex items-center justify-between">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Layanan</p>
-                    <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TOTAL LAYANAN</p>
+                    <div class="w-7 h-7 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <rect x="2" y="3" width="20" height="14" rx="2"/><path stroke-linecap="round" d="M8 21h8M12 17v4"/>
                         </svg>
                     </div>
                 </div>
-                <p class="text-3xl font-extrabold text-slate-800 mt-2">{{ period.total_services }}</p>
-                <p class="text-xs text-slate-400 mt-1 font-medium">Layanan Digital Jatim</p>
+                <div>
+                    <p class="text-3xl font-extrabold text-slate-900 mt-2.5">{{ period.total_services }}</p>
+                    <p class="text-xs text-slate-400 mt-1 font-normal">Layanan Digital Jatim</p>
+                </div>
             </div>
 
-            <!-- Normal -->
-            <div class="bg-white rounded-3xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/20 p-5 shadow-xs relative overflow-hidden">
+            <!-- LAYANAN NORMAL -->
+            <div class="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between">
                 <div class="flex items-center justify-between">
-                    <p class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Layanan Normal</p>
-                    <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">LAYANAN NORMAL</p>
+                    <div class="w-7 h-7 rounded-xl bg-blue-50/80 border border-blue-100 text-blue-500 flex items-center justify-center">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                         </svg>
                     </div>
                 </div>
-                <p class="text-3xl font-extrabold text-emerald-700 mt-2">{{ period.normal_services }}</p>
-                <p class="text-xs text-emerald-600 mt-1 font-medium">Berjalan Optimal</p>
+                <div>
+                    <p class="text-3xl font-extrabold text-slate-900 mt-2.5">{{ period.normal_services }}</p>
+                    <p class="text-xs text-blue-600 font-medium mt-1 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                        <span>Berjalan Optimal</span>
+                    </p>
+                </div>
             </div>
 
-            <!-- Kendala -->
-            <div class="bg-white rounded-3xl border border-rose-100 bg-gradient-to-br from-white to-rose-50/20 p-5 shadow-xs relative overflow-hidden">
+            <!-- TERKENDALA -->
+            <div class="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between">
                 <div class="flex items-center justify-between">
-                    <p class="text-xs font-bold text-rose-600 uppercase tracking-wider">Terkendala</p>
-                    <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TERKENDALA</p>
+                    <div class="w-7 h-7 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 flex items-center justify-center">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                         </svg>
                     </div>
                 </div>
-                <p class="text-3xl font-extrabold text-rose-700 mt-2">{{ period.issues_services }}</p>
-                <p class="text-xs text-rose-500 mt-1 font-medium">Perlu Penanganan</p>
+                <div>
+                    <p class="text-3xl font-extrabold text-slate-900 mt-2.5">{{ period.issues_services }}</p>
+                    <p class="text-xs text-slate-400 mt-1 font-normal">Perlu Penanganan</p>
+                </div>
             </div>
 
-            <!-- Progress Pengecekan -->
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs relative overflow-hidden">
+            <!-- PROGRESS CEK -->
+            <div class="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between">
                 <div class="flex items-center justify-between">
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Progress Cek</p>
-                    <span class="text-xs font-bold text-blue-700">{{ period.checked_services }}/{{ period.total_services }}</span>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">PROGRESS CEK</p>
+                    <span class="text-xs font-semibold text-slate-500 bg-slate-100/90 px-2 py-0.5 rounded-lg">
+                        {{ period.checked_services }}/{{ period.total_services }}
+                    </span>
                 </div>
-                <p class="text-3xl font-extrabold text-slate-800 mt-2">{{ period.progress_percent }}%</p>
-                <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mt-2">
-                    <div
-                        class="h-full rounded-full transition-all duration-500"
-                        :class="period.progress_percent === 100 ? 'bg-emerald-500' : 'bg-blue-600'"
-                        :style="{ width: `${period.progress_percent}%` }"
-                    ></div>
+                <div class="mt-2.5">
+                    <div class="flex items-baseline justify-between">
+                        <p class="text-3xl font-extrabold text-slate-900">{{ period.progress_percent }}%</p>
+                        <span class="text-xs text-slate-400 font-normal">dari total layanan</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-100 rounded-full mt-2.5 overflow-hidden">
+                        <div
+                            class="h-full rounded-full bg-blue-600 transition-all duration-500"
+                            :style="{ width: `${period.progress_percent}%` }"
+                        ></div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- ── Tester Workload Infographic Summary ──────────────── -->
-        <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm mb-6">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">
-                DISTRIBUSI & BEBAN KERJA TESTER
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- ── Distribusi & Beban Kerja Tester ─────────────────── -->
+        <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        DISTRIBUSI & BEBAN KERJA TESTER
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5 font-normal">
+                        Penugasan pengecekan performa dan status layanan
+                    </p>
+                </div>
+                <span class="text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-xl">
+                    {{ distribution.length }} Personel
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
                 <div
                     v-for="group in distribution"
                     :key="group.tester_id"
-                    class="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/70 flex items-center justify-between"
+                    class="p-4.5 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 transition-all shadow-2xs flex flex-col justify-between"
                 >
-                    <div class="flex items-center gap-3">
-                        <div
-                            :class="[
-                                'w-10 h-10 rounded-2xl flex items-center justify-center text-white text-xs font-bold shadow-xs',
-                                getTesterAvatarColor(group.initials, group.name)
-                            ]"
-                        >
-                            {{ group.initials }}
+                    <!-- Row 1: Avatar, Info & Fraction -->
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div
+                                :class="[
+                                    'w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0',
+                                    getTesterProgress(group) > 0 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
+                                ]"
+                            >
+                                {{ group.initials }}
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-bold text-slate-800 leading-tight truncate">{{ group.name }}</p>
+                                <p class="text-xs text-slate-400 font-normal truncate mt-0.5">{{ group.email }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-sm font-bold text-slate-800 leading-tight">{{ group.name }}</p>
-                            <p class="text-xs text-slate-400 font-medium">{{ group.email }}</p>
+                        <div class="text-right shrink-0">
+                            <span
+                                :class="[
+                                    'inline-block text-xs font-bold px-2 py-0.5 rounded-lg',
+                                    getTesterProgress(group) > 0
+                                        ? 'bg-blue-50 text-blue-600 border border-blue-100/60'
+                                        : 'bg-slate-100 text-slate-600'
+                                ]"
+                            >
+                                {{ group.checked_services }}/{{ group.total_services }}
+                            </span>
+                            <span class="text-[10.5px] text-slate-400 font-normal block mt-0.5">layanan selesai</span>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <p class="text-sm font-extrabold text-slate-800">
-                            {{ group.checked_services }}/{{ group.total_services }}
-                        </p>
-                        <p class="text-[11px] text-slate-400 font-medium">layanan selesai</p>
+
+                    <!-- Row 2: Progress Bar -->
+                    <div class="w-full h-1 bg-slate-100 rounded-full mt-3.5 overflow-hidden">
+                        <div
+                            class="h-full bg-blue-600 rounded-full transition-all duration-300"
+                            :style="{ width: `${getTesterProgress(group)}%` }"
+                        ></div>
+                    </div>
+
+                    <!-- Row 3: Status Text & Percentage -->
+                    <div class="flex items-center justify-between text-xs mt-2">
+                        <span class="text-[11px] text-slate-400 font-medium">
+                            {{ getTesterStatusLabel(group) }}
+                        </span>
+                        <span
+                            :class="[
+                                'text-xs font-bold',
+                                getTesterProgress(group) > 0 ? 'text-blue-600' : 'text-slate-400'
+                            ]"
+                        >
+                            {{ getTesterProgress(group) }}%
+                        </span>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- ── Detailed Service Checklist Table ─────────────────── -->
-        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
             <!-- Table Toolbar -->
-            <div class="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="px-6 py-4.5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div class="flex items-center gap-2">
                     <span class="text-sm font-bold text-slate-800">Daftar Layanan</span>
-                    <span class="text-xs font-semibold text-slate-400">({{ filteredServices.length }} dari {{ allServices.length }})</span>
+                    <span class="text-xs font-medium text-slate-400">({{ filteredServices.length }} dari {{ allServices.length }})</span>
                 </div>
 
-                <!-- Filter & Search -->
+                <!-- Filter Tabs & Search -->
                 <div class="flex items-center gap-2 flex-wrap">
                     <!-- Status Filter Tabs -->
-                    <div class="inline-flex p-1 bg-slate-100 rounded-xl text-xs font-semibold text-slate-600">
+                    <div class="inline-flex p-1 bg-slate-100/80 rounded-xl text-xs font-semibold text-slate-600">
                         <button
+                            type="button"
                             @click="statusFilter = 'all'"
-                            :class="['px-2.5 py-1 rounded-lg transition-colors', statusFilter === 'all' ? 'bg-white text-slate-800 shadow-2xs font-bold' : 'hover:text-slate-800']"
+                            :class="[
+                                'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
+                                statusFilter === 'all'
+                                    ? 'bg-white text-blue-600 shadow-2xs font-bold'
+                                    : 'text-slate-500 hover:text-slate-800'
+                            ]"
                         >
                             Semua
                         </button>
                         <button
+                            type="button"
                             @click="statusFilter = 'normal'"
-                            :class="['px-2.5 py-1 rounded-lg transition-colors', statusFilter === 'normal' ? 'bg-white text-emerald-700 shadow-2xs font-bold' : 'hover:text-slate-800']"
+                            :class="[
+                                'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
+                                statusFilter === 'normal'
+                                    ? 'bg-white text-emerald-700 shadow-2xs font-bold'
+                                    : 'text-slate-500 hover:text-slate-800'
+                            ]"
                         >
                             Normal
                         </button>
                         <button
+                            type="button"
                             @click="statusFilter = 'gangguan'"
-                            :class="['px-2.5 py-1 rounded-lg transition-colors', statusFilter === 'gangguan' ? 'bg-white text-rose-700 shadow-2xs font-bold' : 'hover:text-slate-800']"
+                            :class="[
+                                'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
+                                statusFilter === 'gangguan'
+                                    ? 'bg-white text-rose-700 shadow-2xs font-bold'
+                                    : 'text-slate-500 hover:text-slate-800'
+                            ]"
                         >
                             Kendala
                         </button>
                         <button
+                            type="button"
                             @click="statusFilter = 'pending'"
-                            :class="['px-2.5 py-1 rounded-lg transition-colors', statusFilter === 'pending' ? 'bg-white text-slate-700 shadow-2xs font-bold' : 'hover:text-slate-800']"
+                            :class="[
+                                'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
+                                statusFilter === 'pending'
+                                    ? 'bg-white text-slate-700 shadow-2xs font-bold'
+                                    : 'text-slate-500 hover:text-slate-800'
+                            ]"
                         >
                             Belum Dicek
                         </button>
                     </div>
 
                     <!-- Search Input -->
-                    <input
-                        v-model="searchQuery"
-                        type="text"
-                        placeholder="Cari layanan / tester..."
-                        class="px-3.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white w-48 transition-all"
-                    />
+                    <div class="relative">
+                        <input
+                            v-model="searchQuery"
+                            type="text"
+                            placeholder="Cari layanan / tester..."
+                            class="pl-8 pr-3.5 py-1.5 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white w-48 sm:w-56 transition-all"
+                        />
+                        <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
                 </div>
             </div>
 
@@ -447,7 +548,7 @@ function getServiceIcon(iconKey) {
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="border-b border-slate-100 bg-slate-50/40 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        <tr class="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                             <th class="py-3.5 px-6">LAYANAN</th>
                             <th class="py-3.5 px-6">KATEGORI</th>
                             <th class="py-3.5 px-6">PENANGGUNG JAWAB</th>
@@ -460,7 +561,7 @@ function getServiceIcon(iconKey) {
                         <tr
                             v-for="srv in filteredServices"
                             :key="srv.id"
-                            class="hover:bg-slate-50/70 transition-colors"
+                            class="hover:bg-slate-50/60 transition-colors"
                         >
                             <!-- Layanan -->
                             <td class="py-3.5 px-6">
@@ -496,7 +597,7 @@ function getServiceIcon(iconKey) {
                                 <div class="flex items-center gap-2">
                                     <div
                                         :class="[
-                                            'w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold',
+                                            'w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0',
                                             getTesterAvatarColor(srv.tester_initials, srv.tester_name)
                                         ]"
                                     >
