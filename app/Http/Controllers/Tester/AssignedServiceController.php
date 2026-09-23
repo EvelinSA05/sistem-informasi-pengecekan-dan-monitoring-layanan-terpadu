@@ -44,9 +44,6 @@ class AssignedServiceController extends Controller
         // Jika ada parameter period_id, langsung alihkan atau tampilkan periode terkait
         if ($request->filled('period_id')) {
             $period = CheckingPeriod::findOrFail($request->input('period_id'));
-            if ($user->role !== 'admin' && $period->status !== 'proses') {
-                return redirect()->route('tester.services.index')->with('error', 'Periode pengecekan ini sedang dinonaktifkan.');
-            }
             return $this->showPeriod($request, $period);
         }
 
@@ -67,9 +64,6 @@ class AssignedServiceController extends Controller
             })->orWhereHas('periodServices', function ($sq) use ($user) {
                 $sq->where('tester_id', $user->id);
             });
-        })
-        ->when($user->role !== 'admin', function ($q) {
-            $q->where('status', 'proses');
         })
         ->orderBy('date', 'desc')
         ->get()
@@ -145,10 +139,6 @@ class AssignedServiceController extends Controller
 
         // Validasi hak akses penugasan periode jika tester
         if ($user->role !== 'admin') {
-            if ($period->status !== 'proses') {
-                return redirect()->route('tester.services.index')->with('error', 'Periode pengecekan ini sedang dinonaktifkan.');
-            }
-
             $isAssigned = $period->periodTesters()->where('tester_id', $user->id)->exists()
                 || $period->periodServices()->where('tester_id', $user->id)->exists();
 
@@ -377,6 +367,17 @@ class AssignedServiceController extends Controller
             'status' => $request->status,
             'description' => $request->description,
         ]);
+
+        // Auto-complete: jika seluruh layanan pada periode ini sudah selesai diperiksa (0 pending), ubah status periode menjadi 'selesai'
+        $hasPending = PeriodService::where('period_id', $periodService->period_id)
+            ->where('status', 'pending')
+            ->exists();
+
+        if (!$hasPending) {
+            $periodService->period()->update([
+                'status' => 'selesai',
+            ]);
+        }
 
         return back()->with(
             'success',

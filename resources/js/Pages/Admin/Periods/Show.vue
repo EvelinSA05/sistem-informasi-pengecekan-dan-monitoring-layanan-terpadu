@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, computed, watch, onMounted } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
@@ -8,6 +8,7 @@ const props = defineProps({
     distribution: { type: Array,  default: () => [] },
 });
 
+const page = usePage();
 const statusFilter = ref('all');
 const searchQuery = ref('');
 
@@ -21,6 +22,43 @@ function showToast(msg, type = 'success') {
     toast.value = msg;
     toastType.value = type;
     toastTimer = setTimeout(() => { toast.value = ''; }, 4000);
+}
+
+// Watch flash from controller redirect
+watch(() => page.props.flash, (newFlash) => {
+    if (newFlash?.success) {
+        showToast(newFlash.success, 'success');
+    } else if (newFlash?.error) {
+        showToast(newFlash.error, 'error');
+    }
+}, { deep: true });
+
+onMounted(() => {
+    if (page.props.flash?.success) {
+        showToast(page.props.flash.success, 'success');
+    } else if (page.props.flash?.error) {
+        showToast(page.props.flash.error, 'error');
+    }
+});
+
+// ─── Status Toggle (Selesaikan / Buka Kembali) ───────────────────
+const isUpdatingStatus = ref(false);
+
+function togglePeriodStatus() {
+    const nextStatus = props.period.status === 'proses' ? 'selesai' : 'proses';
+    isUpdatingStatus.value = true;
+    router.put(route('admin.periods.update', props.period.id), {
+        status: nextStatus,
+    }, {
+        preserveScroll: true,
+        onError: (errors) => {
+            const err = errors.status || Object.values(errors)[0] || 'Gagal mengubah status periode.';
+            showToast(err, 'error');
+        },
+        onFinish: () => {
+            isUpdatingStatus.value = false;
+        }
+    });
 }
 
 // ─── Filtered Services ───────────────────────────────────────────
@@ -225,6 +263,27 @@ function getServiceIcon(iconKey) {
                     </svg>
                     <span>Export PDF</span>
                 </a>
+
+                <!-- Toggle Status Action (Selesaikan / Buka Kembali Periode) -->
+                <button
+                    type="button"
+                    @click="togglePeriodStatus"
+                    :disabled="isUpdatingStatus"
+                    :class="[
+                        'inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer shadow-xs',
+                        period.status === 'proses'
+                            ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                            : 'bg-[#1e3a8a] hover:bg-blue-900 text-white'
+                    ]"
+                >
+                    <svg v-if="period.status === 'proses'" class="w-4 h-4 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <svg v-else class="w-4 h-4 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    <span>{{ isUpdatingStatus ? 'Memproses...' : (period.status === 'proses' ? 'Selesaikan Periode' : 'Buka Kembali Periode') }}</span>
+                </button>
 
                 <!-- Edit Periode Button -->
                 <Link
