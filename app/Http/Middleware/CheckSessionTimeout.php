@@ -38,10 +38,10 @@ class CheckSessionTimeout
                 // full-page redirect agar browser bisa mengikuti redirect dengan benar
                 // dan flash message tidak hilang karena Inertia SPA navigation.
                 if ($request->header('X-Inertia')) {
-                    return Inertia::location(route('login'));
+                    return Inertia::location(route('login', ['timeout' => 1]));
                 }
 
-                return redirect()->route('login');
+                return redirect()->route('login', ['timeout' => 1]);
             }
 
             // User aktif: perbarui timestamp aktivitas terakhir
