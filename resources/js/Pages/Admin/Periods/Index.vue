@@ -255,7 +255,11 @@ function togglePeriodStatus(period) {
  </p>
  <p class="text-xs text-slate-400 mt-0.5 font-normal">
  {{ period.created_at_label }}
- </p>
+  </p>
+  <div v-if="period.deadline_date_formatted || period.deadline_date" class="flex items-center gap-1.5 mt-1">
+  <span class="px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-600 font-semibold text-[10px] border border-rose-100 uppercase tracking-wide">Deadline</span>
+  <span class="text-[11px] text-slate-500 font-medium">{{ period.deadline_date_formatted || period.deadline_date }}</span>
+  </div>
  </Link>
  </td>
 
@@ -353,7 +357,7 @@ function togglePeriodStatus(period) {
  class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-100/70 transition-all active:scale-95"
  >
  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
- <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 018.586 12z"/>
+ <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
  </svg>
  </Link>
 
