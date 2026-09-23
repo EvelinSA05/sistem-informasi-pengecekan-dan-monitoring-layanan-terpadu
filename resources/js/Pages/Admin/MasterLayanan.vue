@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import Pagination from '@/Components/Pagination.vue';
 import axios from 'axios';
 
 // ─── Props dari controller ────────────────────────────────────
@@ -474,35 +475,7 @@ function confirmDelete() {
             </div>
             
             <!-- ── Pagination ────────────────────────────────────── -->
-            <div v-if="services.links && services.links.length > 3" class="px-6 py-4 border-t border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div>
-                    <p class="text-sm text-slate-600">
-                        Menampilkan <span class="font-bold text-slate-800">{{ services.from }}</span> sampai <span class="font-bold text-slate-800">{{ services.to }}</span> dari <span class="font-bold text-slate-800">{{ services.total }}</span> data
-                    </p>
-                </div>
-                <div>
-                    <nav class="relative z-0 inline-flex shadow-sm rounded-xl overflow-hidden" aria-label="Pagination">
-                        <template v-for="(link, i) in services.links" :key="i">
-                            <Link
-                                v-if="link.url"
-                                :href="link.url"
-                                v-html="link.label.replace('pagination.previous', '&laquo;').replace('pagination.next', '&raquo;')"
-                                preserve-state
-                                preserve-scroll
-                                :class="[
-                                    'relative inline-flex items-center px-4 py-2 border border-slate-200 text-sm font-medium transition-colors',
-                                    link.active ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white text-slate-600 hover:bg-slate-50',
-                                ]"
-                            />
-                            <span
-                                v-else
-                                v-html="link.label.replace('pagination.previous', '&laquo;').replace('pagination.next', '&raquo;')"
-                                class="relative inline-flex items-center px-4 py-2 border border-slate-200 bg-slate-50 text-sm font-medium text-slate-400"
-                            ></span>
-                        </template>
-                    </nav>
-                </div>
-            </div>
+            <Pagination :meta="services" class="px-6 border-t border-slate-200 bg-slate-50/50" />
         </div>
 
         <!-- ── Modal Wrapper Utility ───────────────────────────── -->

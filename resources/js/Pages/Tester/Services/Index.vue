@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import Pagination from '@/Components/Pagination.vue';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
@@ -606,38 +607,7 @@ function submitCheck() {
                 </div>
 
                 <!-- Pagination Component -->
-                <div
-                    v-if="services.links && services.links.length > 3"
-                    class="px-6 py-4 border-t border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4"
-                >
-                    <div>
-                        <p class="text-xs sm:text-sm text-slate-600">
-                            Menampilkan <span class="font-bold text-slate-800">{{ services.from || 0 }}</span> sampai <span class="font-bold text-slate-800">{{ services.to || 0 }}</span> dari <span class="font-bold text-slate-800">{{ services.total || 0 }}</span> data
-                        </p>
-                    </div>
-                    <div>
-                        <nav class="relative z-0 inline-flex shadow-xs rounded-xl overflow-hidden border border-slate-200 bg-white" aria-label="Pagination">
-                            <template v-for="(link, i) in services.links" :key="i">
-                                <Link
-                                    v-if="link.url"
-                                    :href="link.url"
-                                    v-html="link.label.replace('pagination.previous', '&laquo; Previous').replace('pagination.next', 'Next &raquo;')"
-                                    preserve-state
-                                    preserve-scroll
-                                    :class="[
-                                        'relative inline-flex items-center px-3.5 py-1.5 border-r border-slate-200 last:border-r-0 text-xs font-semibold transition-colors',
-                                        link.active ? 'z-10 bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600',
-                                    ]"
-                                />
-                                <span
-                                    v-else
-                                    v-html="link.label.replace('pagination.previous', '&laquo; Previous').replace('pagination.next', 'Next &raquo;')"
-                                    class="relative inline-flex items-center px-3.5 py-1.5 border-r border-slate-200 last:border-r-0 bg-slate-50 text-xs font-medium text-slate-300"
-                                ></span>
-                            </template>
-                        </nav>
-                    </div>
-                </div>
+                <Pagination :meta="services" class="px-6 border-t border-slate-200 bg-slate-50/50" />
 
             </div>
 

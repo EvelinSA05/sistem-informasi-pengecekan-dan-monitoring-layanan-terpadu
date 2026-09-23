@@ -2,10 +2,11 @@
 import { ref, computed, watch } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import Pagination from '@/Components/Pagination.vue';
 
 // ─── Props dari controller ────────────────────────────────────
 const props = defineProps({
-    users:  { type: Array,  default: () => [] },
+    users:  { type: Object, default: () => ({}) },
     stats:  { type: Object, default: () => ({ total: 0, aktif: 0, nonaktif: 0 }) },
     search: { type: String, default: '' },
 });
@@ -273,7 +274,7 @@ function confirmDelete() {
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        <tr v-if="users.length === 0">
+                        <tr v-if="!users.data || users.data.length === 0">
                             <td colspan="3" class="text-center py-16 text-slate-400 text-sm">
                                 <svg class="mx-auto w-10 h-10 text-slate-300 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
@@ -282,7 +283,7 @@ function confirmDelete() {
                             </td>
                         </tr>
                         <tr
-                            v-for="user in users"
+                            v-for="user in users.data"
                             :key="user.id"
                             class="hover:bg-slate-50/70 transition-colors group"
                         >
@@ -354,6 +355,10 @@ function confirmDelete() {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            
+            <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50" v-if="users.data && users.data.length > 0">
+                <Pagination :meta="users" />
             </div>
         </div>
 

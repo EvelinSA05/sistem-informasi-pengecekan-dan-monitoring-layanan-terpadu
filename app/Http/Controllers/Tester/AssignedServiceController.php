@@ -284,7 +284,7 @@ class AssignedServiceController extends Controller
 
         $paginatedServices = $servicesQuery
             ->orderBy('id', 'asc')
-            ->paginate(10)
+            ->paginate($request->input('per_page', 5))
             ->withQueryString()
             ->through(function ($ps) {
                 return [

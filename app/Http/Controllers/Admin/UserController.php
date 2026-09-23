@@ -35,7 +35,8 @@ class UserController extends Controller
                 });
             })
             ->orderBy('created_at', 'desc')
-            ->get(['id', 'name', 'email', 'status', 'role', 'created_at']);
+            ->paginate($request->input('per_page', 5), ['id', 'name', 'email', 'status', 'role', 'created_at'])
+            ->withQueryString();
 
         $stats = [
             'total'    => User::where('role', 'tester')->count(),
