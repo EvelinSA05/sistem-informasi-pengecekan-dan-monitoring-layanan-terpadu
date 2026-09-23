@@ -11,6 +11,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -244,7 +245,7 @@ class PeriodController extends Controller
             })
             ->get();
             
-        \Log::info('PeriodController Store validation', [
+        Log::info('PeriodController Store validation', [
             'tester_ids' => $testerIds,
             'busy' => $busyTesters->pluck('name')
         ]);
@@ -460,7 +461,7 @@ class PeriodController extends Controller
             })
             ->get();
             
-        \Log::info('PeriodController Update validation', [
+        Log::info('PeriodController Update validation', [
             'period_id' => $period->id,
             'tester_ids' => $testerIds,
             'busy' => $busyTesters->pluck('name')
@@ -548,7 +549,7 @@ class PeriodController extends Controller
 
             return redirect()->route('admin.periods.index')->with('success', 'Periode pengecekan berhasil dihapus.');
         } catch (\Throwable $e) {
-            \Log::error('Gagal menghapus periode pengecekan: ' . $e->getMessage(), [
+            Log::error('Gagal menghapus periode pengecekan: ' . $e->getMessage(), [
                 'period_id' => $period->id,
                 'trace'     => $e->getTraceAsString(),
             ]);
