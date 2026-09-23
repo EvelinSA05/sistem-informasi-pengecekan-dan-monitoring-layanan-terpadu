@@ -19,8 +19,8 @@ const initials = computed(() => {
 
 // Avatar color based on name
 const avatarColors = [
-    'bg-rose-500', 'bg-pink-500', 'bg-violet-500', 'bg-blue-500',
-    'bg-cyan-500', 'bg-teal-500', 'bg-green-500', 'bg-amber-500',
+    'bg-slate-500', 'bg-slate-600', 'bg-slate-700', 'bg-blue-500',
+    'bg-blue-600', 'bg-blue-700', 'bg-slate-400'
 ];
 const avatarColor = computed(() => {
     const idx = (user.value?.name?.charCodeAt(0) ?? 0) % avatarColors.length;

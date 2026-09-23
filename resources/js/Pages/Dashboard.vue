@@ -507,41 +507,43 @@ function submitCheck() {
         <div v-if="user?.role === 'admin'" class="space-y-6">
 
             <!-- ── Header Banner ─────────────────────────────────── -->
-            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1e3a8a] via-[#1d4ed8] to-[#0284c7] text-white p-6 sm:p-8 shadow-xl shadow-blue-900/15 border border-blue-400/20">
-                <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-                <div class="absolute right-32 bottom-0 w-48 h-48 rounded-full bg-cyan-400/20 blur-xl pointer-events-none"></div>
-                <div class="absolute left-1/3 -bottom-10 w-40 h-40 rounded-full bg-blue-300/10 blur-xl pointer-events-none"></div>
+            <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#1e40af] via-[#1d4ed8] to-[#1e3a8a] p-6 sm:p-8 shadow-lg">
+                <!-- Dot texture overlay -->
+                <div class="absolute inset-0 opacity-[0.07]" style="background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px); background-size: 20px 20px;"></div>
+                <!-- Diagonal line texture -->
+                <div class="absolute inset-0 opacity-[0.04]" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,1) 35px, rgba(255,255,255,1) 36px);"></div>
+                <!-- Subtle glow circle -->
+                <div class="absolute -top-20 -right-20 w-60 h-60 bg-cyan-400/10 rounded-full blur-3xl"></div>
+                <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-300/10 rounded-full blur-2xl"></div>
 
                 <div class="relative z-10 flex flex-col lg:flex-row lg:items-start justify-between gap-6">
                     <div class="max-w-xl">
-                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/25 mb-3 text-[11px] font-bold tracking-wider uppercase text-cyan-200 shadow-xs">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-3 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
                             <span class="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
                             Admin Panel
                         </div>
-                        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight leading-tight">
+                        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight leading-tight">
                             Selamat Datang, {{ user?.name }}!
                         </h1>
-                        <p class="text-blue-100/90 text-sm sm:text-base mt-2 font-normal leading-relaxed">
+                        <p class="text-blue-200/90 text-sm sm:text-base mt-2 font-normal leading-relaxed">
                             Kelola dan pantau seluruh aktivitas pengujian layanan digital MAJADIGI Checker System.
                         </p>
                         <!-- Quick Action Buttons -->
                         <div class="mt-5 flex flex-row flex-wrap gap-2">
-                            <Link :href="route('admin.users.index')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-semibold transition-all backdrop-blur-sm">
+                            <Link :href="route('admin.users.index')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 border border-white/20 hover:bg-white/25 text-white text-xs font-semibold transition-colors backdrop-blur-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 100-8 4 4 0 000 8z"/></svg>
                                 Manajemen User
                             </Link>
-                            <Link :href="route('admin.periods.index')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-semibold transition-all backdrop-blur-sm">
+                            <Link :href="route('admin.periods.index')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 border border-white/20 hover:bg-white/25 text-white text-xs font-semibold transition-colors backdrop-blur-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path stroke-linecap="round" d="M16 2v4M8 2v4M3 10h18"/></svg>
                                 Kelola Periode
                             </Link>
-                            <Link :href="route('admin.services.index')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-semibold transition-all backdrop-blur-sm">
+                            <Link :href="route('admin.services.index')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 border border-white/20 hover:bg-white/25 text-white text-xs font-semibold transition-colors backdrop-blur-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path stroke-linecap="round" d="M8 21h8M12 17v4"/></svg>
                                 Master Layanan
                             </Link>
                         </div>
                     </div>
-
-
                 </div>
             </div>
 
@@ -549,52 +551,50 @@ function submitCheck() {
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
                 <!-- Total Tester -->
-                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col gap-3">
                     <div class="flex items-center justify-between">
-                        <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 100-8 4 4 0 000 8z"/></svg>
+                        <div class="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 100-8 4 4 0 000 8z"/></svg>
                         </div>
-                        <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Tester</span>
+                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">TESTER</span>
                     </div>
                     <div>
                         <div class="text-3xl font-black text-slate-800 leading-none">{{ testerStats.total }}</div>
-                        <p class="text-xs text-slate-400 mt-1">Tester terdaftar</p>
+                        <p class="text-[11px] text-slate-400 mt-1">Tester terdaftar</p>
                     </div>
                     <div class="flex items-center gap-2 text-xs text-slate-500">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-                        <span class="font-semibold text-emerald-600">{{ testerStats.aktif }} aktif</span>
+                        <span class="font-medium text-blue-600">{{ testerStats.aktif }} aktif</span>
                         <span class="text-slate-300">·</span>
                         <span>{{ testerStats.nonaktif }} nonaktif</span>
                     </div>
                 </div>
 
                 <!-- Total Periode -->
-                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col gap-3">
                     <div class="flex items-center justify-between">
-                        <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
-                            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path stroke-linecap="round" d="M16 2v4M8 2v4M3 10h18"/></svg>
+                        <div class="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path stroke-linecap="round" d="M16 2v4M8 2v4M3 10h18"/></svg>
                         </div>
-                        <span class="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Periode</span>
+                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">PERIODE</span>
                     </div>
                     <div>
                         <div class="text-3xl font-black text-slate-800 leading-none">{{ periodStats.total }}</div>
-                        <p class="text-xs text-slate-400 mt-1">Periode pengecekan</p>
+                        <p class="text-[11px] text-slate-400 mt-1">Periode pengecekan</p>
                     </div>
                     <div class="flex items-center gap-2 text-xs text-slate-500">
-                        <span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>
-                        <span class="font-semibold text-amber-600">{{ periodStats.proses }} proses</span>
+                        <span class="font-medium text-blue-600">{{ periodStats.proses }} proses</span>
                         <span class="text-slate-300">·</span>
                         <span>{{ periodStats.selesai }} selesai</span>
                     </div>
                 </div>
 
                 <!-- Total Layanan -->
-                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col gap-3">
                     <div class="flex items-center justify-between">
-                        <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path stroke-linecap="round" d="M8 21h8M12 17v4"/></svg>
+                        <div class="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path stroke-linecap="round" d="M8 21h8M12 17v4"/></svg>
                         </div>
-                        <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Layanan</span>
+                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">LAYANAN</span>
                     </div>
                     <div>
                         <div class="text-3xl font-black text-slate-800 leading-none">{{ serviceStats.total }}</div>
@@ -1007,43 +1007,47 @@ function submitCheck() {
             </Transition>
 
             <!-- ── 1. Hero Welcome & Active Period Banner ────────── -->
-            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1e40af] via-[#1d4ed8] to-[#0284c7] text-white p-6 sm:p-8 shadow-xl shadow-blue-900/15 border border-blue-400/20">
-                <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-                <div class="absolute right-32 bottom-0 w-48 h-48 rounded-full bg-cyan-400/20 blur-xl pointer-events-none"></div>
-                <div class="absolute left-1/3 -bottom-10 w-40 h-40 rounded-full bg-blue-300/10 blur-xl pointer-events-none"></div>
+            <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#1e40af] via-[#1d4ed8] to-[#1e3a8a] p-6 sm:p-8 shadow-lg">
+                <!-- Dot texture overlay -->
+                <div class="absolute inset-0 opacity-[0.07]" style="background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px); background-size: 20px 20px;"></div>
+                <!-- Diagonal line texture -->
+                <div class="absolute inset-0 opacity-[0.04]" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,1) 35px, rgba(255,255,255,1) 36px);"></div>
+                <!-- Subtle glow circle -->
+                <div class="absolute -top-20 -right-20 w-60 h-60 bg-cyan-400/10 rounded-full blur-3xl"></div>
+                <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-300/10 rounded-full blur-2xl"></div>
 
                 <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div class="max-w-2xl">
-                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/25 mb-3 text-[11px] font-bold tracking-wider uppercase text-cyan-200 shadow-xs">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-3 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
                             <span class="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
                             Monitoring Center Tester
                         </div>
-                        <h2 class="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight leading-tight">
+                        <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight leading-tight">
                             Selamat Datang, {{ user?.name }}!
                         </h2>
-                        <p class="text-blue-100/90 text-sm sm:text-base mt-2 font-normal leading-relaxed">
+                        <p class="text-blue-200/90 text-sm sm:text-base mt-2 font-normal leading-relaxed">
                             Pantau ringkasan progres, status, dan peringatan pengujian layanan digital yang ditugaskan kepada Anda.
                         </p>
                     </div>
 
                     <!-- Period Info Card -->
                     <div class="shrink-0 flex items-center">
-                        <div class="w-full sm:w-auto px-6 py-4 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-lg text-left sm:text-right">
+                        <div class="w-full sm:w-auto px-6 py-4 rounded-xl bg-white/10 border border-white/20 backdrop-blur-sm text-left sm:text-right">
                             <div class="flex items-center sm:justify-end gap-2 mb-1">
                                 <span class="w-2 h-2 rounded-full" :class="periodInfo ? (periodInfo.status === 'selesai' ? 'bg-emerald-400' : 'bg-amber-300 animate-pulse') : 'bg-slate-400'"></span>
-                                <p class="text-[11px] font-bold text-cyan-200 tracking-widest uppercase">
+                                <p class="text-[11px] font-bold text-cyan-100 tracking-widest uppercase">
                                     {{ periodInfo ? (periodInfo.status === 'selesai' ? 'Periode Selesai' : 'Periode Berjalan') : 'Status Saat Ini' }}
                                 </p>
                             </div>
-                            <p class="text-lg sm:text-xl font-extrabold text-white capitalize leading-snug">
+                            <p class="text-lg sm:text-xl font-bold text-white capitalize leading-snug">
                                 {{ periodInfo ? currentMonthYear : 'Tidak Ada Penugasan Aktif' }}
                             </p>
-                            <div class="mt-2.5 flex items-center sm:justify-end gap-2 text-xs font-semibold text-blue-100/90 flex-wrap">
-                                <span v-if="periodInfo?.date" class="inline-flex items-center gap-1.5 bg-black/20 px-3 py-1 rounded-xl border border-white/15 shadow-inner">
-                                    <svg class="w-3.5 h-3.5 text-cyan-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path stroke-linecap="round" d="M16 2v4M8 2v4M3 10h18"/></svg>
+                            <div class="mt-2.5 flex items-center sm:justify-end gap-2 text-xs font-semibold text-blue-100 flex-wrap">
+                                <span v-if="periodInfo?.date" class="inline-flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-lg border border-white/20">
+                                    <svg class="w-3.5 h-3.5 text-cyan-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path stroke-linecap="round" d="M16 2v4M8 2v4M3 10h18"/></svg>
                                     {{ periodInfo.period_title }}
                                 </span>
-                                <span v-if="periodInfo && periodInfo.status === 'proses'" class="inline-flex items-center gap-1 bg-amber-400/25 text-amber-200 px-3 py-1 rounded-xl border border-amber-300/35 shadow-inner">
+                                <span v-if="periodInfo && periodInfo.status === 'proses'" class="inline-flex items-center gap-1 bg-white/10 px-3 py-1 rounded-lg border border-white/20">
                                     <span v-if="periodInfo.days_remaining > 0">⏱️ {{ periodInfo.days_remaining }} hari lagi</span>
                                     <span v-else-if="periodInfo.days_remaining === 0">⏱️ Hari ini</span>
                                     <span v-else>⚠️ Lewat target</span>
@@ -1061,11 +1065,11 @@ function submitCheck() {
                 <!-- 1. Total Ditugaskan -->
                 <Link
                     :href="route('tester.periods.services', { period: periodInfo.id })"
-                    class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-indigo-300 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                    class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-5 hover:border-slate-300 transition-colors flex flex-col justify-between group cursor-pointer"
                 >
                     <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Tugas</span>
-                        <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center transition-transform group-hover:scale-105">
+                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">TOTAL TUGAS</span>
+                        <div class="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 flex items-center justify-center transition-transform group-hover:scale-105">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                             </svg>
@@ -1073,18 +1077,18 @@ function submitCheck() {
                     </div>
                     <div class="mt-4">
                         <div class="text-3xl font-black text-slate-800 leading-none tracking-tight">{{ props.stats.total_assigned }}</div>
-                        <p class="text-xs text-slate-400 mt-1 font-medium">layanan ditugaskan</p>
+                        <p class="text-[11px] text-slate-400 mt-1 font-medium">layanan ditugaskan</p>
                     </div>
                 </Link>
 
                 <!-- 2. Sudah Dicek -->
                 <Link
                     :href="route('tester.periods.services', { period: periodInfo.id, status: 'normal' })"
-                    class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-emerald-300 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                    class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-5 hover:border-slate-300 transition-colors flex flex-col justify-between group cursor-pointer"
                 >
                     <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Sudah Dicek</span>
-                        <div class="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center transition-transform group-hover:scale-105">
+                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">SUDAH DICEK</span>
+                        <div class="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 flex items-center justify-center transition-transform group-hover:scale-105">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                                 <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="2"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 12l3 3 5-5"/>
@@ -1092,19 +1096,19 @@ function submitCheck() {
                         </div>
                     </div>
                     <div class="mt-4">
-                        <div class="text-3xl font-black text-emerald-600 leading-none tracking-tight">{{ props.stats.checked }}</div>
-                        <p class="text-xs text-slate-400 mt-1 font-medium">{{ props.stats.progress_percent }}% dari tugas</p>
+                        <div class="text-3xl font-black text-slate-800 leading-none tracking-tight">{{ props.stats.checked }}</div>
+                        <p class="text-[11px] text-slate-400 mt-1 font-medium">{{ props.stats.progress_percent }}% dari tugas</p>
                     </div>
                 </Link>
 
                 <!-- 3. Belum Dicek -->
                 <Link
                     :href="route('tester.periods.services', { period: periodInfo.id, status: 'pending' })"
-                    class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-blue-300 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                    class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-5 hover:border-slate-300 transition-colors flex flex-col justify-between group cursor-pointer"
                 >
                     <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Belum Dicek</span>
-                        <div class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center transition-transform group-hover:scale-105">
+                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">BELUM DICEK</span>
+                        <div class="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 flex items-center justify-center transition-transform group-hover:scale-105">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <circle cx="12" cy="12" r="9"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 3"/>
@@ -1112,43 +1116,43 @@ function submitCheck() {
                         </div>
                     </div>
                     <div class="mt-4">
-                        <div class="text-3xl font-black text-blue-600 leading-none tracking-tight">{{ props.stats.pending }}</div>
-                        <p class="text-xs text-slate-400 mt-1 font-medium">perlu ditindak</p>
+                        <div class="text-3xl font-black text-slate-800 leading-none tracking-tight">{{ props.stats.pending }}</div>
+                        <p class="text-[11px] text-slate-400 mt-1 font-medium">perlu ditindak</p>
                     </div>
                 </Link>
 
                 <!-- 4. Terkendala -->
                 <Link
                     :href="route('tester.periods.services', { period: periodInfo.id, status: 'gangguan' })"
-                    class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-rose-300 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                    class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-5 hover:border-slate-300 transition-colors flex flex-col justify-between group cursor-pointer"
                 >
                     <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-bold text-rose-700 uppercase tracking-wider">Terkendala</span>
-                        <div class="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center transition-transform group-hover:scale-105">
+                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">TERKENDALA</span>
+                        <div class="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 flex items-center justify-center transition-transform group-hover:scale-105">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                             </svg>
                         </div>
                     </div>
                     <div class="mt-4">
-                        <div class="text-3xl font-black text-rose-600 leading-none tracking-tight">{{ props.stats.issues }}</div>
-                        <p class="text-xs text-slate-400 mt-1 font-medium">perlu perhatian</p>
+                        <div class="text-3xl font-black text-slate-800 leading-none tracking-tight">{{ props.stats.issues }}</div>
+                        <p class="text-[11px] text-slate-400 mt-1 font-medium">perlu perhatian</p>
                     </div>
                 </Link>
 
                 <!-- 5. Need Confirmation -->
-                <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between col-span-2 sm:col-span-1 group">
+                <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-5 flex flex-col justify-between col-span-2 sm:col-span-1 group">
                     <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Konfirmasi</span>
-                        <div class="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center transition-transform group-hover:scale-105">
+                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">KONFIRMASI</span>
+                        <div class="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 flex items-center justify-center transition-transform group-hover:scale-105">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                             </svg>
                         </div>
                     </div>
                     <div class="mt-4">
-                        <div class="text-3xl font-black text-amber-600 leading-none tracking-tight">{{ props.stats.need_confirmation }}</div>
-                        <p class="text-xs text-slate-400 mt-1 font-medium">review admin</p>
+                        <div class="text-3xl font-black text-slate-800 leading-none tracking-tight">{{ props.stats.need_confirmation }}</div>
+                        <p class="text-[11px] text-slate-400 mt-1 font-medium">menunggu review</p>
                     </div>
                 </div>
             </div>

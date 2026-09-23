@@ -189,37 +189,23 @@ function submitCheck() {
                 <!-- ── Deadline Banner ─────────────────────────────────── -->
                 <div
                 v-if="periodInfo && periodInfo.deadline_date && periodInfo.status === 'proses'"
-                :class="[
-                    'px-5 py-4 rounded-2xl border flex items-center justify-between gap-4 shadow-sm',
-                    periodInfo.is_overdue
-                        ? 'bg-rose-50 border-rose-200 text-rose-800'
-                        : periodInfo.days_remaining <= 2
-                            ? 'bg-amber-50 border-amber-200 text-amber-800'
-                            : 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                ]"
+                class="px-5 py-4 rounded-2xl border border-slate-200 bg-white shadow-sm flex items-center justify-between gap-4"
             >
                 <div class="flex items-center gap-3">
                     <div
-                        class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
-                        :class="[
-                            periodInfo.is_overdue
-                                ? 'bg-rose-500 text-white'
-                                : periodInfo.days_remaining <= 2
-                                    ? 'bg-amber-500 text-white'
-                                    : 'bg-emerald-500 text-white'
-                        ]"
+                        class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-slate-100 bg-slate-50 text-slate-500"
                     >
                         <svg class="w-5 h-5 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
                     <div>
-                        <h4 class="font-bold text-sm">
+                        <h4 class="font-bold text-sm text-slate-700">
                             <template v-if="periodInfo.is_overdue">Tenggat Waktu Telah Lewat!</template>
                             <template v-else-if="periodInfo.days_remaining === 0">Jatuh Tempo Hari Ini!</template>
                             <template v-else>Tenggat Waktu: {{ periodInfo.deadline_date }}</template>
                         </h4>
-                        <p class="text-xs mt-0.5 opacity-80 font-medium">
+                        <p class="text-xs mt-0.5 font-medium text-slate-500">
                             <template v-if="periodInfo.is_overdue">Periode ini sudah melewati batas waktu {{ Math.abs(periodInfo.days_remaining) }} hari yang lalu.</template>
                             <template v-else-if="periodInfo.days_remaining === 0">Segera selesaikan pengecekan layanan sebelum hari ini berakhir.</template>
                             <template v-else>Sisa waktu: {{ periodInfo.days_remaining }} hari lagi.</template>
@@ -230,12 +216,12 @@ function submitCheck() {
 
             <!-- ── Top Mini Stats Bar ────────────────────────────── -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
-                <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between">
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex items-center justify-between">
                     <div>
-                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Tugas</p>
+                        <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">TOTAL TUGAS</p>
                         <p class="text-2xl font-black text-slate-800 mt-0.5 leading-none">{{ props.stats.total_assigned }}</p>
                     </div>
-                    <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center">
+                    <div class="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 flex items-center justify-center">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                         </svg>
@@ -244,14 +230,14 @@ function submitCheck() {
 
                 <div
                     @click="setQuickStatus('pending')"
-                    class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between cursor-pointer hover:border-amber-300 hover:shadow-xs transition-all"
-                    :class="filterStatus === 'pending' ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/20' : ''"
+                    class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex items-center justify-between cursor-pointer hover:border-slate-300 transition-all"
+                    :class="filterStatus === 'pending' ? 'ring-2 ring-blue-500 border-blue-500' : ''"
                 >
                     <div>
-                        <p class="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Belum Dicek</p>
-                        <p class="text-2xl font-black text-amber-600 mt-0.5 leading-none">{{ props.stats.pending }}</p>
+                        <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">BELUM DICEK</p>
+                        <p class="text-2xl font-black text-slate-800 mt-0.5 leading-none">{{ props.stats.pending }}</p>
                     </div>
-                    <div class="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center">
+                    <div class="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 flex items-center justify-center">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="9"/>
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 3"/>
@@ -261,14 +247,14 @@ function submitCheck() {
 
                 <div
                     @click="setQuickStatus('normal')"
-                    class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between cursor-pointer hover:border-emerald-300 hover:shadow-xs transition-all"
-                    :class="filterStatus === 'normal' ? 'ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/20' : ''"
+                    class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex items-center justify-between cursor-pointer hover:border-slate-300 transition-all"
+                    :class="filterStatus === 'normal' ? 'ring-2 ring-blue-500 border-blue-500' : ''"
                 >
                     <div>
-                        <p class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Normal</p>
-                        <p class="text-2xl font-black text-emerald-600 mt-0.5 leading-none">{{ props.stats.normal }}</p>
+                        <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">NORMAL</p>
+                        <p class="text-2xl font-black text-slate-800 mt-0.5 leading-none">{{ props.stats.normal }}</p>
                     </div>
-                    <div class="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center">
+                    <div class="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 flex items-center justify-center">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                         </svg>
@@ -277,14 +263,14 @@ function submitCheck() {
 
                 <div
                     @click="setQuickStatus('gangguan')"
-                    class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between cursor-pointer hover:border-rose-300 hover:shadow-xs transition-all"
-                    :class="filterStatus === 'gangguan' ? 'ring-2 ring-rose-500 border-rose-500 bg-rose-50/20' : ''"
+                    class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex items-center justify-between cursor-pointer hover:border-slate-300 transition-all"
+                    :class="filterStatus === 'gangguan' ? 'ring-2 ring-blue-500 border-blue-500' : ''"
                 >
                     <div>
-                        <p class="text-[11px] font-bold text-rose-700 uppercase tracking-wider">Terkendala</p>
-                        <p class="text-2xl font-black text-rose-600 mt-0.5 leading-none">{{ props.stats.issues }}</p>
+                        <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">TERKENDALA</p>
+                        <p class="text-2xl font-black text-slate-800 mt-0.5 leading-none">{{ props.stats.issues }}</p>
                     </div>
-                    <div class="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center">
+                    <div class="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 flex items-center justify-center">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                         </svg>
@@ -313,7 +299,7 @@ function submitCheck() {
                             type="button"
                             @click="filterStatus = ''"
                             class="px-3.5 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer border flex items-center gap-1.5"
-                            :class="filterStatus === '' ? 'bg-blue-600 text-white border-blue-600 shadow-xs' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
+                            :class="filterStatus === '' ? 'bg-slate-800 text-white border-slate-800 shadow-xs' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
                         >
                             <span>Semua</span>
                             <span class="px-1.5 py-0.2 rounded-md text-[11px]" :class="filterStatus === '' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'">
@@ -324,11 +310,11 @@ function submitCheck() {
                             type="button"
                             @click="filterStatus = 'pending'"
                             class="px-3.5 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer border flex items-center gap-1.5"
-                            :class="filterStatus === 'pending' ? 'bg-amber-600 text-white border-amber-600 shadow-xs' : 'bg-amber-50/70 text-amber-700 border-amber-200 hover:bg-amber-100'"
+                            :class="filterStatus === 'pending' ? 'bg-slate-800 text-white border-slate-800 shadow-xs' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
                         >
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7v5l3 3"/></svg>
                             <span>Belum Dicek</span>
-                            <span class="px-1.5 py-0.2 rounded-md text-[11px]" :class="filterStatus === 'pending' ? 'bg-white/20 text-white' : 'bg-amber-200/80 text-amber-800'">
+                            <span class="px-1.5 py-0.2 rounded-md text-[11px]" :class="filterStatus === 'pending' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'">
                                 {{ props.stats.pending }}
                             </span>
                         </button>
@@ -336,11 +322,11 @@ function submitCheck() {
                             type="button"
                             @click="filterStatus = 'normal'"
                             class="px-3.5 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer border flex items-center gap-1.5"
-                            :class="filterStatus === 'normal' ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' : 'bg-emerald-50/70 text-emerald-700 border-emerald-200 hover:bg-emerald-100'"
+                            :class="filterStatus === 'normal' ? 'bg-slate-800 text-white border-slate-800 shadow-xs' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
                         >
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                             <span>Normal</span>
-                            <span class="px-1.5 py-0.2 rounded-md text-[11px]" :class="filterStatus === 'normal' ? 'bg-white/20 text-white' : 'bg-emerald-200/80 text-emerald-800'">
+                            <span class="px-1.5 py-0.2 rounded-md text-[11px]" :class="filterStatus === 'normal' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'">
                                 {{ props.stats.normal }}
                             </span>
                         </button>
@@ -348,11 +334,11 @@ function submitCheck() {
                             type="button"
                             @click="filterStatus = 'gangguan'"
                             class="px-3.5 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer border flex items-center gap-1.5"
-                            :class="filterStatus === 'gangguan' ? 'bg-rose-600 text-white border-rose-600 shadow-xs' : 'bg-rose-50/70 text-rose-700 border-rose-200 hover:bg-rose-100'"
+                            :class="filterStatus === 'gangguan' ? 'bg-slate-800 text-white border-slate-800 shadow-xs' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
                         >
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                             <span>Terkendala</span>
-                            <span class="px-1.5 py-0.2 rounded-md text-[11px]" :class="filterStatus === 'gangguan' ? 'bg-white/20 text-white' : 'bg-rose-200/80 text-rose-800'">
+                            <span class="px-1.5 py-0.2 rounded-md text-[11px]" :class="filterStatus === 'gangguan' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'">
                                 {{ props.stats.issues }}
                             </span>
                         </button>

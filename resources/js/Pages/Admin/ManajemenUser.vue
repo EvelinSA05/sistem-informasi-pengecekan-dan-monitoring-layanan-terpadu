@@ -60,9 +60,8 @@ function showFlash(msg, type = 'success', duration = 4000) {
 
 // ─── Avatar helpers ───────────────────────────────────────────
 const avatarColors = [
-    'bg-rose-500', 'bg-pink-500', 'bg-violet-500', 'bg-blue-500',
-    'bg-cyan-500',  'bg-teal-500',  'bg-green-500',  'bg-amber-500',
-    'bg-orange-500','bg-indigo-500',
+    'bg-slate-500', 'bg-slate-600', 'bg-slate-700', 'bg-blue-500',
+    'bg-blue-600',  'bg-blue-700',  'bg-slate-400',
 ];
 function getInitials(name) {
     const parts = (name ?? '').trim().split(' ');
@@ -209,25 +208,19 @@ function confirmDelete() {
         <!-- ── Stats Cards ───────────────────────────────────── -->
         <div class="grid grid-cols-3 gap-2.5 sm:gap-4 mb-6">
             <!-- Total -->
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <div>
-                    <p class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Total Tester</p>
-                </div>
-                <span class="text-xl sm:text-3xl font-extrabold text-slate-800">{{ stats.total }}</span>
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:px-6 sm:py-5 flex flex-col gap-2">
+                <span class="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">TOTAL TESTER</span>
+                <span class="text-2xl sm:text-3xl font-black text-slate-800">{{ stats.total }}</span>
             </div>
             <!-- Aktif -->
-            <div class="bg-emerald-50 rounded-2xl border border-emerald-100 shadow-sm p-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <div>
-                    <p class="text-[10px] sm:text-xs font-bold text-emerald-600 uppercase tracking-wider truncate">Aktif</p>
-                </div>
-                <span class="text-xl sm:text-3xl font-extrabold text-emerald-700">{{ stats.aktif }}</span>
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:px-6 sm:py-5 flex flex-col gap-2">
+                <span class="text-[11px] sm:text-xs font-bold text-blue-600 uppercase tracking-wider">AKTIF</span>
+                <span class="text-2xl sm:text-3xl font-black text-slate-800">{{ stats.aktif }}</span>
             </div>
             <!-- Nonaktif -->
-            <div class="bg-slate-50 rounded-2xl border border-slate-200 shadow-sm p-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <div>
-                    <p class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Nonaktif</p>
-                </div>
-                <span class="text-xl sm:text-3xl font-extrabold text-slate-600">{{ stats.nonaktif }}</span>
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:px-6 sm:py-5 flex flex-col gap-2">
+                <span class="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">NONAKTIF</span>
+                <span class="text-2xl sm:text-3xl font-black text-slate-800">{{ stats.nonaktif }}</span>
             </div>
         </div>
 

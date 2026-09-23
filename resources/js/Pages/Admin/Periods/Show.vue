@@ -78,12 +78,12 @@ function getTesterStatusLabel(g) {
 }
 
 const avatarPalette = {
-    'SD': 'bg-pink-600', 'AF': 'bg-blue-600', 'AP': 'bg-blue-600',
-    'DR': 'bg-rose-600', 'BS': 'bg-violet-600', 'TK': 'bg-amber-600',
+    'SD': 'bg-slate-600', 'AF': 'bg-blue-600', 'AP': 'bg-blue-600',
+    'DR': 'bg-slate-600', 'BS': 'bg-slate-700', 'TK': 'bg-slate-500',
 };
 function getAvatarColor(initials, name) {
     if (avatarPalette[initials]) return avatarPalette[initials];
-    const c = ['bg-pink-600','bg-blue-600','bg-rose-600','bg-violet-600','bg-emerald-600','bg-amber-600','bg-cyan-600'];
+    const c = ['bg-slate-600','bg-blue-600','bg-slate-700','bg-slate-500','bg-blue-700'];
     return c[(name?.charCodeAt(0) ?? 0) % c.length];
 }
 

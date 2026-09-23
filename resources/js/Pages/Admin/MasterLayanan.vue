@@ -299,29 +299,21 @@ function confirmDelete() {
 
         <!-- ── Stats Cards ───────────────────────────────────── -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mb-6">
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <div>
-                    <p class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Total Layanan</p>
-                </div>
-                <span class="text-xl sm:text-3xl font-extrabold text-slate-800">{{ stats.total }}</span>
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:px-6 sm:py-5 flex flex-col gap-2">
+                <span class="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">TOTAL LAYANAN</span>
+                <span class="text-2xl sm:text-3xl font-black text-slate-800">{{ stats.total }}</span>
             </div>
-            <div class="bg-emerald-50 rounded-2xl border border-emerald-100 shadow-sm p-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <div>
-                    <p class="text-[10px] sm:text-xs font-bold text-emerald-600 uppercase tracking-wider truncate">Aktif</p>
-                </div>
-                <span class="text-xl sm:text-3xl font-extrabold text-emerald-700">{{ stats.aktif }}</span>
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:px-6 sm:py-5 flex flex-col gap-2">
+                <span class="text-[11px] sm:text-xs font-bold text-emerald-600 uppercase tracking-wider">AKTIF</span>
+                <span class="text-2xl sm:text-3xl font-black text-slate-800">{{ stats.aktif }}</span>
             </div>
-            <div class="bg-rose-50 rounded-2xl border border-rose-100 shadow-sm p-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <div>
-                    <p class="text-[10px] sm:text-xs font-bold text-rose-600 uppercase tracking-wider truncate">Tidak Aktif</p>
-                </div>
-                <span class="text-xl sm:text-3xl font-extrabold text-rose-700">{{ stats.nonaktif }}</span>
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:px-6 sm:py-5 flex flex-col gap-2">
+                <span class="text-[11px] sm:text-xs font-bold text-rose-600 uppercase tracking-wider">TIDAK AKTIF</span>
+                <span class="text-2xl sm:text-3xl font-black text-slate-800">{{ stats.nonaktif }}</span>
             </div>
-            <div class="bg-amber-50 rounded-2xl border border-amber-100 shadow-sm p-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <div>
-                    <p class="text-[10px] sm:text-xs font-bold text-amber-600 uppercase tracking-wider truncate">Butuh Konfirmasi</p>
-                </div>
-                <span class="text-xl sm:text-3xl font-extrabold text-amber-700">{{ stats.butuhkonfirmasi }}</span>
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:px-6 sm:py-5 flex flex-col gap-2">
+                <span class="text-[11px] sm:text-xs font-bold text-amber-600 uppercase tracking-wider">BUTUH KONFIRMASI</span>
+                <span class="text-2xl sm:text-3xl font-black text-slate-800">{{ stats.butuhkonfirmasi }}</span>
             </div>
         </div>
 
