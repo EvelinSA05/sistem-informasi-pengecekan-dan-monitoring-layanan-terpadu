@@ -119,20 +119,20 @@ class PeriodController extends Controller
                     ? strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1))
                     : strtoupper(substr($parts[0] ?? 'T', 0, 2));
 
-                // Hitung sisa tugas pending pada periode yang sedang berstatus 'proses' dan belum lewat deadline
-                $pendingTasksCount = PeriodService::where('tester_id', $tester->id)
+                // Ambil semua tugas pending pada periode yang sedang berstatus 'proses'
+                $pendingQuery = PeriodService::where('tester_id', $tester->id)
                     ->where('status', 'pending')
                     ->whereHas('period', function ($q) use ($excludePeriodId) {
                         $q->where('status', 'proses');
                         if ($excludePeriodId) {
                             $q->where('checking_periods.id', '!=', $excludePeriodId);
                         }
-                        $q->where(function ($query) {
-                            $query->whereNull('deadline_date')
-                                  ->orWhere('deadline_date', '>=', \Carbon\Carbon::today()->toDateString());
-                        });
-                    })
-                    ->count();
+                    });
+
+                $pendingTasksCount = (clone $pendingQuery)->count();
+                $maxDeadline = $pendingQuery->with('period')->get()->max(function ($ps) {
+                    return $ps->period->deadline_date;
+                });
 
                 return [
                     'id' => $tester->id,
@@ -141,8 +141,8 @@ class PeriodController extends Controller
                     'nip' => $tester->nip,
                     'bidang' => $tester->bidang ?? 'Layanan Publik',
                     'initials' => $initials,
-                    'is_available' => $pendingTasksCount === 0,
                     'pending_tasks_count' => $pendingTasksCount,
+                    'max_pending_deadline' => $maxDeadline,
                 ];
             });
 
@@ -231,15 +231,16 @@ class PeriodController extends Controller
         }
 
         $testerIds = array_values(array_unique($request->tester_ids));
+        $targetDateObj = \Carbon\Carbon::parse($date)->toDateString();
         
         $busyTesters = \App\Models\User::whereIn('id', $testerIds)
-            ->whereHas('periodServices', function ($q) {
+            ->whereHas('periodServices', function ($q) use ($targetDateObj) {
                 $q->where('status', 'pending')
-                  ->whereHas('period', function ($pq) {
+                  ->whereHas('period', function ($pq) use ($targetDateObj) {
                       $pq->where('status', 'proses')
-                         ->where(function ($query) {
+                         ->where(function ($query) use ($targetDateObj) {
                              $query->whereNull('deadline_date')
-                                   ->orWhere('deadline_date', '>=', \Carbon\Carbon::today()->toDateString());
+                                   ->orWhere('deadline_date', '>=', $targetDateObj);
                          });
                   });
             })
@@ -446,16 +447,17 @@ class PeriodController extends Controller
         }
 
         $testerIds = array_values(array_unique($request->tester_ids));
+        $targetDateObj = \Carbon\Carbon::parse($date)->toDateString();
         
         $busyTesters = \App\Models\User::whereIn('id', $testerIds)
-            ->whereHas('periodServices', function ($q) use ($period) {
+            ->whereHas('periodServices', function ($q) use ($period, $targetDateObj) {
                 $q->where('status', 'pending')
-                  ->whereHas('period', function ($pq) use ($period) {
+                  ->whereHas('period', function ($pq) use ($period, $targetDateObj) {
                       $pq->where('status', 'proses')
                          ->where('checking_periods.id', '!=', $period->id)
-                         ->where(function ($query) {
+                         ->where(function ($query) use ($targetDateObj) {
                              $query->whereNull('deadline_date')
-                                   ->orWhere('deadline_date', '>=', \Carbon\Carbon::today()->toDateString());
+                                   ->orWhere('deadline_date', '>=', $targetDateObj);
                          });
                   });
             })

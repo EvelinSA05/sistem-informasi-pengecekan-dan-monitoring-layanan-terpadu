@@ -20,7 +20,27 @@ const form = useForm({
 });
 
 // ─── Toggle Tester Selection ─────────────────────────────────────
-const availableTesters = computed(() => props.testers.filter(t => t.is_available !== false));
+const enrichedTesters = computed(() => {
+    return props.testers.map(tester => {
+        let is_available = true;
+        if (tester.pending_tasks_count > 0) {
+            if (!tester.max_pending_deadline) {
+                is_available = false;
+            } else if (form.date) {
+                const selectedDate = new Date(form.date);
+                selectedDate.setHours(0, 0, 0, 0);
+                const deadline = new Date(tester.max_pending_deadline);
+                deadline.setHours(0, 0, 0, 0);
+                is_available = selectedDate > deadline;
+            } else {
+                is_available = false;
+            }
+        }
+        return { ...tester, is_available };
+    });
+});
+
+const availableTesters = computed(() => enrichedTesters.value.filter(t => t.is_available !== false));
 const allAvailableSelected = computed(() => {
     return availableTesters.value.length > 0 && availableTesters.value.every(t => form.tester_ids.includes(t.id));
 });
@@ -111,7 +131,7 @@ function getServiceIcon(iconKey) {
 
 // ─── Reactive Automatic Distribution Calculation ─────────────────
 const selectedTestersCount = computed(() => {
-    return props.testers.filter(t => form.tester_ids.includes(t.id)).length;
+    return enrichedTesters.value.filter(t => form.tester_ids.includes(t.id)).length;
 });
 
 const perTesterEstimate = computed(() => {
@@ -122,7 +142,7 @@ const perTesterEstimate = computed(() => {
 const distributedGroups = computed(() => {
     if (selectedTestersCount.value === 0) return [];
 
-    const selectedTestersList = props.testers.filter(t => form.tester_ids.includes(t.id));
+    const selectedTestersList = enrichedTesters.value.filter(t => form.tester_ids.includes(t.id));
     const groups = selectedTestersList.map(tester => ({
         tester,
         services: [],
@@ -249,7 +269,7 @@ function submitForm() {
                         <!-- List of tester cards -->
                         <div class="space-y-2.5">
                             <div
-                                v-for="tester in testers"
+                                v-for="tester in enrichedTesters"
                                 :key="tester.id"
                                 @click="toggleTester(tester)"
                                 :class="[
