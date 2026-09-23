@@ -250,6 +250,15 @@ function submitForm() {
                                         >
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                                         </svg>
+                                        <svg
+                                            v-else-if="tester.is_available === false"
+                                            class="w-3 h-3 text-slate-400 stroke-2"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                        </svg>
                                     </div>
 
                                     <!-- Initials Avatar -->
@@ -273,10 +282,16 @@ function submitForm() {
                                     </div>
                                 </div>
 
-                                <!-- Estimated services badge (when selected) -->
+                                <!-- Right side badge -->
                                 <div v-if="isTesterSelected(tester.id)">
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-lg border border-slate-200/90 bg-white text-[11px] font-semibold text-slate-600 shadow-2xs">
                                         ~{{ perTesterEstimate }} layanan
+                                    </span>
+                                </div>
+                                <div v-else-if="tester.is_available === false">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-200/80 bg-amber-50 text-[11px] font-semibold text-amber-700 shadow-2xs">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                        {{ tester.pending_tasks_count }} pending
                                     </span>
                                 </div>
                             </div>

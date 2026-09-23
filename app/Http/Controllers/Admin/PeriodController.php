@@ -105,17 +105,28 @@ class PeriodController extends Controller
     /**
      * Helper untuk mengambil data tester dan layanan
      */
-    private function getFormData()
+    private function getFormData($excludePeriodId = null)
     {
         $testers = User::where('role', 'tester')
             ->where('status', 'aktif')
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'nip', 'bidang'])
-            ->map(function ($tester) {
+            ->map(function ($tester) use ($excludePeriodId) {
                 $parts = explode(' ', trim($tester->name));
                 $initials = count($parts) >= 2
                     ? strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1))
                     : strtoupper(substr($parts[0] ?? 'T', 0, 2));
+
+                // Hitung sisa tugas pending pada periode yang sedang berstatus 'proses'
+                $pendingTasksCount = \App\Models\PeriodService::where('tester_id', $tester->id)
+                    ->where('status', 'pending')
+                    ->whereHas('period', function ($q) use ($excludePeriodId) {
+                        $q->where('status', 'proses');
+                        if ($excludePeriodId) {
+                            $q->where('checking_periods.id', '!=', $excludePeriodId);
+                        }
+                    })
+                    ->count();
 
                 return [
                     'id' => $tester->id,
@@ -124,6 +135,8 @@ class PeriodController extends Controller
                     'nip' => $tester->nip,
                     'bidang' => $tester->bidang ?? 'Layanan Publik',
                     'initials' => $initials,
+                    'is_available' => $pendingTasksCount === 0,
+                    'pending_tasks_count' => $pendingTasksCount,
                 ];
             });
 
@@ -156,7 +169,7 @@ class PeriodController extends Controller
      */
     public function edit(CheckingPeriod $period)
     {
-        [$testers, $services] = $this->getFormData();
+        [$testers, $services] = $this->getFormData($period->id);
 
         $carbonDate = Carbon::parse($period->date);
         $formattedDate = $carbonDate->format('Y-m-d');

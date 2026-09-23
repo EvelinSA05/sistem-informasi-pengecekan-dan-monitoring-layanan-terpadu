@@ -169,7 +169,12 @@ onUnmounted(() => {
                         <tr
                             v-for="period in periods"
                             :key="period.id"
-                            class="hover:bg-slate-50/70 transition-colors group"
+                            :class="[
+                                'transition-colors group',
+                                period.status === 'proses'
+                                    ? 'hover:bg-slate-50/70 bg-white'
+                                    : 'hover:bg-slate-100/60 bg-slate-50/40 opacity-75'
+                            ]"
                         >
                             <!-- Periode -->
                             <td class="px-5 py-3.5 text-left">
@@ -211,9 +216,7 @@ onUnmounted(() => {
                                     v-else
                                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold uppercase bg-slate-100 border border-slate-200 text-slate-600"
                                 >
-                                    <svg class="w-3 h-3 text-slate-500 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                                    </svg>
+                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                                     NONAKTIF
                                 </span>
                             </td>
