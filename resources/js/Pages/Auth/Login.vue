@@ -12,7 +12,10 @@ defineProps({
     },
 });
 
+import { onMounted } from 'vue';
+
 const page = usePage();
+const siteKey = page.props.recaptcha_site_key;
 
 // Baca session_expired dari flash props yang dibagikan oleh HandleInertiaRequests,
 // ATAU dari query parameter URL jika platform hosting (seperti Vercel) tidak menyimpan session dengan baik.
@@ -34,11 +37,31 @@ const form = useForm({
     email: '',
     password: '',
     remember: false,
+    'g-recaptcha-response': '',
+});
+
+onMounted(() => {
+    if (!document.getElementById('recaptcha-script')) {
+        const script = document.createElement('script');
+        script.id = 'recaptcha-script';
+        script.src = 'https://www.google.com/recaptcha/api.js';
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+    }
 });
 
 const submit = () => {
+    if (window.grecaptcha) {
+        form['g-recaptcha-response'] = window.grecaptcha.getResponse();
+    }
     form.post(route('login'), {
-        onFinish: () => form.reset('password'),
+        onFinish: () => {
+            form.reset('password');
+            if (window.grecaptcha) {
+                window.grecaptcha.reset();
+            }
+        },
     });
 };
 </script>
@@ -279,6 +302,12 @@ const submit = () => {
                             Lupa Password?
                         </Link>
                     </div>
+
+                    <!-- Google reCAPTCHA -->
+                    <div v-if="siteKey" class="flex justify-center">
+                        <div class="g-recaptcha" :data-sitekey="siteKey"></div>
+                    </div>
+                    <InputError class="mt-1" :message="form.errors['g-recaptcha-response']" />
 
                     <!-- Action Buttons (Masuk) -->
                     <div class="pt-1">
