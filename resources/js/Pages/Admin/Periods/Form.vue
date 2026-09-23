@@ -376,9 +376,9 @@ function submitForm() {
  >
  <div
  v-if="selectedTestersCount > 0"
- class="bg-primary/70 border border-primary/80 rounded-2xl p-4 flex items-center gap-3 text-xs text-primary"
+ class="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex items-center gap-3 text-xs text-primary"
  >
- <div class="w-8 h-8 rounded-xl bg-primary/80 text-primary flex items-center justify-center shrink-0">
+ <div class="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center shrink-0">
  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
  </svg>
