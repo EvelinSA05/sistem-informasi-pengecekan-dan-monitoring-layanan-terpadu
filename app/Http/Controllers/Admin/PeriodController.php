@@ -389,16 +389,17 @@ class PeriodController extends Controller
 
             if ($statusVal === 'proses') {
                 $testerIds = $period->periodTesters()->pluck('tester_id')->toArray();
+                $targetDateObj = \Carbon\Carbon::parse($period->date)->toDateString();
                 
                 $busyTesters = \App\Models\User::whereIn('id', $testerIds)
-                    ->whereHas('periodServices', function ($q) use ($period) {
+                    ->whereHas('periodServices', function ($q) use ($period, $targetDateObj) {
                         $q->where('status', 'pending')
-                          ->whereHas('period', function ($pq) use ($period) {
+                          ->whereHas('period', function ($pq) use ($period, $targetDateObj) {
                               $pq->where('status', 'proses')
                                  ->where('checking_periods.id', '!=', $period->id)
-                                 ->where(function ($query) {
+                                 ->where(function ($query) use ($targetDateObj) {
                                      $query->whereNull('deadline_date')
-                                           ->orWhere('deadline_date', '>=', \Carbon\Carbon::today()->toDateString());
+                                           ->orWhere('deadline_date', '>=', $targetDateObj);
                                  });
                           });
                     })
