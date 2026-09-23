@@ -669,7 +669,7 @@ function confirmDelete() {
  <div class="p-6">
  <div class="space-y-4">
  <!-- Hero Section (Nama, URL & Status) -->
- <div class="p-4 bg-slate-50 rounded-2xl border border-primary/60 relative overflow-hidden">
+ <div class="p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl border border-primary/20 relative overflow-hidden">
  <!-- Hiasan Background -->
  <div class="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl pointer-events-none"></div>
  
@@ -710,11 +710,11 @@ function confirmDelete() {
 
  <!-- Meta (Kategori & Level) Grid -->
  <div class="grid grid-cols-2 gap-3">
- <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/60 flex flex-col justify-center">
+ <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center">
  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Kategori</p>
  <p class="text-sm font-bold text-slate-700 truncate">{{ selectedService.category || '-' }}</p>
  </div>
- <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/60 flex flex-col justify-center">
+ <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center">
  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Level</p>
  <p class="text-sm font-bold text-slate-700 truncate">{{ selectedService.level || '-' }}</p>
  </div>
@@ -723,7 +723,7 @@ function confirmDelete() {
  <!-- Deskripsi -->
  <div>
  <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Deskripsi Layanan</p>
- <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+ <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 shadow-sm">
  <p v-if="selectedService.deskripsi_layanan" class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{{ selectedService.deskripsi_layanan }}</p>
  <p v-else class="text-sm text-slate-400 italic">Belum ada deskripsi layanan.</p>
  </div>
