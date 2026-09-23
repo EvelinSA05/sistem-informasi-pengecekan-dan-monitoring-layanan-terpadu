@@ -661,12 +661,12 @@ function confirmDelete() {
  leave-to-class="opacity-0 scale-95 translate-y-4"
  >
  <div v-if="showDetailModal && selectedService" class="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
- <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+ <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
  <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
  <h3 class="text-lg font-bold text-slate-800">Detail Layanan</h3>
  <button @click="showDetailModal = false" class="text-slate-400 hover:text-slate-600 transition-colors p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
  </div>
- <div class="p-6">
+ <div class="p-6 overflow-y-auto">
  <div class="space-y-4">
  <!-- Hero Section (Nama, URL & Status) -->
  <div class="p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl border border-primary/20 relative overflow-hidden">
