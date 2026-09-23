@@ -30,6 +30,7 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+            'g-recaptcha-response' => ['required', new \App\Rules\Recaptcha()],
         ];
     }
 
@@ -90,5 +91,17 @@ class LoginRequest extends FormRequest
     public function throttleKey(): string
     {
         return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'g-recaptcha-response.required' => 'Silakan centang Captcha untuk memverifikasi bahwa Anda bukan robot.',
+        ];
     }
 }
