@@ -290,7 +290,7 @@ function submitForm() {
  tester.is_available === false && !isTesterSelected(tester.id)
  ? 'bg-slate-50/70 border-slate-200/70 opacity-60 cursor-not-allowed'
  : (isTesterSelected(tester.id)
- ? 'cursor-pointer bg-primary/30 border-primary ring-1 ring-primary/20 shadow-xs'
+ ? 'cursor-pointer bg-primary/10 border-primary ring-1 ring-primary/20 shadow-xs'
  : 'cursor-pointer bg-white border-slate-200/80 hover:border-slate-300 hover:bg-slate-50/50')
  ]"
  >
@@ -300,7 +300,7 @@ function submitForm() {
  :class="[
  'w-5 h-5 rounded-full flex items-center justify-center transition-colors',
  isTesterSelected(tester.id)
- ? 'bg-[#1e3a8a] text-white'
+ ? 'bg-primary text-white'
  : (tester.is_available === false ? 'border-2 border-slate-200 bg-slate-100 text-slate-400' : 'border-2 border-slate-300 bg-white')
  ]"
  >
