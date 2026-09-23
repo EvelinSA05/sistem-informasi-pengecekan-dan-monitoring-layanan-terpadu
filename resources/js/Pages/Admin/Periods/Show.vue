@@ -70,6 +70,21 @@ const filteredServices = computed(() => {
  });
 });
 
+const paginatedServices = computed(() => {
+ const start = (currentPage.value - 1) * perPage.value;
+ return filteredServices.value.slice(start, start + perPage.value);
+});
+
+const paginationMeta = computed(() => {
+ const total = filteredServices.value.length;
+ return {
+ total: total,
+ per_page: perPage.value,
+ current_page: currentPage.value,
+ last_page: Math.ceil(total / perPage.value) || 1,
+ };
+});
+
 // Helpers
 function getTesterProgress(g) {
  if (!g.total_services) return 0;
