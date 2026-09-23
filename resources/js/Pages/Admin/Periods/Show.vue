@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import ClientPagination from '@/Components/ClientPagination.vue';
 
 const props = defineProps({
  period: { type: Object, required: true },
@@ -12,6 +13,8 @@ const page = usePage();
 const statusFilter = ref('all');
 const searchQuery = ref('');
 const isTableVisible = ref(true);
+const currentPage = ref(1);
+const perPage = ref(10);
 
 // Toast
 const toast = ref('');
@@ -56,6 +59,8 @@ const allServices = computed(() => {
  });
  return list;
 });
+watch([searchQuery, statusFilter], () => { currentPage.value = 1; });
+
 const filteredServices = computed(() => {
  return allServices.value.filter(s => {
  const matchStatus = statusFilter.value === 'all' || s.status === statusFilter.value;
@@ -343,7 +348,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  </tr>
  </thead>
  <tbody class="divide-y divide-slate-100 text-xs">
- <tr v-for="srv in filteredServices" :key="srv.id" class="hover:bg-slate-50/50 transition-colors">
+ <tr v-for="srv in paginatedServices" :key="srv.id" class="hover:bg-slate-50/50 transition-colors">
  <td class="py-3 px-6">
  <div class="flex items-center gap-3">
  <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100" v-html="getServiceIcon(srv.icon)"></div>
@@ -383,6 +388,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  </tbody>
  </table>
  </div>
+ <ClientPagination :meta="paginationMeta" @update:page="currentPage = $event" @update:perPage="perPage = $event; currentPage = 1" class="px-6 py-4 border-t border-slate-100 bg-slate-50/50" />
  </div>
 
  </div>
