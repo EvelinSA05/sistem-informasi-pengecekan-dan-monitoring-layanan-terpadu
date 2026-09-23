@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>500 - Terjadi Kesalahan | Majadigi Checking</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/kominfo-jatim.png') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
