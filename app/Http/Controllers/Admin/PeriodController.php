@@ -118,7 +118,7 @@ class PeriodController extends Controller
                     ? strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1))
                     : strtoupper(substr($parts[0] ?? 'T', 0, 2));
 
-                // Hitung sisa tugas pending pada periode yang sedang berstatus 'proses'
+                // Hitung sisa tugas pending pada periode yang sedang berstatus 'proses' dan belum lewat deadline
                 $pendingTasksCount = PeriodService::where('tester_id', $tester->id)
                     ->where('status', 'pending')
                     ->whereHas('period', function ($q) use ($excludePeriodId) {
@@ -126,6 +126,10 @@ class PeriodController extends Controller
                         if ($excludePeriodId) {
                             $q->where('checking_periods.id', '!=', $excludePeriodId);
                         }
+                        $q->where(function ($query) {
+                            $query->whereNull('deadline_date')
+                                  ->orWhere('deadline_date', '>=', \Carbon\Carbon::today()->toDateString());
+                        });
                     })
                     ->count();
 
@@ -231,7 +235,11 @@ class PeriodController extends Controller
             ->whereHas('periodServices', function ($q) {
                 $q->where('status', 'pending')
                   ->whereHas('period', function ($pq) {
-                      $pq->where('status', 'proses');
+                      $pq->where('status', 'proses')
+                         ->where(function ($query) {
+                             $query->whereNull('deadline_date')
+                                   ->orWhere('deadline_date', '>=', \Carbon\Carbon::today()->toDateString());
+                         });
                   });
             })
             ->get();
@@ -384,7 +392,12 @@ class PeriodController extends Controller
                     ->whereHas('periodServices', function ($q) use ($period) {
                         $q->where('status', 'pending')
                           ->whereHas('period', function ($pq) use ($period) {
-                              $pq->where('status', 'proses')->where('checking_periods.id', '!=', $period->id);
+                              $pq->where('status', 'proses')
+                                 ->where('checking_periods.id', '!=', $period->id)
+                                 ->where(function ($query) {
+                                     $query->whereNull('deadline_date')
+                                           ->orWhere('deadline_date', '>=', \Carbon\Carbon::today()->toDateString());
+                                 });
                           });
                     })
                     ->get();
@@ -437,7 +450,12 @@ class PeriodController extends Controller
             ->whereHas('periodServices', function ($q) use ($period) {
                 $q->where('status', 'pending')
                   ->whereHas('period', function ($pq) use ($period) {
-                      $pq->where('status', 'proses')->where('checking_periods.id', '!=', $period->id);
+                      $pq->where('status', 'proses')
+                         ->where('checking_periods.id', '!=', $period->id)
+                         ->where(function ($query) {
+                             $query->whereNull('deadline_date')
+                                   ->orWhere('deadline_date', '>=', \Carbon\Carbon::today()->toDateString());
+                         });
                   });
             })
             ->get();
