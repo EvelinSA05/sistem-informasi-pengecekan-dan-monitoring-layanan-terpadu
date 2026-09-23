@@ -11,6 +11,7 @@ const props = defineProps({
 const page = usePage();
 const statusFilter = ref('all');
 const searchQuery = ref('');
+const isTableVisible = ref(true);
 
 // ✨ Toast Notification ✨
 const toast = ref('');
@@ -213,444 +214,468 @@ function getServiceIcon(iconKey) {
             </div>
         </Transition>
 
-        <!-- ── Top Header Card (Clean & Minimal Redesign) ──────── -->
-        <div class="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs mb-6">
-            <!-- Back Navigation -->
-            <div class="mb-4">
-                <Link
-                    :href="route('admin.periods.index')"
-                    class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-blue-600 transition-colors group cursor-pointer"
-                >
-                    <span class="text-sm transition-transform group-hover:-translate-x-0.5">&larr;</span>
-                    <span>Kembali</span>
-                </Link>
-            </div>
-
-            <!-- Title & Action Toolbar -->
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-                <div>
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-                            Detail Periode: {{ period.title }}
-                        </h2>
-                        <!-- Soft Blue Badge for AKTIF / Slate for NONAKTIF -->
-                        <span
-                            v-if="period.status === 'proses'"
-                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-blue-50 border border-blue-200/60 text-blue-600"
-                        >
-                            AKTIF
-                        </span>
-                        <span
-                            v-else
-                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-slate-100 border border-slate-200 text-slate-500"
-                        >
-                            NONAKTIF
-                        </span>
-                    </div>
-                    <p class="text-xs text-slate-500 mt-2 font-normal">
-                        Dibuat pada {{ period.created_at_label }} oleh {{ period.creator_name }}
-                        <span v-if="period.deadline_date">
-                            &bull; <span class="text-amber-600 font-semibold">Tenggat Waktu: {{ period.deadline_date }}</span>
-                        </span>
-                    </p>
-                </div>
-
-                <!-- Export & Action Buttons -->
-                <div class="flex items-center gap-2.5 flex-wrap">
-                    <!-- Edit Periode (Outlined Minimal) -->
+        <div class="space-y-6 max-w-7xl mx-auto">
+            <!-- ── 1. Top Header Card (Clean & Minimal Sesuai Mockup) ── -->
+            <div class="bg-white rounded-2xl border border-slate-200/70 p-6 shadow-2xs">
+                <!-- Back Link -->
+                <div class="mb-3.5">
                     <Link
-                        :href="route('admin.periods.edit', period.id)"
-                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all duration-150 cursor-pointer"
+                        :href="route('admin.periods.index')"
+                        class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors group cursor-pointer"
                     >
-                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 018.586 12z"/>
-                        </svg>
-                        <span>Edit Periode</span>
+                        <span class="text-xs transition-transform group-hover:-translate-x-0.5">&larr;</span>
+                        <span>Kembali</span>
                     </Link>
-
-                    <!-- Export Excel (Outlined Minimal) -->
-                    <a
-                        :href="route('admin.periods.export.excel', period.id)"
-                        target="_blank"
-                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all duration-150 cursor-pointer"
-                    >
-                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                        </svg>
-                        <span>Export Excel</span>
-                    </a>
-
-                    <!-- Export PDF (Outlined Minimal) -->
-                    <a
-                        :href="route('admin.periods.export.pdf', period.id)"
-                        target="_blank"
-                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all duration-150 cursor-pointer"
-                    >
-                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        <span>Export PDF</span>
-                    </a>
-
-                    <!-- Toggle Status (Primary Solid Blue Button) -->
-                    <button
-                        type="button"
-                        @click="togglePeriodStatus"
-                        :disabled="isUpdatingStatus"
-                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-sm shadow-blue-600/20 transition-all duration-150 cursor-pointer disabled:opacity-60"
-                    >
-                        <svg v-if="period.status === 'proses'" class="w-4 h-4 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <svg v-else class="w-4 h-4 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                        </svg>
-                        <span>{{ isUpdatingStatus ? 'Memproses...' : (period.status === 'proses' ? 'Selesaikan Periode' : 'Buka Kembali Periode') }}</span>
-                    </button>
                 </div>
-            </div>
-        </div>
 
-        <!-- ── Infographic Executive KPI Cards ──────────────────── -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <!-- TOTAL LAYANAN -->
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between">
-                <div class="flex items-center justify-between">
-                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TOTAL LAYANAN</p>
-                    <div class="w-7 h-7 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <rect x="2" y="3" width="20" height="14" rx="2"/><path stroke-linecap="round" d="M8 21h8M12 17v4"/>
-                        </svg>
+                <!-- Main Row: Title & Action Toolbar -->
+                <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                    <!-- Left: Title, Badge & Meta -->
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2.5 flex-wrap">
+                            <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                                Detail Periode: {{ period.title }}
+                            </h2>
+                            <!-- Soft Blue Badge for AKTIF / Slate for NONAKTIF -->
+                            <span
+                                v-if="period.status === 'proses'"
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 border border-blue-200/60 text-blue-600"
+                            >
+                                AKTIF
+                            </span>
+                            <span
+                                v-else
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 border border-slate-200 text-slate-500"
+                            >
+                                NONAKTIF
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1.5 font-normal">
+                            Dibuat pada {{ period.created_at_label }} oleh {{ period.creator_name }}
+                            <span v-if="period.deadline_date">
+                                &bull; <span class="text-amber-600 font-medium">Tenggat Waktu: {{ period.deadline_date }}</span>
+                            </span>
+                        </p>
+                    </div>
+
+                    <!-- Right: Action Buttons Group (Clean Outlined & Solid Blue) -->
+                    <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap shrink-0">
+                        <!-- Edit Periode -->
+                        <Link
+                            :href="route('admin.periods.edit', period.id)"
+                            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium shadow-2xs transition-all cursor-pointer"
+                        >
+                            <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 018.586 12z"/>
+                            </svg>
+                            <span>Edit Periode</span>
+                        </Link>
+
+                        <!-- Export Excel -->
+                        <a
+                            :href="route('admin.periods.export.excel', period.id)"
+                            target="_blank"
+                            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium shadow-2xs transition-all cursor-pointer"
+                        >
+                            <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            <span>Export Excel</span>
+                        </a>
+
+                        <!-- Export PDF -->
+                        <a
+                            :href="route('admin.periods.export.pdf', period.id)"
+                            target="_blank"
+                            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium shadow-2xs transition-all cursor-pointer"
+                        >
+                            <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span>Export PDF</span>
+                        </a>
+
+                        <!-- Selesaikan / Buka Kembali (Primary CTA) -->
+                        <button
+                            type="button"
+                            @click="togglePeriodStatus"
+                            :disabled="isUpdatingStatus"
+                            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-xs transition-all cursor-pointer disabled:opacity-60 shrink-0"
+                        >
+                            <svg v-if="period.status === 'proses'" class="w-3.5 h-3.5 stroke-[2.2] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <svg v-else class="w-3.5 h-3.5 stroke-[2.2] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            <span>{{ isUpdatingStatus ? 'Memproses...' : (period.status === 'proses' ? 'Selesaikan Periode' : 'Buka Kembali Periode') }}</span>
+                        </button>
                     </div>
                 </div>
-                <div>
-                    <p class="text-3xl font-extrabold text-slate-900 mt-2.5">{{ period.total_services }}</p>
-                    <p class="text-xs text-slate-400 mt-1 font-normal">Layanan Digital Jatim</p>
-                </div>
             </div>
 
-            <!-- LAYANAN NORMAL -->
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between">
-                <div class="flex items-center justify-between">
-                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">LAYANAN NORMAL</p>
-                    <div class="w-7 h-7 rounded-xl bg-blue-50/80 border border-blue-100 text-blue-500 flex items-center justify-center">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                        </svg>
+            <!-- ── 2. 4 Infographic Executive KPI Cards ────────────── -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- TOTAL LAYANAN -->
+                <div class="bg-white rounded-2xl border border-slate-200/70 p-5 shadow-2xs flex flex-col justify-between min-h-[135px]">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-semibold text-slate-400 tracking-wider">TOTAL LAYANAN</span>
+                        <div class="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="2" y="3" width="20" height="14" rx="2"/><path stroke-linecap="round" d="M8 21h8M12 17v4"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-3xl font-bold text-slate-900 mt-2">{{ period.total_services }}</p>
+                        <p class="text-xs text-slate-400 mt-1 font-normal">Layanan Digital Jatim</p>
                     </div>
                 </div>
-                <div>
-                    <p class="text-3xl font-extrabold text-slate-900 mt-2.5">{{ period.normal_services }}</p>
-                    <p class="text-xs text-blue-600 font-medium mt-1 flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-                        <span>Berjalan Optimal</span>
-                    </p>
-                </div>
-            </div>
 
-            <!-- TERKENDALA -->
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between">
-                <div class="flex items-center justify-between">
-                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TERKENDALA</p>
-                    <div class="w-7 h-7 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 flex items-center justify-center">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
+                <!-- LAYANAN NORMAL -->
+                <div class="bg-white rounded-2xl border border-slate-200/70 p-5 shadow-2xs flex flex-col justify-between min-h-[135px]">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-semibold text-slate-400 tracking-wider">LAYANAN NORMAL</span>
+                        <div class="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100/70 flex items-center justify-center text-blue-500">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-3xl font-bold text-slate-900 mt-2">{{ period.normal_services }}</p>
+                        <p class="text-xs text-blue-600 font-medium mt-1 flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                            <span>Berjalan Optimal</span>
+                        </p>
                     </div>
                 </div>
-                <div>
-                    <p class="text-3xl font-extrabold text-slate-900 mt-2.5">{{ period.issues_services }}</p>
-                    <p class="text-xs text-slate-400 mt-1 font-normal">Perlu Penanganan</p>
+
+                <!-- TERKENDALA -->
+                <div class="bg-white rounded-2xl border border-slate-200/70 p-5 shadow-2xs flex flex-col justify-between min-h-[135px]">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-semibold text-slate-400 tracking-wider">TERKENDALA</span>
+                        <div class="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-3xl font-bold text-slate-900 mt-2">{{ period.issues_services }}</p>
+                        <p class="text-xs text-slate-400 mt-1 font-normal">Perlu Penanganan</p>
+                    </div>
+                </div>
+
+                <!-- PROGRESS CEK -->
+                <div class="bg-white rounded-2xl border border-slate-200/70 p-5 shadow-2xs flex flex-col justify-between min-h-[135px]">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-semibold text-slate-400 tracking-wider">PROGRESS CEK</span>
+                        <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                            {{ period.checked_services }}/{{ period.total_services }}
+                        </span>
+                    </div>
+                    <div>
+                        <div class="flex items-baseline justify-between mt-2">
+                            <span class="text-3xl font-bold text-slate-900">{{ period.progress_percent }}%</span>
+                            <span class="text-xs text-slate-400 font-normal">dari total layanan</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-slate-100 rounded-full mt-2 overflow-hidden">
+                            <div
+                                class="h-full bg-blue-600 rounded-full transition-all duration-500"
+                                :style="{ width: `${period.progress_percent}%` }"
+                            ></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- PROGRESS CEK -->
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between">
+            <!-- ── 3. Distribusi & Beban Kerja Tester ──────────────── -->
+            <div class="bg-white rounded-2xl border border-slate-200/70 p-6 shadow-2xs">
+                <!-- Section Header -->
                 <div class="flex items-center justify-between">
-                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">PROGRESS CEK</p>
-                    <span class="text-xs font-semibold text-slate-500 bg-slate-100/90 px-2 py-0.5 rounded-lg">
-                        {{ period.checked_services }}/{{ period.total_services }}
+                    <div>
+                        <h3 class="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                            DISTRIBUSI & BEBAN KERJA TESTER
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5 font-normal">
+                            Penugasan pengecekan performa dan status layanan
+                        </p>
+                    </div>
+                    <span class="text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                        {{ distribution.length }} Personel
                     </span>
                 </div>
-                <div class="mt-2.5">
-                    <div class="flex items-baseline justify-between">
-                        <p class="text-3xl font-extrabold text-slate-900">{{ period.progress_percent }}%</p>
-                        <span class="text-xs text-slate-400 font-normal">dari total layanan</span>
-                    </div>
-                    <div class="w-full h-1.5 bg-slate-100 rounded-full mt-2.5 overflow-hidden">
-                        <div
-                            class="h-full rounded-full bg-blue-600 transition-all duration-500"
-                            :style="{ width: `${period.progress_percent}%` }"
-                        ></div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- ── Distribusi & Beban Kerja Tester ─────────────────── -->
-        <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs mb-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        DISTRIBUSI & BEBAN KERJA TESTER
-                    </h3>
-                    <p class="text-xs text-slate-400 mt-0.5 font-normal">
-                        Penugasan pengecekan performa dan status layanan
-                    </p>
-                </div>
-                <span class="text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-xl">
-                    {{ distribution.length }} Personel
-                </span>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
-                <div
-                    v-for="group in distribution"
-                    :key="group.tester_id"
-                    class="p-4.5 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 transition-all shadow-2xs flex flex-col justify-between"
-                >
-                    <!-- Row 1: Avatar, Info & Fraction -->
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div
-                                :class="[
-                                    'w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0',
-                                    getTesterProgress(group) > 0 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
-                                ]"
-                            >
-                                {{ group.initials }}
+                <!-- Tester Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
+                    <div
+                        v-for="group in distribution"
+                        :key="group.tester_id"
+                        class="rounded-2xl border border-slate-200/70 bg-white p-4.5 flex flex-col justify-between hover:border-slate-300 transition-all shadow-2xs"
+                    >
+                        <!-- Row 1: Avatar, Name, Email & Tasks Pill -->
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div
+                                    :class="[
+                                        'w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0',
+                                        getTesterProgress(group) > 0 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
+                                    ]"
+                                >
+                                    {{ group.initials }}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-slate-900 leading-tight truncate" :title="group.name">
+                                        {{ group.name }}
+                                    </p>
+                                    <p class="text-xs text-slate-400 truncate mt-0.5 font-normal" :title="group.email">
+                                        {{ group.email }}
+                                    </p>
+                                </div>
                             </div>
-                            <div class="min-w-0">
-                                <p class="text-sm font-bold text-slate-800 leading-tight truncate">{{ group.name }}</p>
-                                <p class="text-xs text-slate-400 font-normal truncate mt-0.5">{{ group.email }}</p>
+                            <div class="text-right shrink-0">
+                                <span
+                                    :class="[
+                                        'inline-block text-xs font-semibold px-2 py-0.5 rounded-md',
+                                        getTesterProgress(group) > 0
+                                            ? 'bg-blue-50 text-blue-600 border border-blue-100'
+                                            : 'bg-slate-100 text-slate-500'
+                                    ]"
+                                >
+                                    {{ group.checked_services }}/{{ group.total_services }}
+                                </span>
+                                <span class="text-[10px] text-slate-400 block text-right mt-0.5 font-normal">layanan selesai</span>
                             </div>
                         </div>
-                        <div class="text-right shrink-0">
+
+                        <!-- Row 2: Progress Bar Line -->
+                        <div class="w-full h-1 bg-slate-100 rounded-full mt-4 overflow-hidden">
+                            <div
+                                class="h-full bg-blue-600 rounded-full transition-all duration-300"
+                                :style="{ width: `${getTesterProgress(group)}%` }"
+                            ></div>
+                        </div>
+
+                        <!-- Row 3: Status Text & Percentage -->
+                        <div class="flex items-center justify-between text-xs mt-2.5">
+                            <span class="text-[11px] text-slate-400 font-normal">
+                                {{ getTesterStatusLabel(group) }}
+                            </span>
                             <span
                                 :class="[
-                                    'inline-block text-xs font-bold px-2 py-0.5 rounded-lg',
-                                    getTesterProgress(group) > 0
-                                        ? 'bg-blue-50 text-blue-600 border border-blue-100/60'
-                                        : 'bg-slate-100 text-slate-600'
+                                    'text-xs font-semibold',
+                                    getTesterProgress(group) > 0 ? 'text-blue-600' : 'text-slate-400'
                                 ]"
                             >
-                                {{ group.checked_services }}/{{ group.total_services }}
+                                {{ getTesterProgress(group) }}%
                             </span>
-                            <span class="text-[10.5px] text-slate-400 font-normal block mt-0.5">layanan selesai</span>
                         </div>
                     </div>
-
-                    <!-- Row 2: Progress Bar -->
-                    <div class="w-full h-1 bg-slate-100 rounded-full mt-3.5 overflow-hidden">
-                        <div
-                            class="h-full bg-blue-600 rounded-full transition-all duration-300"
-                            :style="{ width: `${getTesterProgress(group)}%` }"
-                        ></div>
-                    </div>
-
-                    <!-- Row 3: Status Text & Percentage -->
-                    <div class="flex items-center justify-between text-xs mt-2">
-                        <span class="text-[11px] text-slate-400 font-medium">
-                            {{ getTesterStatusLabel(group) }}
-                        </span>
-                        <span
-                            :class="[
-                                'text-xs font-bold',
-                                getTesterProgress(group) > 0 ? 'text-blue-600' : 'text-slate-400'
-                            ]"
-                        >
-                            {{ getTesterProgress(group) }}%
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ── Detailed Service Checklist Table ─────────────────── -->
-        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-            <!-- Table Toolbar -->
-            <div class="px-6 py-4.5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
-                    <span class="text-sm font-bold text-slate-800">Daftar Layanan</span>
-                    <span class="text-xs font-medium text-slate-400">({{ filteredServices.length }} dari {{ allServices.length }})</span>
-                </div>
-
-                <!-- Filter Tabs & Search -->
-                <div class="flex items-center gap-2 flex-wrap">
-                    <!-- Status Filter Tabs -->
-                    <div class="inline-flex p-1 bg-slate-100/80 rounded-xl text-xs font-semibold text-slate-600">
-                        <button
-                            type="button"
-                            @click="statusFilter = 'all'"
-                            :class="[
-                                'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
-                                statusFilter === 'all'
-                                    ? 'bg-white text-blue-600 shadow-2xs font-bold'
-                                    : 'text-slate-500 hover:text-slate-800'
-                            ]"
-                        >
-                            Semua
-                        </button>
-                        <button
-                            type="button"
-                            @click="statusFilter = 'normal'"
-                            :class="[
-                                'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
-                                statusFilter === 'normal'
-                                    ? 'bg-white text-emerald-700 shadow-2xs font-bold'
-                                    : 'text-slate-500 hover:text-slate-800'
-                            ]"
-                        >
-                            Normal
-                        </button>
-                        <button
-                            type="button"
-                            @click="statusFilter = 'gangguan'"
-                            :class="[
-                                'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
-                                statusFilter === 'gangguan'
-                                    ? 'bg-white text-rose-700 shadow-2xs font-bold'
-                                    : 'text-slate-500 hover:text-slate-800'
-                            ]"
-                        >
-                            Kendala
-                        </button>
-                        <button
-                            type="button"
-                            @click="statusFilter = 'pending'"
-                            :class="[
-                                'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
-                                statusFilter === 'pending'
-                                    ? 'bg-white text-slate-700 shadow-2xs font-bold'
-                                    : 'text-slate-500 hover:text-slate-800'
-                            ]"
-                        >
-                            Belum Dicek
-                        </button>
-                    </div>
-
-                    <!-- Search Input -->
-                    <div class="relative">
-                        <input
-                            v-model="searchQuery"
-                            type="text"
-                            placeholder="Cari layanan / tester..."
-                            class="pl-8 pr-3.5 py-1.5 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white w-48 sm:w-56 transition-all"
-                        />
-                        <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                    </div>
                 </div>
             </div>
 
-            <!-- Table -->
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            <th class="py-3.5 px-6">LAYANAN</th>
-                            <th class="py-3.5 px-6">KATEGORI</th>
-                            <th class="py-3.5 px-6">PENANGGUNG JAWAB</th>
-                            <th class="py-3.5 px-6">STATUS</th>
-                            <th class="py-3.5 px-6">WAKTU CEK</th>
-                            <th class="py-3.5 px-6">KETERANGAN</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 text-xs">
-                        <tr
-                            v-for="srv in filteredServices"
-                            :key="srv.id"
-                            class="hover:bg-slate-50/60 transition-colors"
+            <!-- ── 4. Detailed Service Checklist Table ─────────────── -->
+            <div class="bg-white rounded-2xl border border-slate-200/70 shadow-2xs overflow-hidden">
+                <!-- Collapsible Header / Toolbar -->
+                <div class="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <button
+                            type="button"
+                            @click="isTableVisible = !isTableVisible"
+                            class="inline-flex items-center gap-2 text-sm font-semibold text-slate-800 hover:text-blue-600 transition-colors cursor-pointer"
                         >
-                            <!-- Layanan -->
-                            <td class="py-3.5 px-6">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200/50" v-html="getServiceIcon(srv.icon)">
+                            <span>Daftar Layanan</span>
+                            <span class="text-xs text-slate-400 font-normal">({{ filteredServices.length }} dari {{ allServices.length }})</span>
+                            <svg
+                                class="w-4 h-4 text-slate-400 transition-transform duration-200"
+                                :class="isTableVisible ? 'rotate-180' : ''"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Filter Tabs & Search Box -->
+                    <div v-if="isTableVisible" class="flex items-center gap-2 flex-wrap">
+                        <!-- Status Filter Tabs -->
+                        <div class="inline-flex p-1 bg-slate-100/90 rounded-xl text-xs font-medium text-slate-600">
+                            <button
+                                type="button"
+                                @click="statusFilter = 'all'"
+                                :class="[
+                                    'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
+                                    statusFilter === 'all'
+                                        ? 'bg-white text-blue-600 shadow-2xs font-semibold'
+                                        : 'text-slate-500 hover:text-slate-800'
+                                ]"
+                            >
+                                Semua
+                            </button>
+                            <button
+                                type="button"
+                                @click="statusFilter = 'normal'"
+                                :class="[
+                                    'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
+                                    statusFilter === 'normal'
+                                        ? 'bg-white text-blue-600 shadow-2xs font-semibold'
+                                        : 'text-slate-500 hover:text-slate-800'
+                                ]"
+                            >
+                                Normal
+                            </button>
+                            <button
+                                type="button"
+                                @click="statusFilter = 'gangguan'"
+                                :class="[
+                                    'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
+                                    statusFilter === 'gangguan'
+                                        ? 'bg-white text-rose-700 shadow-2xs font-semibold'
+                                        : 'text-slate-500 hover:text-slate-800'
+                                ]"
+                            >
+                                Kendala
+                            </button>
+                            <button
+                                type="button"
+                                @click="statusFilter = 'pending'"
+                                :class="[
+                                    'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
+                                    statusFilter === 'pending'
+                                        ? 'bg-white text-slate-700 shadow-2xs font-semibold'
+                                        : 'text-slate-500 hover:text-slate-800'
+                                ]"
+                            >
+                                Belum Dicek
+                            </button>
+                        </div>
+
+                        <!-- Search Input -->
+                        <div class="relative">
+                            <input
+                                v-model="searchQuery"
+                                type="text"
+                                placeholder="Cari layanan / tester..."
+                                class="pl-8 pr-3.5 py-1.5 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white w-44 sm:w-52 transition-all"
+                            />
+                            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Content -->
+                <div v-show="isTableVisible" class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-100 bg-slate-50/50 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                                <th class="py-3.5 px-6">LAYANAN</th>
+                                <th class="py-3.5 px-6">KATEGORI</th>
+                                <th class="py-3.5 px-6">PENANGGUNG JAWAB</th>
+                                <th class="py-3.5 px-6">STATUS</th>
+                                <th class="py-3.5 px-6">WAKTU CEK</th>
+                                <th class="py-3.5 px-6">KETERANGAN</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-xs">
+                            <tr
+                                v-for="srv in filteredServices"
+                                :key="srv.id"
+                                class="hover:bg-slate-50/60 transition-colors"
+                            >
+                                <!-- Layanan -->
+                                <td class="py-3.5 px-6">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200/50" v-html="getServiceIcon(srv.icon)">
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-slate-800 leading-tight">{{ srv.service_name }}</p>
+                                            <a
+                                                v-if="srv.service_url"
+                                                :href="srv.service_url"
+                                                target="_blank"
+                                                class="text-[11px] text-blue-500 hover:underline inline-flex items-center gap-0.5 mt-0.5"
+                                            >
+                                                <span>Buka link</span>
+                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                                </svg>
+                                            </a>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p class="font-bold text-slate-800 leading-tight">{{ srv.service_name }}</p>
-                                        <a
-                                            v-if="srv.service_url"
-                                            :href="srv.service_url"
-                                            target="_blank"
-                                            class="text-[11px] text-blue-500 hover:underline inline-flex items-center gap-0.5 mt-0.5"
+                                </td>
+
+                                <!-- Kategori -->
+                                <td class="py-3.5 px-6">
+                                    <span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-medium">
+                                        {{ srv.category }}
+                                    </span>
+                                </td>
+
+                                <!-- Penanggung Jawab -->
+                                <td class="py-3.5 px-6">
+                                    <div class="flex items-center gap-2">
+                                        <div
+                                            :class="[
+                                                'w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0',
+                                                getTesterAvatarColor(srv.tester_initials, srv.tester_name)
+                                            ]"
                                         >
-                                            <span>Buka link</span>
-                                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                            </svg>
-                                        </a>
+                                            {{ srv.tester_initials }}
+                                        </div>
+                                        <span class="font-medium text-slate-700">{{ srv.tester_name }}</span>
                                     </div>
-                                </div>
-                            </td>
+                                </td>
 
-                            <!-- Kategori -->
-                            <td class="py-3.5 px-6">
-                                <span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-semibold">
-                                    {{ srv.category }}
-                                </span>
-                            </td>
-
-                            <!-- Penanggung Jawab -->
-                            <td class="py-3.5 px-6">
-                                <div class="flex items-center gap-2">
-                                    <div
-                                        :class="[
-                                            'w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0',
-                                            getTesterAvatarColor(srv.tester_initials, srv.tester_name)
-                                        ]"
+                                <!-- Status Cek -->
+                                <td class="py-3.5 px-6">
+                                    <span
+                                        v-if="srv.status === 'normal'"
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-semibold text-[10.5px] bg-blue-50 text-blue-700 border border-blue-200/70"
                                     >
-                                        {{ srv.tester_initials }}
-                                    </div>
-                                    <span class="font-semibold text-slate-700">{{ srv.tester_name }}</span>
-                                </div>
-                            </td>
+                                        <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                        Normal
+                                    </span>
+                                    <span
+                                        v-else-if="srv.status === 'gangguan'"
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-semibold text-[10.5px] bg-rose-50 text-rose-700 border border-rose-200/70"
+                                    >
+                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                        Kendala
+                                    </span>
+                                    <span
+                                        v-else
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-semibold text-[10.5px] bg-slate-100 text-slate-500 border border-slate-200"
+                                    >
+                                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                        Belum Dicek
+                                    </span>
+                                </td>
 
-                            <!-- Status Cek -->
-                            <td class="py-3.5 px-6">
-                                <span
-                                    v-if="srv.status === 'normal'"
-                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10.5px] bg-emerald-50 text-emerald-700 border border-emerald-200/80"
-                                >
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                    Normal
-                                </span>
-                                <span
-                                    v-else-if="srv.status === 'gangguan'"
-                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10.5px] bg-rose-50 text-rose-700 border border-rose-200/80"
-                                >
-                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                                    Kendala
-                                </span>
-                                <span
-                                    v-else
-                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10.5px] bg-slate-100 text-slate-500 border border-slate-200"
-                                >
-                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                                    Belum Dicek
-                                </span>
-                            </td>
+                                <!-- Waktu Cek -->
+                                <td class="py-3.5 px-6 text-slate-400 font-normal">
+                                    {{ srv.checked_at || '-' }}
+                                </td>
 
-                            <!-- Waktu Cek -->
-                            <td class="py-3.5 px-6 text-slate-400 font-medium">
-                                {{ srv.checked_at || '-' }}
-                            </td>
+                                <!-- Keterangan -->
+                                <td class="py-3.5 px-6 text-slate-600 font-normal max-w-xs truncate">
+                                    {{ srv.description || '-' }}
+                                </td>
+                            </tr>
 
-                            <!-- Keterangan -->
-                            <td class="py-3.5 px-6 text-slate-600 font-medium max-w-xs truncate">
-                                {{ srv.description || '-' }}
-                            </td>
-                        </tr>
-
-                        <!-- Empty state -->
-                        <tr v-if="filteredServices.length === 0">
-                            <td colspan="6" class="py-8 text-center text-slate-400 text-xs">
-                                Tidak ada layanan yang sesuai dengan filter.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                            <!-- Empty state -->
+                            <tr v-if="filteredServices.length === 0">
+                                <td colspan="6" class="py-8 text-center text-slate-400 text-xs">
+                                    Tidak ada layanan yang sesuai dengan filter.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </AdminLayout>
