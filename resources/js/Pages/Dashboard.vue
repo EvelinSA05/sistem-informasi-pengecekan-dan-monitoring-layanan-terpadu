@@ -1048,7 +1048,7 @@ function submitCheck() {
  <p class="text-lg sm:text-xl font-bold text-white capitalize leading-snug">
  {{ periodInfo ? currentMonthYear : 'Tidak Ada Penugasan Aktif' }}
  </p>
- <div class="mt-2.5 flex items-center sm:justify-end gap-2 text-xs font-semibold text-primary flex-wrap">
+ <div class="mt-2.5 flex items-center sm:justify-end gap-2 text-xs font-semibold text-white flex-wrap">
  <span v-if="periodInfo?.date" class="inline-flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-lg border border-white/20">
  <svg class="w-3.5 h-3.5 text-cyan-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path stroke-linecap="round" d="M16 2v4M8 2v4M3 10h18"/></svg>
  {{ periodInfo.period_title }}
