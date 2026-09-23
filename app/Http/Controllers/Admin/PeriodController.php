@@ -377,6 +377,24 @@ class PeriodController extends Controller
                 default => $request->status,
             };
 
+            if ($statusVal === 'proses') {
+                $testerIds = $period->periodTesters()->pluck('tester_id')->toArray();
+                
+                $busyTesters = \App\Models\User::whereIn('id', $testerIds)
+                    ->whereHas('periodServices', function ($q) use ($period) {
+                        $q->where('status', 'pending')
+                          ->whereHas('period', function ($pq) use ($period) {
+                              $pq->where('status', 'proses')->where('checking_periods.id', '!=', $period->id);
+                          });
+                    })
+                    ->get();
+                    
+                if ($busyTesters->isNotEmpty()) {
+                    $names = $busyTesters->pluck('name')->implode(', ');
+                    return back()->with('error', "Gagal mengaktifkan periode! Tester berikut masih memiliki tugas pengecekan yang belum selesai (pending) di periode aktif lain: {$names}.");
+                }
+            }
+
             $period->update([
                 'status' => $statusVal,
             ]);
@@ -505,16 +523,19 @@ class PeriodController extends Controller
 
         try {
             DB::transaction(function () use ($period) {
-                $period->periodServices()->delete();
                 $period->periodTesters()->delete();
+                $period->periodServices()->delete();
                 $period->delete();
             });
 
-            return redirect()->route('admin.periods.index')
-                ->with('success', 'Periode pengecekan berhasil dihapus.');
-        } catch (\Exception $e) {
-            return redirect()->route('admin.periods.index')
-                ->with('error', 'Gagal menghapus periode: ' . $e->getMessage());
+            return redirect()->route('admin.periods.index')->with('success', 'Periode pengecekan berhasil dihapus.');
+        } catch (\Throwable $e) {
+            \Log::error('Gagal menghapus periode pengecekan: ' . $e->getMessage(), [
+                'period_id' => $period->id,
+                'trace'     => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->route('admin.periods.index')->with('error', 'Gagal menghapus periode. Data mungkin masih terkait riwayat pengujian.');
         }
     }
 

@@ -110,7 +110,9 @@ function getServiceIcon(iconKey) {
 }
 
 // ─── Reactive Automatic Distribution Calculation ─────────────────
-const selectedTestersCount = computed(() => form.tester_ids.length);
+const selectedTestersCount = computed(() => {
+    return props.testers.filter(t => form.tester_ids.includes(t.id)).length;
+});
 
 const perTesterEstimate = computed(() => {
     if (selectedTestersCount.value === 0) return 0;
