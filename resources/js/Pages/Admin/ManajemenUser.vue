@@ -441,7 +441,7 @@ function confirmDelete() {
  <div class="grid grid-cols-2 gap-2">
  <label :class="[
  'flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 cursor-pointer transition-all',
- addForm.status === 'aktif' ? 'border-primary bg-primary' : 'border-slate-200 bg-white hover:border-slate-300'
+ addForm.status === 'aktif' ? 'border-primary bg-primary/10' : 'border-slate-200 bg-white hover:border-slate-300'
  ]">
  <input type="radio" v-model="addForm.status" value="aktif" class="accent-primary"/>
  <span class="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
@@ -450,7 +450,7 @@ function confirmDelete() {
  </label>
  <label :class="[
  'flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 cursor-pointer transition-all',
- addForm.status === 'tidak aktif' ? 'border-primary bg-primary' : 'border-slate-200 bg-white hover:border-slate-300'
+ addForm.status === 'tidak aktif' ? 'border-primary bg-primary/10' : 'border-slate-200 bg-white hover:border-slate-300'
  ]">
  <input type="radio" v-model="addForm.status" value="tidak aktif" class="accent-primary"/>
  <span class="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
@@ -526,7 +526,7 @@ function confirmDelete() {
  <div class="grid grid-cols-2 gap-2">
  <label :class="[
  'flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 cursor-pointer transition-all',
- editForm.status === 'aktif' ? 'border-primary bg-primary' : 'border-slate-200 bg-white hover:border-slate-300'
+ editForm.status === 'aktif' ? 'border-primary bg-primary/10' : 'border-slate-200 bg-white hover:border-slate-300'
  ]">
  <input type="radio" v-model="editForm.status" value="aktif" class="accent-primary"/>
  <span class="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
@@ -535,7 +535,7 @@ function confirmDelete() {
  </label>
  <label :class="[
  'flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 cursor-pointer transition-all',
- editForm.status === 'tidak aktif' ? 'border-primary bg-primary' : 'border-slate-200 bg-white hover:border-slate-300'
+ editForm.status === 'tidak aktif' ? 'border-primary bg-primary/10' : 'border-slate-200 bg-white hover:border-slate-300'
  ]">
  <input type="radio" v-model="editForm.status" value="tidak aktif" class="accent-primary"/>
  <span class="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
