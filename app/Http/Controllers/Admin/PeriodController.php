@@ -228,15 +228,18 @@ class PeriodController extends Controller
         $testerIds = array_values(array_map('intval', array_unique((array) $request->tester_ids)));
         
         $busyTesters = User::whereIn('id', $testerIds)
-            ->whereHas('periodTesters.period', function ($q) {
-                $q->where('status', 'proses');
+            ->whereHas('periodServices', function ($q) {
+                $q->where('status', 'pending')
+                  ->whereHas('period', function ($pq) {
+                      $pq->where('status', 'proses');
+                  });
             })
             ->get();
 
         if ($busyTesters->isNotEmpty()) {
             $names = $busyTesters->pluck('name')->implode(', ');
             return back()->withErrors([
-                'tester_ids' => "Pembuatan dibatalkan! Tester berikut masih memiliki tugas di periode aktif yang belum selesai: {$names}. Silakan tutup periode lama terlebih dahulu."
+                'tester_ids' => "Pembuatan dibatalkan! Tester berikut masih memiliki tugas pengecekan yang belum selesai (pending) di periode aktif lain: {$names}."
             ]);
         }
 
@@ -377,21 +380,6 @@ class PeriodController extends Controller
                 'nonaktif' => 'selesai',
                 default => $request->status,
             };
-            
-            if ($statusVal === 'proses') {
-                $testerIds = $period->periodTesters()->pluck('tester_id')->toArray();
-                
-                $busyTesters = User::whereIn('id', $testerIds)
-                    ->whereHas('periodTesters.period', function ($q) use ($period) {
-                        $q->where('status', 'proses')->where('checking_periods.id', '!=', $period->id);
-                    })
-                    ->get();
-                    
-                if ($busyTesters->isNotEmpty()) {
-                    $names = $busyTesters->pluck('name')->implode(', ');
-                    return back()->with('error', "Gagal mengaktifkan periode! Tester berikut masih memiliki penugasan di periode aktif lain: {$names}.");
-                }
-            }
 
             try {
                 $period->update([
@@ -441,15 +429,18 @@ class PeriodController extends Controller
         $testerIds = array_values(array_map('intval', array_unique((array) $request->tester_ids)));
         
         $busyTesters = User::whereIn('id', $testerIds)
-            ->whereHas('periodTesters.period', function ($q) use ($period) {
-                $q->where('status', 'proses')->where('checking_periods.id', '!=', $period->id);
+            ->whereHas('periodServices', function ($q) use ($period) {
+                $q->where('status', 'pending')
+                  ->whereHas('period', function ($pq) use ($period) {
+                      $pq->where('status', 'proses')->where('checking_periods.id', '!=', $period->id);
+                  });
             })
             ->get();
 
         if ($busyTesters->isNotEmpty()) {
             $names = $busyTesters->pluck('name')->implode(', ');
             return back()->withErrors([
-                'tester_ids' => "Pembaruan dibatalkan! Tester berikut masih memiliki tugas di periode aktif yang belum selesai: {$names}. Silakan tutup periode lama terlebih dahulu."
+                'tester_ids' => "Pembaruan dibatalkan! Tester berikut masih memiliki tugas pengecekan yang belum selesai (pending) di periode aktif lain: {$names}."
             ]);
         }
 
