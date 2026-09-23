@@ -370,12 +370,23 @@ class AssignedServiceController extends Controller
                 'description' => $validated['description'] ?? null,
             ]);
 
+            // Auto-complete: jika seluruh layanan pada periode ini sudah selesai diperiksa (0 pending), ubah status periode menjadi 'selesai'
+            $hasPending = PeriodService::where('period_id', $periodService->period_id)
+                ->where('status', 'pending')
+                ->exists();
+
+            if (!$hasPending) {
+                $periodService->period()->update([
+                    'status' => 'selesai',
+                ]);
+            }
+
             return back()->with(
                 'success',
                 'Hasil pengecekan berhasil disimpan.'
             );
         } catch (\Throwable $e) {
-            Log::error('Gagal menyimpan hasil pengecekan (Tester): ' . $e->getMessage(), [
+            \Illuminate\Support\Facades\Log::error('Gagal menyimpan hasil pengecekan (Tester): ' . $e->getMessage(), [
                 'period_service_id' => $periodService->id,
             ]);
 

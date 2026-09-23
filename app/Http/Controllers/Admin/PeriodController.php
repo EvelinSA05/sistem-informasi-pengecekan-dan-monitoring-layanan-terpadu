@@ -149,6 +149,7 @@ class PeriodController extends Controller
                     'nip' => $tester->nip,
                     'bidang' => $tester->bidang ?? 'Layanan Publik',
                     'initials' => $initials,
+                    'is_available' => $pendingTasksCount === 0,
                     'pending_tasks_count' => $pendingTasksCount,
                     'max_pending_deadline' => $maxDeadline,
                 ];
@@ -398,32 +399,6 @@ class PeriodController extends Controller
                 'nonaktif' => 'selesai',
                 default => $request->status,
             };
-
-            if ($statusVal === 'proses') {
-                $testerIds = $period->periodTesters()->pluck('tester_id')->toArray();
-                $targetDateObj = \Carbon\Carbon::parse($period->date)->toDateString();
-                
-                $busyTesters = \App\Models\User::whereIn('id', $testerIds)
-                    ->whereHas('periodServices', function ($q) use ($period, $targetDateObj) {
-                        $q->where('status', 'pending')
-                          ->whereHas('period', function ($pq) use ($period, $targetDateObj) {
-                              $pq->where('status', 'proses')
-                                 ->where('checking_periods.id', '!=', $period->id)
-                                 ->where('date', '<=', $targetDateObj)
-                                 ->where(function ($query) use ($targetDateObj) {
-                                     $query->whereNull('deadline_date')
-                                           ->orWhere('deadline_date', '>=', $targetDateObj);
-                                 });
-                          });
-                    })
-                    ->get();
-                    
-                if ($busyTesters->isNotEmpty()) {
-                    $names = $busyTesters->pluck('name')->implode(', ');
-                    return back()->with('error', "Gagal mengaktifkan periode! Tester berikut masih memiliki tugas pengecekan yang belum selesai (pending) di periode aktif lain: {$names}.");
-                }
-            }
-
             $period->update([
                 'status' => $statusVal,
             ]);
