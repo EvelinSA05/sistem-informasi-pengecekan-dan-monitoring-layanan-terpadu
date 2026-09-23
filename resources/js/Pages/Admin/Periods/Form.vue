@@ -12,12 +12,14 @@ const props = defineProps({
     initialTesterIds: { type: Array,   default: () => [] },
 });
 
-// ─── Form State ──────────────────────────────────────────────────
 const form = useForm({
     date: props.initialDate || props.period?.date || new Date().toISOString().split('T')[0],
     deadline_date: props.period?.deadline_date || '',
     tester_ids: [...props.initialTesterIds],
 });
+
+const showValidationErrorModal = ref(false);
+const validationErrorMessage = ref('');
 
 // ─── Toggle Tester Selection ─────────────────────────────────────
 const enrichedTesters = computed(() => {
@@ -156,16 +158,27 @@ const distributedGroups = computed(() => {
     return groups;
 });
 
-// ─── Submit Form ─────────────────────────────────────────────────
 function submitForm() {
+    const errorOptions = {
+        preserveScroll: true,
+        onError: (errors) => {
+            if (errors.deadline_date) {
+                validationErrorMessage.value = errors.deadline_date;
+                showValidationErrorModal.value = true;
+            } else if (errors.date) {
+                validationErrorMessage.value = errors.date;
+                showValidationErrorModal.value = true;
+            } else if (errors.tester_ids) {
+                validationErrorMessage.value = errors.tester_ids;
+                showValidationErrorModal.value = true;
+            }
+        }
+    };
+
     if (props.isEdit) {
-        form.put(route('admin.periods.update', props.period.id), {
-            preserveScroll: true,
-        });
+        form.put(route('admin.periods.update', props.period.id), errorOptions);
     } else {
-        form.post(route('admin.periods.store'), {
-            preserveScroll: true,
-        });
+        form.post(route('admin.periods.store'), errorOptions);
     }
 }
 </script>
@@ -219,9 +232,6 @@ function submitForm() {
                                         : 'border-slate-200 hover:border-slate-300'"
                                 />
                             </div>
-                            <p v-if="form.errors.date" class="text-xs text-rose-500 mt-1 font-medium">
-                                {{ form.errors.date }}
-                            </p>
                         </div>
 
                         <div class="mt-4">
@@ -239,9 +249,6 @@ function submitForm() {
                                         : 'border-slate-200 hover:border-slate-300'"
                                 />
                             </div>
-                            <p v-if="form.errors.deadline_date" class="text-xs text-rose-500 mt-1 font-medium">
-                                {{ form.errors.deadline_date }}
-                            </p>
                         </div>
                     </div>
 
@@ -475,5 +482,41 @@ function submitForm() {
             </div>
 
         </div>
+        <!-- ════════════════════════════════════════════════════ -->
+        <!-- Modal: Error Validasi                                  -->
+        <!-- ════════════════════════════════════════════════════ -->
+        <Teleport to="body">
+            <Transition
+                enter-active-class="transition-all duration-200 ease-out"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition-all duration-150 ease-in"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div v-if="showValidationErrorModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showValidationErrorModal = false"></div>
+                    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 sm:p-7 z-10 text-center">
+                        <div class="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4 border border-rose-200 shadow-xs">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800">Gagal Disimpan</h3>
+                        <p class="text-sm text-slate-500 mt-2 leading-relaxed mb-6 font-medium">
+                            {{ validationErrorMessage }}
+                        </p>
+                        <button
+                            type="button"
+                            @click="showValidationErrorModal = false"
+                            class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
+                        >
+                            Tutup
+                        </button>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
+
     </AdminLayout>
 </template>
