@@ -294,11 +294,11 @@ function submitForm() {
  : 'cursor-pointer bg-white border-slate-200/80 hover:border-slate-300 hover:bg-slate-50/50')
  ]"
  >
- <div class="flex items-center gap-3.5">
+ <div class="flex items-center gap-3.5 min-w-0 flex-1 pr-2">
  <!-- Checkbox circle / Lock icon -->
  <div
  :class="[
- 'w-5 h-5 rounded-full flex items-center justify-center transition-colors',
+ 'w-5 h-5 rounded-full flex items-center justify-center transition-colors shrink-0',
  isTesterSelected(tester.id)
  ? 'bg-primary text-white'
  : (tester.is_available === false ? 'border-2 border-slate-200 bg-slate-100 text-slate-400' : 'border-2 border-slate-300 bg-white')
@@ -327,7 +327,7 @@ function submitForm() {
  <!-- Initials Avatar -->
  <div
  :class="[
- 'w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm',
+ 'w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0',
  getTesterAvatarColor(tester.initials, tester.name)
  ]"
  >
@@ -335,18 +335,18 @@ function submitForm() {
  </div>
 
  <!-- Name & Email -->
- <div>
- <p class="text-sm font-bold text-slate-800 leading-tight">
+ <div class="min-w-0">
+ <p class="text-sm font-bold text-slate-800 leading-tight truncate">
  {{ tester.name }}
  </p>
- <p class="text-xs text-slate-400 mt-0.5 font-medium">
+ <p class="text-xs text-slate-400 mt-0.5 font-medium truncate">
  {{ tester.email }}
  </p>
  </div>
  </div>
 
  <!-- Right side badge -->
- <div v-if="isTesterSelected(tester.id)">
+ <div v-if="isTesterSelected(tester.id)" class="shrink-0">
  <span class="inline-flex items-center px-2.5 py-1 rounded-lg border border-slate-200/90 bg-white text-[11px] font-semibold text-slate-600 shadow-2xs">
  ~{{ perTesterEstimate }} layanan
  </span>
