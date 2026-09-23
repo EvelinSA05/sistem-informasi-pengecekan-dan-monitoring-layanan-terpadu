@@ -15,6 +15,16 @@ export default {
             fontFamily: {
                 sans: ['"Plus Jakarta Sans"', 'Figtree', ...defaultTheme.fontFamily.sans],
             },
+            colors: {
+                primary: {
+                    DEFAULT: '#001166', // Atlantic Depths
+                    hover: '#000c4d', // Slightly darker for hover
+                },
+                secondary: {
+                    DEFAULT: '#f0f0e7', // Aspen Snow
+                    hover: '#e2e2d9',
+                },
+            },
         },
     },
 
