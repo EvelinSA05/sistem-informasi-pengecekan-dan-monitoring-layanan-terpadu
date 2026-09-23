@@ -39,6 +39,22 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * Check if the user is an admin.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Check if the user is a tester.
+     */
+    public function isTester(): bool
+    {
+        return $this->role === 'tester';
+    }
+
     // Relasi ke checking_periods
     // Satu user (Admin) dapat membuat banyak periode
     public function checkingPeriods()

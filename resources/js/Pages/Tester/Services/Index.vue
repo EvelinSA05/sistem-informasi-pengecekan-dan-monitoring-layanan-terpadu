@@ -26,7 +26,10 @@ let filterTimer = null;
 watch([searchQuery, filterStatus, filterLevel, filterCategory], ([newSearch, newStatus, newLevel, newCat]) => {
     clearTimeout(filterTimer);
     filterTimer = setTimeout(() => {
-        router.get(route('tester.services.index'), {
+        const routeName = props.periodInfo ? 'tester.periods.services' : 'tester.services.index';
+        const routeParam = props.periodInfo ? props.periodInfo.id : undefined;
+
+        router.get(route(routeName, routeParam), {
             search: newSearch,
             status: newStatus,
             level: newLevel,
@@ -149,6 +152,81 @@ function submitCheck() {
         </Transition>
 
         <div class="space-y-6 max-w-7xl mx-auto">
+
+            <!-- ── Top Action Bar (Back to Periods List) ──────────────── -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+                <Link
+                    :href="route('tester.services.index')"
+                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-[#1e3a8a] text-xs sm:text-sm font-bold transition-all active:scale-95 group w-fit"
+                >
+                    <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5 text-slate-500 group-hover:text-[#1e3a8a]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                    </svg>
+                    <span>Kembali ke Daftar Periode</span>
+                </Link>
+
+                <div v-if="periodInfo" class="flex items-center gap-2">
+                    <span
+                        v-if="periodInfo.status === 'proses'"
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold uppercase bg-[#1e3a8a] text-white shadow-xs"
+                    >
+                        <span class="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
+                        Status: Proses
+                    </span>
+                    <span
+                        v-else
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold uppercase bg-slate-100 border border-slate-200 text-slate-600"
+                    >
+                        <svg class="w-3.5 h-3.5 text-slate-500 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Status: Selesai (Terkunci)
+                    </span>
+                </div>
+            </div>
+            
+            <template v-if="periodInfo">
+                <!-- ── Deadline Banner ─────────────────────────────────── -->
+                <div
+                v-if="periodInfo && periodInfo.deadline_date && periodInfo.status === 'proses'"
+                :class="[
+                    'px-5 py-4 rounded-2xl border flex items-center justify-between gap-4 shadow-sm',
+                    periodInfo.is_overdue
+                        ? 'bg-rose-50 border-rose-200 text-rose-800'
+                        : periodInfo.days_remaining <= 2
+                            ? 'bg-amber-50 border-amber-200 text-amber-800'
+                            : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                ]"
+            >
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+                        :class="[
+                            periodInfo.is_overdue
+                                ? 'bg-rose-500 text-white'
+                                : periodInfo.days_remaining <= 2
+                                    ? 'bg-amber-500 text-white'
+                                    : 'bg-emerald-500 text-white'
+                        ]"
+                    >
+                        <svg class="w-5 h-5 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm">
+                            <template v-if="periodInfo.is_overdue">Tenggat Waktu Telah Lewat!</template>
+                            <template v-else-if="periodInfo.days_remaining === 0">Jatuh Tempo Hari Ini!</template>
+                            <template v-else>Tenggat Waktu: {{ periodInfo.deadline_date }}</template>
+                        </h4>
+                        <p class="text-xs mt-0.5 opacity-80 font-medium">
+                            <template v-if="periodInfo.is_overdue">Periode ini sudah melewati batas waktu {{ Math.abs(periodInfo.days_remaining) }} hari yang lalu.</template>
+                            <template v-else-if="periodInfo.days_remaining === 0">Segera selesaikan pengecekan layanan sebelum hari ini berakhir.</template>
+                            <template v-else>Sisa waktu: {{ periodInfo.days_remaining }} hari lagi.</template>
+                        </p>
+                    </div>
+                </div>
+            </div>
 
             <!-- ── Top Mini Stats Bar ────────────────────────────── -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
@@ -487,33 +565,40 @@ function submitCheck() {
 
                                 <!-- Action Button (Cek vs Ubah) -->
                                 <td class="py-4 px-5 text-center align-top pt-4">
-                                    <!-- Primary Cek Button for Pending -->
-                                    <button
-                                        v-if="service.status === 'pending'"
-                                        type="button"
-                                        @click="openCheckModal(service)"
-                                        class="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-xl font-bold text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-xs hover:shadow transition-all active:scale-95 cursor-pointer border border-blue-600"
-                                        title="Lakukan Pengecekan Layanan"
-                                    >
-                                        <svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                                        </svg>
-                                        Cek
-                                    </button>
+                                    <template v-if="periodInfo.status === 'proses'">
+                                        <!-- Primary Cek Button for Pending -->
+                                        <button
+                                            v-if="service.status === 'pending'"
+                                            type="button"
+                                            @click="openCheckModal(service)"
+                                            class="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-xl font-bold text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-xs hover:shadow transition-all active:scale-95 cursor-pointer border border-blue-600"
+                                            title="Lakukan Pengecekan Layanan"
+                                        >
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                            Cek
+                                        </button>
 
-                                    <!-- Subtle Ubah Button for Already Checked -->
-                                    <button
-                                        v-else
-                                        type="button"
-                                        @click="openCheckModal(service)"
-                                        class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs transition-all active:scale-95 cursor-pointer"
-                                        title="Ubah Hasil Pengecekan"
-                                    >
-                                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                                        </svg>
-                                        Ubah
-                                    </button>
+                                        <!-- Subtle Ubah Button for Already Checked -->
+                                        <button
+                                            v-else
+                                            type="button"
+                                            @click="openCheckModal(service)"
+                                            class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                            title="Ubah Hasil Pengecekan"
+                                        >
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                            </svg>
+                                            Ubah
+                                        </button>
+                                    </template>
+                                    <template v-else>
+                                        <span class="inline-flex items-center justify-center px-3 py-1.5 rounded-xl font-semibold text-xs bg-slate-100 text-slate-400 border border-slate-200" title="Periode sudah ditutup">
+                                            Terkunci
+                                        </span>
+                                    </template>
                                 </td>
                             </tr>
                         </tbody>
@@ -556,6 +641,24 @@ function submitCheck() {
 
             </div>
 
+            </template>
+            
+            <template v-else>
+                <!-- EMPTY STATE TUGAS -->
+                <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-8 flex flex-col items-center justify-center text-center min-h-[500px]">
+                    <div class="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6 border border-slate-100 shadow-inner">
+                        <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    </div>
+                    <h3 class="text-2xl font-black text-slate-800 mb-3 tracking-tight">Belum Ada Penugasan Aktif</h3>
+                    <p class="text-sm text-slate-500 max-w-md leading-relaxed mb-6">
+                        Saat ini Anda tidak memiliki penugasan pada periode yang sedang berjalan. Seluruh tugas pada periode sebelumnya telah selesai atau dikunci oleh sistem.
+                    </p>
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-semibold text-xs border border-slate-200">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Silakan tunggu informasi selanjutnya dari Admin Majadigi.
+                    </div>
+                </div>
+            </template>
         </div>
 
         <!-- ── Modal Uji Layanan / Edit Hasil Pengujian (Clean & Modern) ── -->
@@ -726,12 +829,13 @@ function submitCheck() {
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                                     {{ checkForm.status === 'gangguan' ? 'Catatan / Keterangan Kendala' : 'Catatan Pengujian' }}
-                                    <span v-if="checkForm.status === 'gangguan'" class="text-rose-500 font-normal lowercase">(disarankan)</span>
+                                    <span v-if="checkForm.status === 'gangguan'" class="text-rose-600 font-bold lowercase">(wajib)</span>
                                     <span v-else class="text-slate-400 font-normal lowercase">(opsional)</span>
                                 </label>
                                 <textarea
                                     v-model="checkForm.description"
                                     rows="3"
+                                    maxlength="5000"
                                     class="w-full rounded-xl bg-slate-50/70 border border-slate-200 text-xs focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 p-3 leading-relaxed placeholder:text-slate-400 outline-none transition-all"
                                     :placeholder="checkForm.status === 'gangguan' ? 'Jelaskan secara spesifik kendala yang dialami (misal: halaman 404, lambat diakses, SSL expired, gagal login, dsb.)...' : 'Tambahkan catatan pengujian bila ada (opsional)...'"
                                 ></textarea>

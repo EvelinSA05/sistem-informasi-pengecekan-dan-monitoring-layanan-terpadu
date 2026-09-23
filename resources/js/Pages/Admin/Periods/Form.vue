@@ -15,6 +15,7 @@ const props = defineProps({
 // ─── Form State ──────────────────────────────────────────────────
 const form = useForm({
     date: props.initialDate || props.period?.date || new Date().toISOString().split('T')[0],
+    deadline_date: props.period?.deadline_date || '',
     tester_ids: [...props.initialTesterIds],
 });
 
@@ -92,8 +93,9 @@ function getServiceIcon(iconKey) {
     return serviceIcons[iconKey] || serviceIcons['globe'];
 }
 
-// ─── Reactive Automatic Distribution Calculation ─────────────────
-const selectedTestersCount = computed(() => form.tester_ids.length);
+// ─── Reactive Automatic Distribution Calculation ───────────────
+const selectedTestersList = computed(() => props.testers.filter(t => form.tester_ids.includes(t.id)));
+const selectedTestersCount = computed(() => selectedTestersList.value.length);
 
 const perTesterEstimate = computed(() => {
     if (selectedTestersCount.value === 0) return 0;
@@ -103,8 +105,7 @@ const perTesterEstimate = computed(() => {
 const distributedGroups = computed(() => {
     if (selectedTestersCount.value === 0) return [];
 
-    const selectedTestersList = props.testers.filter(t => form.tester_ids.includes(t.id));
-    const groups = selectedTestersList.map(tester => ({
+    const groups = selectedTestersList.value.map(tester => ({
         tester,
         services: [],
     }));
@@ -182,6 +183,26 @@ function submitForm() {
                             </div>
                             <p v-if="form.errors.date" class="text-xs text-rose-500 mt-1 font-medium">
                                 {{ form.errors.date }}
+                            </p>
+                        </div>
+
+                        <div class="mt-4">
+                            <label for="deadline_date" class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Tenggat Waktu (Opsional)
+                            </label>
+                            <div class="relative">
+                                <input
+                                    id="deadline_date"
+                                    v-model="form.deadline_date"
+                                    type="date"
+                                    class="w-full px-4 py-2.5 bg-white rounded-2xl border text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 transition-all shadow-2xs cursor-pointer text-slate-700"
+                                    :class="form.errors.deadline_date
+                                        ? 'border-rose-500 ring-2 ring-rose-500/10'
+                                        : 'border-slate-200 hover:border-slate-300'"
+                                />
+                            </div>
+                            <p v-if="form.errors.deadline_date" class="text-xs text-rose-500 mt-1 font-medium">
+                                {{ form.errors.deadline_date }}
                             </p>
                         </div>
                     </div>

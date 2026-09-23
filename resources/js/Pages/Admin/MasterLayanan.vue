@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import axios from 'axios';
@@ -7,11 +7,12 @@ import axios from 'axios';
 // ─── Props dari controller ────────────────────────────────────
 const props = defineProps({
     services: { type: Object, default: () => ({ data: [] }) },
-    stats:    { type: Object, default: () => ({ total: 0, aktif: 0, nonaktif: 0 }) },
+    stats:    { type: Object, default: () => ({ total: 0, aktif: 0, nonaktif: 0, butuhkonfirmasi: 0 }) },
     search:   { type: String, default: '' },
     status:   { type: String, default: '' },
     level:    { type: String, default: '' },
     levels:   { type: Array,  default: () => [] },
+    flash:    { type: Object, default: () => ({}) },
 });
 
 // ─── State modal ─────────────────────────────────────────────
@@ -38,44 +39,110 @@ watch([searchQuery, filterStatus, filterLevel], ([newSearch, newStatus, newLevel
     }, 350);
 });
 
-// ─── Flash message ───────────────────────────────────────────
-const flash = ref('');
-const flashType = ref('success'); // 'success' | 'error'
+// ─── Flash Notification ──────────────────────────────────────────
+const flashMsg = ref(props.flash?.success || props.flash?.error || '');
+const flashType = ref(props.flash?.error ? 'error' : 'success');
 let flashTimer = null;
+const progressWidth = ref(100);
+const flashDuration = ref(4000);
+
+function clearFlashTimer() {
+    if (flashTimer) {
+        clearTimeout(flashTimer);
+        flashTimer = null;
+    }
+}
 
 function closeFlash() {
-    if (flashTimer) clearTimeout(flashTimer);
-    flash.value = '';
+    clearFlashTimer();
+    flashMsg.value = '';
 }
 
-function showFlash(msg, type = 'success') {
-    if (flashTimer) clearTimeout(flashTimer);
-    flash.value = msg;
+function showFlash(msg, type = 'success', duration = 4000) {
+    clearFlashTimer();
+    flashMsg.value = msg;
     flashType.value = type;
-    flashTimer = setTimeout(() => { flash.value = ''; }, 4000);
+    flashDuration.value = duration;
+    
+    progressWidth.value = 100;
+    setTimeout(() => {
+        if (flashMsg.value === msg) {
+            progressWidth.value = 0;
+        }
+    }, 50);
+
+    flashTimer = setTimeout(() => {
+        flashMsg.value = '';
+        flashTimer = null;
+    }, duration);
 }
+
+// Watch props.flash if updated via Inertia visit / redirect
+watch(() => props.flash, (newFlash) => {
+    if (newFlash?.success) {
+        showFlash(newFlash.success, 'success', 4000);
+    } else if (newFlash?.error) {
+        showFlash(newFlash.error, 'error', 4000);
+    }
+}, { deep: true });
+
+onMounted(() => {
+    if (flashMsg.value) {
+        flashDuration.value = 4000;
+        progressWidth.value = 100;
+        setTimeout(() => {
+            progressWidth.value = 0;
+        }, 50);
+
+        flashTimer = setTimeout(() => {
+            flashMsg.value = '';
+            flashTimer = null;
+        }, 4000);
+    }
+});
+
+onUnmounted(() => {
+    clearFlashTimer();
+});
 
 // ─── Add Form ─────────────────────────────────────────────────
-const addForm = useForm({
+const defaultAddFormData = {
     service_name: '',
     category:     '',
     level:        '',
     service_url:  '',
-    is_active:    true,
+    status:       'aktif',
     notes:        '',
     deskripsi_layanan: '',
     tester_instruction: '',
-});
-function openAddModal() {
-    addForm.reset();
+};
+
+const addForm = useForm({ ...defaultAddFormData });
+
+function resetAddForm() {
     addForm.clearErrors();
+    addForm.defaults({ ...defaultAddFormData });
+    addForm.reset();
+    Object.keys(defaultAddFormData).forEach((key) => {
+        addForm[key] = defaultAddFormData[key];
+    });
+}
+
+function openAddModal() {
+    resetAddForm();
     showAddModal.value = true;
 }
+
+function closeAddModal() {
+    showAddModal.value = false;
+    resetAddForm();
+}
+
 function submitAdd() {
     addForm.post(route('admin.services.store'), {
         preserveScroll: true,
         onSuccess: () => {
-            showAddModal.value = false;
+            closeAddModal();
             showFlash('Layanan berhasil ditambahkan.');
         },
     });
@@ -87,7 +154,7 @@ const editForm = useForm({
     category:     '',
     level:        '',
     service_url:  '',
-    is_active:    true,
+    status:       'aktif',
     notes:        '',
     deskripsi_layanan: '',
     tester_instruction: '',
@@ -98,7 +165,12 @@ function openEditModal(service) {
     editForm.category     = service.category;
     editForm.level        = service.level ?? '';
     editForm.service_url  = service.service_url;
-    editForm.is_active    = !!service.is_active;
+    // Load status — jika masih boolean (data lama), fallback ke mapping
+    if (service.status && ['aktif', 'tidak_aktif', 'butuh_konfirmasi'].includes(service.status)) {
+        editForm.status = service.status;
+    } else {
+        editForm.status = service.is_active ? 'aktif' : 'tidak_aktif';
+    }
     editForm.notes        = service.notes;
     editForm.deskripsi_layanan = service.deskripsi_layanan ?? '';
     editForm.tester_instruction = service.tester_instruction ?? '';
@@ -110,7 +182,7 @@ function submitEdit() {
         preserveScroll: true,
         onSuccess: () => {
             showEditModal.value = false;
-            showFlash('Data layanan berhasil diperbarui.');
+            showFlash('Layanan berhasil diperbarui.');
         },
     });
 }
@@ -121,7 +193,7 @@ function openDetailModal(service) {
     showDetailModal.value = true;
 }
 
-// ─── History Modal ────────────────────────────────────────────
+// ─── History Modal ────────────────────────────────────
 const serviceHistory = ref([]);
 const isLoadingHistory = ref(false);
 
@@ -147,11 +219,16 @@ function openDeleteModal(service) {
     showDeleteModal.value = true;
 }
 function confirmDelete() {
+    if (!selectedService.value) return;
     router.delete(route('admin.services.destroy', selectedService.value.id), {
         preserveScroll: true,
         onSuccess: () => {
             showDeleteModal.value = false;
             showFlash('Layanan berhasil dihapus.');
+        },
+        onError: () => {
+            showDeleteModal.value = false;
+            showFlash('Gagal menghapus layanan.', 'error');
         },
     });
 }
@@ -167,50 +244,61 @@ function confirmDelete() {
         <!-- ── Flash Notification ──────────────────────────────── -->
         <Transition
             enter-active-class="transition-all duration-300 ease-out"
-            enter-from-class="opacity-0 -translate-y-2 translate-x-1"
-            enter-to-class="opacity-100 translate-y-0 translate-x-0"
+            enter-from-class="opacity-0 translate-y-4"
+            enter-to-class="opacity-100 translate-y-0"
             leave-active-class="transition-all duration-200 ease-in"
-            leave-from-class="opacity-100 translate-y-0 translate-x-0"
-            leave-to-class="opacity-0 -translate-y-2 translate-x-1"
+            leave-from-class="opacity-100 translate-y-0"
+            leave-to-class="opacity-0 translate-y-4"
         >
             <div
-                v-if="flash"
+                v-if="flashMsg"
                 :class="[
-                    'fixed top-5 right-5 z-[100] flex items-center justify-between gap-3 px-4 py-3 rounded-2xl shadow-lg text-sm font-semibold border backdrop-blur-sm transition-all max-w-md',
+                    'fixed bottom-[24px] right-[24px] z-[100] flex items-center justify-between gap-3 px-4 py-3 rounded-2xl shadow-lg text-sm font-semibold border backdrop-blur-sm transition-all max-w-md overflow-hidden',
                     flashType === 'success'
                         ? 'bg-emerald-50/95 border-emerald-200 text-emerald-800 shadow-emerald-900/10'
                         : 'bg-red-50/95 border-red-200 text-red-800 shadow-red-900/10'
                 ]"
             >
-                <div class="flex items-center gap-2.5">
+                <div class="flex items-center gap-2.5 relative z-10">
                     <svg v-if="flashType === 'success'" class="w-4 h-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                     </svg>
                     <svg v-else class="w-4 h-4 shrink-0 text-red-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
-                    <span>{{ flash }}</span>
+                    <span>{{ flashMsg }}</span>
                 </div>
 
                 <!-- Close Button -->
                 <button
                     type="button"
                     @click="closeFlash"
-                    class="p-1 rounded-xl transition-colors focus:outline-none shrink-0"
+                    class="p-1 rounded-xl transition-colors focus:outline-none shrink-0 relative z-10"
                     :class="flashType === 'success'
                         ? 'text-emerald-500 hover:text-emerald-800 hover:bg-emerald-100/70'
                         : 'text-red-500 hover:text-red-800 hover:bg-red-100/70'"
                     aria-label="Tutup notifikasi"
+                    title="Tutup"
                 >
                     <svg class="w-4 h-4 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
+
+                <!-- Progress Bar -->
+                <div
+                    class="absolute bottom-0 left-0 h-1 transition-all ease-linear"
+                    :class="flashType === 'success' ? 'bg-emerald-500/40' : 'bg-red-500/40'"
+                    :style="{
+                        width: progressWidth + '%',
+                        transitionDuration: progressWidth === 100 ? '0ms' : `${flashDuration}ms`
+                    }"
+                ></div>
             </div>
         </Transition>
 
         <!-- ── Stats Cards ───────────────────────────────────── -->
-        <div class="grid grid-cols-3 gap-2.5 sm:gap-4 mb-6">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mb-6">
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                 <div>
                     <p class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Total Layanan</p>
@@ -225,9 +313,15 @@ function confirmDelete() {
             </div>
             <div class="bg-rose-50 rounded-2xl border border-rose-100 shadow-sm p-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                 <div>
-                    <p class="text-[10px] sm:text-xs font-bold text-rose-600 uppercase tracking-wider truncate">Non-Aktif</p>
+                    <p class="text-[10px] sm:text-xs font-bold text-rose-600 uppercase tracking-wider truncate">Tidak Aktif</p>
                 </div>
                 <span class="text-xl sm:text-3xl font-extrabold text-rose-700">{{ stats.nonaktif }}</span>
+            </div>
+            <div class="bg-amber-50 rounded-2xl border border-amber-100 shadow-sm p-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <div>
+                    <p class="text-[10px] sm:text-xs font-bold text-amber-600 uppercase tracking-wider truncate">Butuh Konfirmasi</p>
+                </div>
+                <span class="text-xl sm:text-3xl font-extrabold text-amber-700">{{ stats.butuhkonfirmasi }}</span>
             </div>
         </div>
 
@@ -258,10 +352,11 @@ function confirmDelete() {
                         </svg>
                     </button>
                 </div>
-                <select v-model="filterStatus" class="w-full sm:w-36 py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-slate-700">
+                <select v-model="filterStatus" class="w-full sm:w-44 py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-slate-700">
                     <option value="">Semua Status</option>
-                    <option value="1">Aktif</option>
-                    <option value="0">Non-Aktif</option>
+                    <option value="aktif">Aktif</option>
+                    <option value="tidak_aktif">Tidak Aktif</option>
+                    <option value="butuh_konfirmasi">Butuh Konfirmasi</option>
                 </select>
                 <select v-model="filterLevel" class="w-full sm:w-36 py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-slate-700">
                     <option value="">Semua Level</option>
@@ -335,11 +430,26 @@ function confirmDelete() {
                             </td>
                             <td class="py-3.5 px-5 align-middle">
                                 <span
-                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
-                                    :class="svc.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
+                                    :class="{
+                                        'bg-emerald-50 text-emerald-700 border border-emerald-200': svc.status === 'aktif',
+                                        'bg-rose-50 text-rose-700 border border-rose-200': svc.status === 'tidak_aktif',
+                                        'bg-amber-50 text-amber-700 border border-amber-200': svc.status === 'butuh_konfirmasi',
+                                        'bg-slate-100 text-slate-600 border border-slate-200': !svc.status,
+                                    }"
                                 >
-                                    <span class="w-1.5 h-1.5 rounded-full" :class="svc.is_active ? 'bg-emerald-500' : 'bg-slate-400'"></span>
-                                    {{ svc.is_active ? 'Aktif' : 'Non-Aktif' }}
+                                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                                        :class="{
+                                            'bg-emerald-500': svc.status === 'aktif',
+                                            'bg-rose-500': svc.status === 'tidak_aktif',
+                                            'bg-amber-500': svc.status === 'butuh_konfirmasi',
+                                            'bg-slate-400': !svc.status,
+                                        }"
+                                    ></span>
+                                    <span v-if="svc.status === 'aktif'">Aktif</span>
+                                    <span v-else-if="svc.status === 'tidak_aktif'">Tidak Aktif</span>
+                                    <span v-else-if="svc.status === 'butuh_konfirmasi'">Butuh Konfirmasi</span>
+                                    <span v-else>-</span>
                                 </span>
                             </td>
                             <td class="py-3.5 px-5 text-center align-middle">
@@ -421,7 +531,7 @@ function confirmDelete() {
                 <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
                     <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
                         <h3 class="text-lg font-bold text-slate-800">Tambah Layanan</h3>
-                        <button @click="showAddModal = false" class="text-slate-400 hover:text-slate-600 transition-colors p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                        <button @click="closeAddModal" class="text-slate-400 hover:text-slate-600 transition-colors p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
                     </div>
                     <div class="p-6 overflow-y-auto">
                         <form @submit.prevent="submitAdd" class="space-y-4">
@@ -463,17 +573,19 @@ function confirmDelete() {
                                 <textarea v-model="addForm.notes" rows="2" class="w-full rounded-xl border-slate-200 text-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
                                 <p v-if="addForm.errors.notes" class="mt-1 text-xs text-rose-500">{{ addForm.errors.notes }}</p>
                             </div>
-                            <div class="flex items-center gap-3 mt-2">
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" v-model="addForm.is_active" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                    <span class="ml-3 text-sm font-semibold text-slate-700">Status Aktif</span>
-                                </label>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Status <span class="text-rose-500">*</span></label>
+                                <select v-model="addForm.status" class="w-full rounded-xl border border-slate-200 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-700 bg-white py-2.5 px-3 outline-none">
+                                    <option value="aktif">Aktif</option>
+                                    <option value="tidak_aktif">Tidak Aktif</option>
+                                    <option value="butuh_konfirmasi">Butuh Konfirmasi</option>
+                                </select>
+                                <p v-if="addForm.errors.status" class="mt-1 text-xs text-rose-500">{{ addForm.errors.status }}</p>
                             </div>
                         </form>
                     </div>
                     <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
-                        <button type="button" @click="showAddModal = false" class="px-5 py-2.5 rounded-xl font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors">Batal</button>
+                        <button type="button" @click="closeAddModal" class="px-5 py-2.5 rounded-xl font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors">Batal</button>
                         <button type="button" @click="submitAdd" :disabled="addForm.processing" class="px-5 py-2.5 rounded-xl font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-all disabled:opacity-70 flex items-center gap-2">
                             <svg v-if="addForm.processing" class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                             Simpan
@@ -538,12 +650,14 @@ function confirmDelete() {
                                 <textarea v-model="editForm.notes" rows="2" class="w-full rounded-xl border-slate-200 text-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
                                 <p v-if="editForm.errors.notes" class="mt-1 text-xs text-rose-500">{{ editForm.errors.notes }}</p>
                             </div>
-                            <div class="flex items-center gap-3 mt-2">
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" v-model="editForm.is_active" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                    <span class="ml-3 text-sm font-semibold text-slate-700">Status Aktif</span>
-                                </label>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Status <span class="text-rose-500">*</span></label>
+                                <select v-model="editForm.status" class="w-full rounded-xl border border-slate-200 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-700 bg-white py-2.5 px-3 outline-none">
+                                    <option value="aktif">Aktif</option>
+                                    <option value="tidak_aktif">Tidak Aktif</option>
+                                    <option value="butuh_konfirmasi">Butuh Konfirmasi</option>
+                                </select>
+                                <p v-if="editForm.errors.status" class="mt-1 text-xs text-rose-500">{{ editForm.errors.status }}</p>
                             </div>
                         </form>
                     </div>
@@ -585,9 +699,28 @@ function confirmDelete() {
                                         <p class="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-1">Nama Layanan</p>
                                         <p class="text-lg font-extrabold text-slate-800 leading-tight">{{ selectedService.service_name }}</p>
                                     </div>
-                                    <span class="inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider" :class="selectedService.is_active ? 'bg-emerald-100 text-emerald-700 border border-emerald-200/50' : 'bg-slate-200 text-slate-600 border border-slate-300/50'">
-                                        <span class="w-1.5 h-1.5 rounded-full" :class="selectedService.is_active ? 'bg-emerald-500' : 'bg-slate-400'"></span>
-                                        {{ selectedService.is_active ? 'Aktif' : 'Non-Aktif' }}
+                                    <span
+                                        class="inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
+                                        :class="{
+                                            'bg-emerald-100 text-emerald-700 border border-emerald-200/50': selectedService.status === 'aktif',
+                                            'bg-rose-100 text-rose-700 border border-rose-200/50': selectedService.status === 'tidak_aktif',
+                                            'bg-amber-100 text-amber-700 border border-amber-200/50': selectedService.status === 'butuh_konfirmasi',
+                                            'bg-slate-200 text-slate-600 border border-slate-300/50': !selectedService.status,
+                                        }"
+                                    >
+                                        <span
+                                            class="w-1.5 h-1.5 rounded-full"
+                                            :class="{
+                                                'bg-emerald-500': selectedService.status === 'aktif',
+                                                'bg-rose-500': selectedService.status === 'tidak_aktif',
+                                                'bg-amber-500': selectedService.status === 'butuh_konfirmasi',
+                                                'bg-slate-400': !selectedService.status,
+                                            }"
+                                        ></span>
+                                        <span v-if="selectedService.status === 'aktif'">Aktif</span>
+                                        <span v-else-if="selectedService.status === 'tidak_aktif'">Tidak Aktif</span>
+                                        <span v-else-if="selectedService.status === 'butuh_konfirmasi'">Butuh Konfirmasi</span>
+                                        <span v-else>-</span>
                                     </span>
                                 </div>
                                 <a v-if="selectedService.service_url" :href="selectedService.service_url" target="_blank" class="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline break-all relative z-10 w-fit">

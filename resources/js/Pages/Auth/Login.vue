@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import InputError from '@/Components/InputError.vue';
 
 defineProps({
@@ -11,6 +11,13 @@ defineProps({
         type: String,
     },
 });
+
+const page = usePage();
+
+// Baca session_expired dari flash props yang dibagikan oleh HandleInertiaRequests.
+// Ini bekerja untuk semua skenario: full-page load, Inertia::location() redirect,
+// maupun redirect biasa — karena HandleInertiaRequests::share() selalu membaca session.
+const sessionExpiredMessage = computed(() => page.props.flash?.session_expired ?? null);
 
 const showPassword = ref(false);
 
@@ -153,7 +160,24 @@ const submit = () => {
                     </p>
                 </div>
 
-                <!-- Status Flash Message -->
+                <!-- Notifikasi Session Expired (hanya dari idle timeout, bukan logout normal) -->
+                <div
+                    v-if="sessionExpiredMessage"
+                    class="mb-4 p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-xs sm:text-sm font-medium text-amber-800 flex items-start gap-3 shadow-sm"
+                    role="alert"
+                    id="session-expired-alert"
+                >
+                    <!-- Ikon jam / sesi berakhir -->
+                    <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-amber-200 flex items-center justify-center">
+                        <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </span>
+                    <span class="leading-relaxed">{{ sessionExpiredMessage }}</span>
+                </div>
+
+                <!-- Status Flash Message (untuk pesan sukses biasa, misal reset password) -->
                 <div v-if="status" class="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs sm:text-sm font-medium text-emerald-700 flex items-center gap-2">
                     <svg class="w-4 h-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />

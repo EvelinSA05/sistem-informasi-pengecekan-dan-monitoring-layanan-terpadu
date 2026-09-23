@@ -15,7 +15,7 @@ const props = defineProps({
     // Admin props
     testerStats:           { type: Object, default: () => ({ total: 0, aktif: 0, nonaktif: 0 }) },
     periodStats:           { type: Object, default: () => ({ total: 0, proses: 0, selesai: 0 }) },
-    serviceStats:          { type: Object, default: () => ({ total: 0, aktif: 0, nonaktif: 0 }) },
+    serviceStats:          { type: Object, default: () => ({ total: 0, aktif: 0, nonaktif: 0, butuhkonfirmasi: 0 }) },
     categoryDistribution:  { type: Array,  default: () => [] },
     levelDistribution:     { type: Array,  default: () => [] },
     recentPeriods:         { type: Array,  default: () => [] },
@@ -46,17 +46,19 @@ const currentMonthYear = computed(() =>
 );
 
 // ─── Chart refs (Admin & Tester) ───────────────────────────────
-const testerChartRef       = ref(null);
-const periodChartRef       = ref(null);
-const categoryChartRef     = ref(null);
-const levelChartRef        = ref(null);
-const testerStatusChartRef = ref(null);
+const testerChartRef            = ref(null);
+const periodChartRef            = ref(null);
+const categoryChartRef          = ref(null);
+const levelChartRef             = ref(null);
+const testerStatusChartRef      = ref(null);
+const serviceStatusChartRef     = ref(null);
 
-let testerChartInstance       = null;
-let periodChartInstance       = null;
-let categoryChartInstance     = null;
-let levelChartInstance        = null;
-let testerStatusChartInstance = null;
+let testerChartInstance            = null;
+let periodChartInstance            = null;
+let categoryChartInstance          = null;
+let levelChartInstance             = null;
+let testerStatusChartInstance      = null;
+let serviceStatusChartInstance     = null;
 
 // ─── Color Palette ─────────────────────────────────────────────
 const COLORS = {
@@ -185,6 +187,70 @@ function setCategoryPage(page) {
     });
 }
 
+// ─── Service Status Horizontal Bar Chart ─────────────────────
+function renderServiceStatusChart() {
+    if (!serviceStatusChartRef.value) return;
+    if (serviceStatusChartInstance) {
+        serviceStatusChartInstance.destroy();
+        serviceStatusChartInstance = null;
+    }
+
+    const aktif           = Number(props.serviceStats?.aktif)          || 0;
+    const tidakAktif      = Number(props.serviceStats?.nonaktif)       || 0;
+    const butuhKonfirmasi = Number(props.serviceStats?.butuhkonfirmasi)|| 0;
+    const maxVal          = Math.max(aktif, tidakAktif, butuhKonfirmasi);
+
+    serviceStatusChartInstance = new Chart(serviceStatusChartRef.value, {
+        type: 'bar',
+        data: {
+            labels: ['Aktif', 'Tidak Aktif', 'Butuh Konfirmasi'],
+            datasets: [{
+                label: 'Jumlah Layanan',
+                data: [aktif, tidakAktif, butuhKonfirmasi],
+                backgroundColor: [
+                    COLORS.green  + 'cc',
+                    COLORS.red    + 'cc',
+                    COLORS.amber  + 'cc',
+                ],
+                borderColor: [
+                    COLORS.green,
+                    COLORS.red,
+                    COLORS.amber,
+                ],
+                borderWidth: 1.5,
+                borderRadius: 6,
+                borderSkipped: false,
+                maxBarThickness: 24,
+            }],
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => ` ${ctx.parsed.x} layanan`,
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    suggestedMax: maxVal > 0 ? maxVal + Math.max(Math.ceil(maxVal * 0.15), 2) : 5,
+                    ticks: { stepSize: 1, precision: 0, font: { size: 11 } },
+                    grid: { color: '#f1f5f9' },
+                },
+                y: {
+                    grid: { display: false },
+                    ticks: { font: { size: 12, weight: 'bold' } },
+                },
+            },
+        },
+    });
+}
+
 // ─── Tester Status Doughnut Chart ─────────────────────────────
 function renderTesterStatusChart() {
     if (!testerStatusChartRef.value) return;
@@ -305,6 +371,11 @@ function initCharts() {
         // Chart 3 — Kategori Horizontal Bar
         if (categoryChartRef.value && props.categoryDistribution.length > 0) {
             renderCategoryChart();
+        }
+
+        // Chart 5 — Service Status Horizontal Bar
+        if (serviceStatusChartRef.value) {
+            renderServiceStatusChart();
         }
 
         // Chart 4 — Level Bar Chart
@@ -529,11 +600,22 @@ function submitCheck() {
                         <div class="text-3xl font-black text-slate-800 leading-none">{{ serviceStats.total }}</div>
                         <p class="text-xs text-slate-400 mt-1">Layanan digital terdaftar</p>
                     </div>
-                    <div class="flex items-center gap-2 text-xs text-slate-500">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-                        <span class="font-semibold text-emerald-600">{{ serviceStats.aktif }} aktif</span>
-                        <span class="text-slate-300">·</span>
-                        <span>{{ serviceStats.nonaktif }} nonaktif</span>
+                    <div class="flex flex-col gap-1 text-xs">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                            <span class="font-semibold text-emerald-600">{{ serviceStats.aktif }}</span>
+                            <span class="text-slate-400">Aktif</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                            <span class="font-semibold text-rose-600">{{ serviceStats.nonaktif }}</span>
+                            <span class="text-slate-400">Tidak Aktif</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                            <span class="font-semibold text-amber-600">{{ serviceStats.butuhkonfirmasi ?? 0 }}</span>
+                            <span class="text-slate-400">Butuh Konfirmasi</span>
+                        </div>
                     </div>
                 </div>
 
@@ -555,7 +637,41 @@ function submitCheck() {
                 </div>
             </div>
 
-            <!-- ── ROW 2: Charts Status Tester & Periode ─────────── -->
+            <!-- ── ROW 2: Status Layanan (Full Width) ─────────────── -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-7">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 sm:mb-6">
+                    <div>
+                        <h3 class="text-sm sm:text-base font-bold text-slate-800">Status Layanan</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Rekap jumlah layanan berdasarkan status</p>
+                    </div>
+                    <span class="self-start sm:self-auto text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">
+                        {{ serviceStats.total }} Total Layanan
+                    </span>
+                </div>
+
+                <!-- Chart Container -->
+                <div class="relative w-full" style="height: 150px">
+                    <canvas ref="serviceStatusChartRef"></canvas>
+                </div>
+
+                <!-- Mini Stats / Summary Angka -->
+                <div class="mt-6 pt-5 border-t border-slate-100 grid grid-cols-3 divide-x divide-slate-100 text-center">
+                    <div class="px-2 sm:px-4">
+                        <p class="text-xl sm:text-2xl font-black text-emerald-600 leading-none">{{ serviceStats.aktif }}</p>
+                        <p class="text-xs font-medium text-slate-500 mt-1.5">Aktif</p>
+                    </div>
+                    <div class="px-2 sm:px-4">
+                        <p class="text-xl sm:text-2xl font-black text-rose-500 leading-none">{{ serviceStats.nonaktif }}</p>
+                        <p class="text-xs font-medium text-slate-500 mt-1.5">Tidak Aktif</p>
+                    </div>
+                    <div class="px-2 sm:px-4">
+                        <p class="text-xl sm:text-2xl font-black text-amber-500 leading-none">{{ serviceStats.butuhkonfirmasi ?? 0 }}</p>
+                        <p class="text-xs font-medium text-slate-500 mt-1.5">Butuh Konfirmasi</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── ROW 3: Charts Status Tester & Periode ─────────── -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 <!-- Status Tester Chart -->
@@ -914,13 +1030,13 @@ function submitCheck() {
                     <div class="shrink-0 flex items-center">
                         <div class="w-full sm:w-auto px-6 py-4 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-lg text-left sm:text-right">
                             <div class="flex items-center sm:justify-end gap-2 mb-1">
-                                <span class="w-2 h-2 rounded-full" :class="periodInfo?.status === 'selesai' ? 'bg-emerald-400' : 'bg-amber-300 animate-pulse'"></span>
+                                <span class="w-2 h-2 rounded-full" :class="periodInfo ? (periodInfo.status === 'selesai' ? 'bg-emerald-400' : 'bg-amber-300 animate-pulse') : 'bg-slate-400'"></span>
                                 <p class="text-[11px] font-bold text-cyan-200 tracking-widest uppercase">
-                                    {{ periodInfo?.status === 'selesai' ? 'Periode Selesai' : 'Periode Berjalan' }}
+                                    {{ periodInfo ? (periodInfo.status === 'selesai' ? 'Periode Selesai' : 'Periode Berjalan') : 'Status Saat Ini' }}
                                 </p>
                             </div>
                             <p class="text-lg sm:text-xl font-extrabold text-white capitalize leading-snug">
-                                {{ currentMonthYear }}
+                                {{ periodInfo ? currentMonthYear : 'Tidak Ada Penugasan Aktif' }}
                             </p>
                             <div class="mt-2.5 flex items-center sm:justify-end gap-2 text-xs font-semibold text-blue-100/90 flex-wrap">
                                 <span v-if="periodInfo?.date" class="inline-flex items-center gap-1.5 bg-black/20 px-3 py-1 rounded-xl border border-white/15 shadow-inner">
@@ -939,7 +1055,8 @@ function submitCheck() {
             </div>
 
             <!-- ── 2. 5 KPI Summary Cards (Menjawab 5 Pertanyaan Utama) ── -->
-            <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
+            <template v-if="periodInfo">
+                <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
 
                 <!-- 1. Total Ditugaskan -->
                 <Link
@@ -1412,6 +1529,23 @@ function submitCheck() {
                     </div>
                 </div>
             </div>
+            </template>
+            <template v-else>
+                <!-- EMPTY STATE TUGAS -->
+                <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-8 flex flex-col items-center justify-center text-center min-h-[400px]">
+                    <div class="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6 border border-slate-100 shadow-inner">
+                        <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    </div>
+                    <h3 class="text-2xl font-black text-slate-800 mb-3 tracking-tight">Belum Ada Penugasan Aktif</h3>
+                    <p class="text-sm text-slate-500 max-w-md leading-relaxed mb-6">
+                        Saat ini Anda tidak memiliki penugasan pada periode yang sedang berjalan. Seluruh tugas pada periode sebelumnya telah selesai atau dikunci oleh sistem.
+                    </p>
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-semibold text-xs border border-slate-200">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Silakan tunggu informasi selanjutnya dari Admin Majadigi.
+                    </div>
+                </div>
+            </template>
         </div>
 
         <!-- ── Modal Uji Layanan / Edit Hasil Pengujian (Clean & Modern) ── -->

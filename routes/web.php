@@ -12,6 +12,9 @@ Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'ind
 Route::middleware('auth')->group(function () {
     // ─── Tester Routes ─────────────────────────────────────────
     Route::get('/tester/services', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'index'])->name('tester.services.index');
+    Route::get('/tester/periods', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'index'])->name('tester.periods.index');
+    Route::get('/tester/periods/{period}', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'showPeriod'])->name('tester.periods.show');
+    Route::get('/tester/periods/{period}/services', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'showPeriod'])->name('tester.periods.services');
     Route::get('/tester/assigned-services', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'index'])->name('tester.assigned-services.index');
     Route::post('/tester/check/{periodService}', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'submitCheck'])->name('tester.submit_check');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -19,7 +22,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // ─── Admin Routes ──────────────────────────────────────────
-    Route::prefix('admin')->name('admin.')->group(function () {
+    Route::prefix('admin')->name('admin.')->middleware([\App\Http\Middleware\IsAdmin::class])->group(function () {
         // Manajemen User
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');

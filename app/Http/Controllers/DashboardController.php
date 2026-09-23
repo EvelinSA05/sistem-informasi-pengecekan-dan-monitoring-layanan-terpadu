@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\CheckingPeriod;
 use App\Models\PeriodService;
 use App\Models\Service;
+use App\Models\ServiceCheckLog;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -59,9 +61,10 @@ class DashboardController extends Controller
             $periodSelesai = CheckingPeriod::where('status', 'selesai')->count();
 
             // --- Service Stats ---
-            $serviceTotal = Service::count();
-            $serviceAktif = Service::where('is_active', true)->count();
-            $serviceNonaktif = Service::where('is_active', false)->count();
+            $serviceTotal         = Service::count();
+            $serviceAktif         = Service::where('status', 'aktif')->count();
+            $serviceNonaktif      = Service::where('status', 'tidak_aktif')->count();
+            $serviceBtuhKonfirmasi = Service::where('status', 'butuh_konfirmasi')->count();
 
             // --- Distribusi Kategori Layanan ---
             $categoryRows = Service::selectRaw('category, count(*) as total')
@@ -158,9 +161,10 @@ class DashboardController extends Controller
                 ],
 
                 'serviceStats' => [
-                    'total' => $serviceTotal,
-                    'aktif' => $serviceAktif,
-                    'nonaktif' => $serviceNonaktif,
+                    'total'             => $serviceTotal,
+                    'aktif'             => $serviceAktif,
+                    'nonaktif'          => $serviceNonaktif,
+                    'butuhkonfirmasi'   => $serviceBtuhKonfirmasi,
                 ],
 
                 'categoryDistribution' => $categoryDistribution,
@@ -169,14 +173,13 @@ class DashboardController extends Controller
             ]);
         }
 
-        // ─── TESTER DASHBOARD (MONITORING CENTER) ─────────────────────────
+        // ─── TESTER DASHBOARD (MONITORING CENTER) ──────────────────────────
         $activePeriod = CheckingPeriod::where('status', 'proses')
+            ->whereHas('periodTesters', function ($q) use ($user) {
+                $q->where('tester_id', $user->id);
+            })
             ->orderBy('date', 'desc')
             ->first();
-
-        if (!$activePeriod) {
-            $activePeriod = CheckingPeriod::orderBy('date', 'desc')->first();
-        }
 
         $periodInfo = null;
 
@@ -298,7 +301,8 @@ class DashboardController extends Controller
                     'title' => "{$pendingCount} layanan belum diuji",
                     'description' => 'Layanan masih menunggu verifikasi dan pengecekan aksesibilitas.',
                     'action_label' => 'Uji Sekarang',
-                    'action_url' => route('tester.services.index', [
+                    'action_url' => route('tester.periods.services', [
+                        'period' => $activePeriod->id,
                         'status' => 'pending',
                     ]),
                     'severity' => 'warning',
@@ -313,7 +317,8 @@ class DashboardController extends Controller
                     'title' => "{$issuesCount} pengujian memiliki kendala",
                     'description' => 'Terdapat kendala/error yang telah dilaporkan dan memerlukan perhatian.',
                     'action_label' => 'Lihat Kendala',
-                    'action_url' => route('tester.services.index', [
+                    'action_url' => route('tester.periods.services', [
+                        'period' => $activePeriod->id,
                         'status' => 'gangguan',
                     ]),
                     'severity' => 'danger',
@@ -328,7 +333,8 @@ class DashboardController extends Controller
                     'title' => "{$needConfirm} hasil membutuhkan konfirmasi",
                     'description' => 'Pengujian menunggu konfirmasi lebih lanjut dari admin.',
                     'action_label' => 'Lihat Hasil',
-                    'action_url' => route('tester.services.index', [
+                    'action_url' => route('tester.periods.services', [
+                        'period' => $activePeriod->id,
                         'status' => 'need_confirmation',
                     ]),
                     'severity' => 'info',
@@ -349,7 +355,8 @@ class DashboardController extends Controller
                         : "Tersisa {$daysRemaining} hari sebelum periode berakhir",
                     'description' => "Segera tuntaskan {$pendingCount} penugasan yang belum selesai diuji.",
                     'action_label' => 'Selesaikan Tugas',
-                    'action_url' => route('tester.services.index', [
+                    'action_url' => route('tester.periods.services', [
+                        'period' => $activePeriod->id,
                         'status' => 'pending',
                     ]),
                     'severity' => 'urgent',
@@ -441,34 +448,39 @@ class DashboardController extends Controller
                 'title' => 'Mulai Pengujian',
                 'subtitle' => 'Kerjakan layanan belum dicek',
                 'count' => $stats['pending'],
-                'url' => route('tester.services.index', [
+                'url' => $activePeriod ? route('tester.periods.services', [
+                    'period' => $activePeriod->id,
                     'status' => 'pending',
-                ]),
+                ]) : route('tester.services.index'),
                 'color' => 'blue',
             ],
             [
                 'title' => 'Layanan Terkendala',
                 'subtitle' => 'Daftar layanan ada error',
                 'count' => $stats['issues'],
-                'url' => route('tester.services.index', [
+                'url' => $activePeriod ? route('tester.periods.services', [
+                    'period' => $activePeriod->id,
                     'status' => 'gangguan',
-                ]),
+                ]) : route('tester.services.index'),
                 'color' => 'rose',
             ],
             [
                 'title' => 'Sudah Selesai',
                 'subtitle' => 'Layanan berhasil diuji',
                 'count' => $stats['checked'],
-                'url' => route('tester.services.index', [
+                'url' => $activePeriod ? route('tester.periods.services', [
+                    'period' => $activePeriod->id,
                     'status' => 'normal',
-                ]),
+                ]) : route('tester.services.index'),
                 'color' => 'emerald',
             ],
             [
                 'title' => 'Semua Penugasan',
                 'subtitle' => 'Workspace seluruh layanan',
                 'count' => $stats['total_assigned'],
-                'url' => route('tester.services.index'),
+                'url' => $activePeriod ? route('tester.periods.services', [
+                    'period' => $activePeriod->id,
+                ]) : route('tester.services.index'),
                 'color' => 'indigo',
             ],
         ];
@@ -509,20 +521,42 @@ class DashboardController extends Controller
             );
         }
 
-        $request->validate([
+        if ($user->role !== 'admin' && $periodService->period?->status === 'selesai') {
+            abort(403, 'Periode pengecekan sudah selesai dan dikunci.');
+        }
+
+        $validated = $request->validate([
             'status' => 'required|in:normal,gangguan',
-            'description' => 'nullable|string',
+            'description' => 'required_if:status,gangguan|nullable|string|max:5000',
+        ], [
+            'description.required_if' => 'Catatan / Keterangan kendala wajib diisi jika layanan berstatus kendala.',
+            'description.max' => 'Catatan tidak boleh lebih dari 5000 karakter.',
         ]);
 
-        $periodService->update([
-            'status' => $request->status,
-            'description' => $request->description,
-            'checked_at' => now(),
-        ]);
+        try {
+            $periodService->update([
+                'status' => $validated['status'],
+                'description' => $validated['description'] ?? null,
+                'checked_at' => now(),
+            ]);
 
-        return back()->with(
-            'success',
-            'Hasil pengecekan berhasil disimpan.'
-        );
+            ServiceCheckLog::create([
+                'period_service_id' => $periodService->id,
+                'tester_id' => $user->id,
+                'status' => $validated['status'],
+                'description' => $validated['description'] ?? null,
+            ]);
+
+            return back()->with(
+                'success',
+                'Hasil pengecekan berhasil disimpan.'
+            );
+        } catch (\Throwable $e) {
+            Log::error('Gagal menyimpan hasil pengecekan (Dashboard): ' . $e->getMessage(), [
+                'period_service_id' => $periodService->id,
+            ]);
+
+            return back()->with('error', 'Terjadi kesalahan saat menyimpan hasil pengecekan.');
+        }
     }
 }
