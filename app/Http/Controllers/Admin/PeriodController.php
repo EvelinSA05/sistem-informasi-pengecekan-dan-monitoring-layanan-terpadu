@@ -529,23 +529,6 @@ class PeriodController extends Controller
      */
     public function destroy(CheckingPeriod $period)
     {
-        // Cek apakah ada layanan yang sudah memiliki hasil pengecekan
-        $hasResults = $period->periodServices()
-            ->where(function ($q) {
-                $q->where('status', '!=', 'pending')
-                  ->orWhereNotNull('checked_at');
-            })
-            ->exists()
-            || \App\Models\ServiceCheckLog::whereIn(
-                'period_service_id',
-                $period->periodServices()->pluck('id')
-            )->exists();
-
-        if ($hasResults) {
-            return redirect()->route('admin.periods.index')
-                ->with('error', 'Periode tidak dapat dihapus karena sudah memiliki hasil pengecekan.');
-        }
-
         try {
             DB::transaction(function () use ($period) {
                 $period->periodTesters()->delete();
