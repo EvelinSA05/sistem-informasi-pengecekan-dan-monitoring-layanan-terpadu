@@ -401,24 +401,38 @@ function togglePeriodStatus(period) {
                     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showDeleteModal = false"></div>
                     <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 sm:p-7 z-10 text-center">
                         
-                        <!-- KONDISI 3: Periode yang sudah memiliki HASIL pengecekan -> TIDAK BISA DIHAPUS -->
+                        <!-- KONDISI 3: Periode yang sudah memiliki HASIL pengecekan -> FORCE DELETE CONFIRMATION -->
                         <template v-if="periodToDelete.checked_services > 0 || periodToDelete.has_results">
                             <div class="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4 border border-rose-200 shadow-xs">
                                 <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                 </svg>
                             </div>
-                            <h3 class="text-lg font-bold text-slate-800">Tidak Bisa Dihapus</h3>
+                            <h3 class="text-lg font-bold text-slate-800">Hapus Permanen Histori?</h3>
                             <p class="text-sm text-slate-500 mt-2 leading-relaxed mb-6">
-                                Periode <span class="font-semibold text-slate-700">"{{ periodToDelete.period_title }}"</span> sudah memiliki <span class="font-bold text-slate-700">{{ periodToDelete.checked_services }} hasil pengecekan</span>. Periode ini tidak dapat dihapus karena sudah menjadi histori dan rekap pengecekan.
+                                Periode <span class="font-semibold text-slate-700">"{{ periodToDelete.period_title }}"</span> sudah memiliki <span class="font-bold text-slate-700">{{ periodToDelete.checked_services }} hasil pengecekan</span>. 
+                                <br><br>
+                                <span class="text-rose-600 font-semibold">Peringatan:</span> Menghapus periode ini akan <b>menghapus permanen seluruh data riwayat pengecekan</b> di dalamnya. Apakah Anda yakin?
                             </p>
-                            <button
-                                type="button"
-                                @click="showDeleteModal = false"
-                                class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
-                            >
-                                Tutup
-                            </button>
+                            <div class="flex gap-3">
+                                <button
+                                    type="button"
+                                    @click="showDeleteModal = false"
+                                    class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="deletePeriod"
+                                    class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-sm font-bold text-white transition-all shadow-md shadow-rose-600/20 active:scale-95 cursor-pointer flex justify-center items-center gap-2"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z" />
+                                    </svg>
+                                    Hapus Paksa
+                                </button>
+                            </div>
                         </template>
 
                         <!-- KONDISI 2: Periode yang sudah ada tester tapi BELUM melakukan pengecekan -> MASIH BISA DIHAPUS DENGAN CONFIRMATION WARNING -->
