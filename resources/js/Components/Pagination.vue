@@ -94,7 +94,7 @@ const nextLink = computed(() => {
             <select 
                 :value="meta.per_page" 
                 @change="onPerPageChange"
-                class="bg-white border border-slate-300 text-slate-700 py-1 pl-3 pr-8 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer text-sm"
+                class="bg-white border border-slate-300 text-slate-700 py-1 pl-3 pr-8 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer text-sm"
             >
                 <option v-for="option in perPageOptions" :key="option" :value="option">
                     {{ option }}
@@ -140,7 +140,7 @@ const nextLink = computed(() => {
                 </Link>
                 <span 
                     v-else-if="link.active"
-                    class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-50 text-blue-600 text-sm font-bold"
+                    class="w-8 h-8 flex items-center justify-center rounded-full bg-primary text-white text-sm font-bold"
                 >
                     {{ link.label }}
                 </span>
