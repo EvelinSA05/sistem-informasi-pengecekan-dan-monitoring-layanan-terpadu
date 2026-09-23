@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            \App\Http\Middleware\CheckSessionTimeout::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
@@ -20,5 +21,41 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // Normal error handling
+        $exceptions->render(function (\Illuminate\Database\QueryException $e, Request $request) {
+            \Illuminate\Support\Facades\Log::error('Database QueryException intercepted: ' . $e->getMessage(), [
+                'url' => $request->fullUrl(),
+            ]);
+
+            if ($request->expectsJson() || $request->header('X-Inertia')) {
+                if ($request->header('X-Inertia')) {
+                    return back()->with('error', 'Terjadi kesalahan saat memproses data. Silakan periksa kembali input Anda.');
+                }
+                return response()->json([
+                    'message' => 'Terjadi kesalahan saat memproses data. Silakan periksa kembali input Anda.'
+                ], 500);
+            }
+
+            return response()->view('errors.500', [
+                'message' => 'Terjadi kesalahan saat memproses data. Silakan periksa kembali input Anda.'
+            ], 500);
+        });
+
+        $exceptions->render(function (\PDOException $e, Request $request) {
+            \Illuminate\Support\Facades\Log::error('Database PDOException intercepted: ' . $e->getMessage(), [
+                'url' => $request->fullUrl(),
+            ]);
+
+            if ($request->expectsJson() || $request->header('X-Inertia')) {
+                if ($request->header('X-Inertia')) {
+                    return back()->with('error', 'Terjadi kesalahan saat memproses data. Silakan periksa kembali input Anda.');
+                }
+                return response()->json([
+                    'message' => 'Terjadi kesalahan saat memproses data. Silakan periksa kembali input Anda.'
+                ], 500);
+            }
+
+            return response()->view('errors.500', [
+                'message' => 'Terjadi kesalahan saat memproses data. Silakan periksa kembali input Anda.'
+            ], 500);
+        });
     })->create();

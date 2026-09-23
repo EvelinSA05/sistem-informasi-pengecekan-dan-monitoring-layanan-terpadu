@@ -8,6 +8,7 @@ use App\Models\PeriodService;
 use App\Models\ServiceCheckLog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class AssignedServiceController extends Controller
@@ -347,7 +348,7 @@ class AssignedServiceController extends Controller
             abort(403, 'Periode pengecekan sedang dinonaktifkan.');
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'status' => 'required|in:normal,gangguan',
             'description' => 'required_if:status,gangguan|nullable|string|max:5000',
         ], [
@@ -355,33 +356,41 @@ class AssignedServiceController extends Controller
             'description.max' => 'Catatan tidak boleh lebih dari 5000 karakter.'
         ]);
 
-        $periodService->update([
-            'status' => $request->status,
-            'description' => $request->description,
-            'checked_at' => now(),
-        ]);
-
-        ServiceCheckLog::create([
-            'period_service_id' => $periodService->id,
-            'tester_id' => $user->id,
-            'status' => $request->status,
-            'description' => $request->description,
-        ]);
-
-        // Auto-complete: jika seluruh layanan pada periode ini sudah selesai diperiksa (0 pending), ubah status periode menjadi 'selesai'
-        $hasPending = PeriodService::where('period_id', $periodService->period_id)
-            ->where('status', 'pending')
-            ->exists();
-
-        if (!$hasPending) {
-            $periodService->period()->update([
-                'status' => 'selesai',
+        try {
+            $periodService->update([
+                'status' => $validated['status'],
+                'description' => $validated['description'] ?? null,
+                'checked_at' => now(),
             ]);
-        }
 
-        return back()->with(
-            'success',
-            'Hasil pengecekan berhasil disimpan.'
-        );
+            ServiceCheckLog::create([
+                'period_service_id' => $periodService->id,
+                'tester_id' => $user->id,
+                'status' => $validated['status'],
+                'description' => $validated['description'] ?? null,
+            ]);
+
+            // Auto-complete: jika seluruh layanan pada periode ini sudah selesai diperiksa (0 pending), ubah status periode menjadi 'selesai'
+            $hasPending = PeriodService::where('period_id', $periodService->period_id)
+                ->where('status', 'pending')
+                ->exists();
+
+            if (!$hasPending) {
+                $periodService->period()->update([
+                    'status' => 'selesai',
+                ]);
+            }
+
+            return back()->with(
+                'success',
+                'Hasil pengecekan berhasil disimpan.'
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Gagal menyimpan hasil pengecekan (Tester): ' . $e->getMessage(), [
+                'period_service_id' => $periodService->id,
+            ]);
+
+            return back()->with('error', 'Terjadi kesalahan saat menyimpan hasil pengecekan.');
+        }
     }
 }

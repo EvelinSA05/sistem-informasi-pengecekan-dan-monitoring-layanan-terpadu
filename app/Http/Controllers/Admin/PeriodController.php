@@ -11,6 +11,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -118,16 +119,20 @@ class PeriodController extends Controller
                     ? strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1))
                     : strtoupper(substr($parts[0] ?? 'T', 0, 2));
 
-                // Hitung sisa tugas pending pada periode yang sedang berstatus 'proses'
-                $pendingTasksCount = PeriodService::where('tester_id', $tester->id)
+                // Ambil semua tugas pending pada periode yang sedang berstatus 'proses'
+                $pendingQuery = PeriodService::where('tester_id', $tester->id)
                     ->where('status', 'pending')
                     ->whereHas('period', function ($q) use ($excludePeriodId) {
                         $q->where('status', 'proses');
                         if ($excludePeriodId) {
                             $q->where('checking_periods.id', '!=', $excludePeriodId);
                         }
-                    })
-                    ->count();
+                    });
+
+                $pendingTasksCount = (clone $pendingQuery)->count();
+                $maxDeadline = $pendingQuery->with('period')->get()->max(function ($ps) {
+                    return $ps->period->deadline_date;
+                });
 
                 return [
                     'id' => $tester->id,
@@ -138,6 +143,7 @@ class PeriodController extends Controller
                     'initials' => $initials,
                     'is_available' => $pendingTasksCount === 0,
                     'pending_tasks_count' => $pendingTasksCount,
+                    'max_pending_deadline' => $maxDeadline,
                 ];
             });
 
@@ -226,17 +232,23 @@ class PeriodController extends Controller
         }
 
         $testerIds = array_values(array_unique($request->tester_ids));
+        $targetDateObj = \Carbon\Carbon::parse($date)->toDateString();
         
         $busyTesters = \App\Models\User::whereIn('id', $testerIds)
-            ->whereHas('periodServices', function ($q) {
+            ->whereHas('periodServices', function ($q) use ($targetDateObj) {
                 $q->where('status', 'pending')
-                  ->whereHas('period', function ($pq) {
-                      $pq->where('status', 'proses');
+                  ->whereHas('period', function ($pq) use ($targetDateObj) {
+                      $pq->where('status', 'proses')
+                         ->where('date', '<=', $targetDateObj)
+                         ->where(function ($query) use ($targetDateObj) {
+                             $query->whereNull('deadline_date')
+                                   ->orWhere('deadline_date', '>=', $targetDateObj);
+                         });
                   });
             })
             ->get();
             
-        \Log::info('PeriodController Store validation', [
+        Log::info('PeriodController Store validation', [
             'tester_ids' => $testerIds,
             'busy' => $busyTesters->pluck('name')
         ]);
@@ -376,7 +388,6 @@ class PeriodController extends Controller
                 'nonaktif' => 'selesai',
                 default => $request->status,
             };
-
             $period->update([
                 'status' => $statusVal,
             ]);
@@ -414,17 +425,24 @@ class PeriodController extends Controller
         }
 
         $testerIds = array_values(array_unique($request->tester_ids));
+        $targetDateObj = \Carbon\Carbon::parse($date)->toDateString();
         
         $busyTesters = \App\Models\User::whereIn('id', $testerIds)
-            ->whereHas('periodServices', function ($q) use ($period) {
+            ->whereHas('periodServices', function ($q) use ($period, $targetDateObj) {
                 $q->where('status', 'pending')
-                  ->whereHas('period', function ($pq) use ($period) {
-                      $pq->where('status', 'proses')->where('checking_periods.id', '!=', $period->id);
+                  ->whereHas('period', function ($pq) use ($period, $targetDateObj) {
+                      $pq->where('status', 'proses')
+                         ->where('checking_periods.id', '!=', $period->id)
+                         ->where('date', '<=', $targetDateObj)
+                         ->where(function ($query) use ($targetDateObj) {
+                             $query->whereNull('deadline_date')
+                                   ->orWhere('deadline_date', '>=', $targetDateObj);
+                         });
                   });
             })
             ->get();
             
-        \Log::info('PeriodController Update validation', [
+        Log::info('PeriodController Update validation', [
             'period_id' => $period->id,
             'tester_ids' => $testerIds,
             'busy' => $busyTesters->pluck('name')
@@ -505,16 +523,19 @@ class PeriodController extends Controller
 
         try {
             DB::transaction(function () use ($period) {
-                $period->periodServices()->delete();
                 $period->periodTesters()->delete();
+                $period->periodServices()->delete();
                 $period->delete();
             });
 
-            return redirect()->route('admin.periods.index')
-                ->with('success', 'Periode pengecekan berhasil dihapus.');
-        } catch (\Exception $e) {
-            return redirect()->route('admin.periods.index')
-                ->with('error', 'Gagal menghapus periode: ' . $e->getMessage());
+            return redirect()->route('admin.periods.index')->with('success', 'Periode pengecekan berhasil dihapus.');
+        } catch (\Throwable $e) {
+            Log::error('Gagal menghapus periode pengecekan: ' . $e->getMessage(), [
+                'period_id' => $period->id,
+                'trace'     => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->route('admin.periods.index')->with('error', 'Gagal menghapus periode. Data mungkin masih terkait riwayat pengujian.');
         }
     }
 

@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { Link, usePage, router } from '@inertiajs/vue3';
 
 const props = defineProps({
     title: { type: String, default: 'Dashboard' },
@@ -110,6 +110,39 @@ function closeSidebarOnMobile() {
         isSidebarOpen.value = false;
     }
 }
+
+const showLogoutModal = ref(false);
+
+function confirmLogout() {
+    router.post(route('logout'));
+}
+
+// ─── Real-Time Inactivity Timeout ────────────────────────────────
+let inactivityTimeout;
+
+const resetInactivityTimeout = () => {
+    clearTimeout(inactivityTimeout);
+    inactivityTimeout = setTimeout(() => {
+        // Trigger logout otomatis dengan indikator timeout
+        router.post(route('logout'), { timeout: true });
+    }, 5 * 60 * 1000); // 5 Menit
+};
+
+onMounted(() => {
+    window.addEventListener('mousemove', resetInactivityTimeout);
+    window.addEventListener('keydown', resetInactivityTimeout);
+    window.addEventListener('click', resetInactivityTimeout);
+    window.addEventListener('scroll', resetInactivityTimeout);
+    resetInactivityTimeout();
+});
+
+onUnmounted(() => {
+    window.removeEventListener('mousemove', resetInactivityTimeout);
+    window.removeEventListener('keydown', resetInactivityTimeout);
+    window.removeEventListener('click', resetInactivityTimeout);
+    window.removeEventListener('scroll', resetInactivityTimeout);
+    clearTimeout(inactivityTimeout);
+});
 </script>
 
 <template>
@@ -204,17 +237,16 @@ function closeSidebarOnMobile() {
                             </p>
                         </div>
                     </div>
-                    <Link
-                        :href="route('logout')"
-                        method="post"
-                        as="button"
+                    <button
+                        @click="showLogoutModal = true"
+                        type="button"
                         class="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold text-blue-100/90 hover:text-white hover:bg-white/10 transition-all duration-150"
                     >
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                         </svg>
                         Keluar
-                    </Link>
+                    </button>
                 </div>
             </div>
         </aside>
@@ -261,4 +293,49 @@ function closeSidebarOnMobile() {
         </div>
 
     </div>
+
+    <!-- ════════════════════════════════════════════════════ -->
+    <!-- Modal Konfirmasi Logout                              -->
+    <!-- ════════════════════════════════════════════════════ -->
+    <Teleport to="body">
+        <Transition
+            enter-active-class="transition-all duration-200 ease-out"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="transition-all duration-150 ease-in"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div v-if="showLogoutModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showLogoutModal = false"></div>
+                <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 z-10">
+                    <div class="flex flex-col items-center text-center mb-6">
+                        <div class="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center mb-4 text-rose-500 shadow-inner">
+                            <svg class="w-8 h-8 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800 mb-1">Keluar dari sistem?</h3>
+                        <p class="text-sm text-slate-500">
+                            Anda harus masuk kembali untuk mengakses MAJADIGI CHECKER.
+                        </p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button
+                            @click="showLogoutModal = false"
+                            class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            @click="confirmLogout"
+                            class="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold shadow-sm transition-all shadow-rose-500/20"
+                        >
+                            Ya, Keluar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </Transition>
+    </Teleport>
 </template>

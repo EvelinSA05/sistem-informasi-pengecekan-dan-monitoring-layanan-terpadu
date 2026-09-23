@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\CheckingPeriod;
 use App\Models\PeriodService;
 use App\Models\Service;
+use App\Models\ServiceCheckLog;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -519,20 +521,42 @@ class DashboardController extends Controller
             );
         }
 
-        $request->validate([
+        if ($user->role !== 'admin' && $periodService->period?->status === 'selesai') {
+            abort(403, 'Periode pengecekan sudah selesai dan dikunci.');
+        }
+
+        $validated = $request->validate([
             'status' => 'required|in:normal,gangguan',
-            'description' => 'nullable|string',
+            'description' => 'required_if:status,gangguan|nullable|string|max:5000',
+        ], [
+            'description.required_if' => 'Catatan / Keterangan kendala wajib diisi jika layanan berstatus kendala.',
+            'description.max' => 'Catatan tidak boleh lebih dari 5000 karakter.',
         ]);
 
-        $periodService->update([
-            'status' => $request->status,
-            'description' => $request->description,
-            'checked_at' => now(),
-        ]);
+        try {
+            $periodService->update([
+                'status' => $validated['status'],
+                'description' => $validated['description'] ?? null,
+                'checked_at' => now(),
+            ]);
 
-        return back()->with(
-            'success',
-            'Hasil pengecekan berhasil disimpan.'
-        );
+            ServiceCheckLog::create([
+                'period_service_id' => $periodService->id,
+                'tester_id' => $user->id,
+                'status' => $validated['status'],
+                'description' => $validated['description'] ?? null,
+            ]);
+
+            return back()->with(
+                'success',
+                'Hasil pengecekan berhasil disimpan.'
+            );
+        } catch (\Throwable $e) {
+            Log::error('Gagal menyimpan hasil pengecekan (Dashboard): ' . $e->getMessage(), [
+                'period_service_id' => $periodService->id,
+            ]);
+
+            return back()->with('error', 'Terjadi kesalahan saat menyimpan hasil pengecekan.');
+        }
     }
 }
