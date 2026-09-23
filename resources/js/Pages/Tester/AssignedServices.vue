@@ -53,88 +53,85 @@ const filteredServices = computed(() => {
 <template>
     <Head title="Layanan Ditugaskan" />
 
-    <AdminLayout>
-        <template #header>
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">Layanan Ditugaskan</h2>
-                    <p class="text-sm text-slate-500 mt-1 font-medium">
-                        Periode berjalan: <span class="text-blue-600 font-bold capitalize">{{ activePeriod || 'Belum ada periode aktif' }}</span>
-                    </p>
-                </div>
-            </div>
-        </template>
+    <AdminLayout title="Layanan Ditugaskan" subtitle="Daftar layanan yang ditugaskan untuk dicek">
+
 
         <div class="max-w-7xl mx-auto space-y-6">
             <!-- Filter & Search -->
-            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
-                <div class="relative w-full sm:w-96">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    </div>
-                    <input type="text" v-model="searchQuery" placeholder="Cari layanan berdasarkan nama atau URL..." class="pl-10 w-full rounded-xl border-slate-200 text-sm focus:ring-blue-500 focus:border-blue-500 bg-slate-50">
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <p class="text-sm text-slate-500 font-medium hidden sm:block">
+                        Periode: <span class="text-blue-600 font-bold capitalize">{{ activePeriod || 'Belum ada periode aktif' }}</span>
+                    </p>
                 </div>
-                <div class="w-full sm:w-auto">
-                    <select v-model="statusFilter" class="w-full rounded-xl border-slate-200 text-sm focus:ring-blue-500 focus:border-blue-500 bg-slate-50">
-                        <option value="">Semua Status</option>
-                        <option value="checked">Sudah Dicek</option>
-                        <option value="pending">Belum Dicek</option>
-                    </select>
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <div class="relative flex-1 sm:flex-initial">
+                        <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <input type="text" v-model="searchQuery" placeholder="Cari layanan..." class="pl-8 pr-3 py-1.5 w-full sm:w-52 rounded-lg border-slate-200 text-xs focus:ring-blue-500 focus:border-blue-500 bg-slate-50">
+                    </div>
+                    <div class="inline-flex p-0.5 bg-slate-100 rounded-lg text-xs text-slate-600">
+                        <button type="button" @click="statusFilter = ''" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === '' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Semua</button>
+                        <button type="button" @click="statusFilter = 'checked'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'checked' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Sudah Dicek</button>
+                        <button type="button" @click="statusFilter = 'pending'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'pending' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Belum Dicek</button>
+                    </div>
                 </div>
             </div>
 
             <!-- Bagian Layanan yang Ditugaskan -->
-            <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
-                <div class="flex items-center justify-between p-6 border-b border-slate-100">
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                     <div>
-                        <h3 class="text-base sm:text-lg font-bold text-slate-800">Daftar Penugasan</h3>
+                        <h3 class="text-sm font-bold text-slate-800">Daftar Penugasan</h3>
                         <p class="text-xs text-slate-400 mt-0.5">Klik layanan untuk menguji dan melaporkan statusnya</p>
                     </div>
+                    <span class="text-xs text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">{{ filteredServices.length }} Layanan</span>
                 </div>
 
                 <!-- Empty State bila belum ada penugasan -->
                 <div v-if="filteredServices.length === 0" class="py-14 px-4 flex flex-col items-center justify-center text-center">
-                    <div class="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm mb-4">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+                    <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 mb-4">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                         </svg>
                     </div>
-                    <h4 class="text-base font-bold text-slate-800">Belum Ada Layanan</h4>
-                    <p class="text-sm text-slate-400 max-w-md mt-1 leading-relaxed">
-                        Data layanan tidak ditemukan berdasarkan kriteria pencarian Anda, atau admin belum membagikan daftar layanan untuk periode ini.
+                    <h4 class="text-sm font-bold text-slate-700">Belum Ada Layanan</h4>
+                    <p class="text-xs text-slate-400 max-w-md mt-1 leading-relaxed">
+                        Data layanan tidak ditemukan, atau admin belum membagikan daftar layanan untuk periode ini.
                     </p>
                 </div>
 
-                <!-- List Layanan jika sudah ada penugasan -->
-                <div v-else class="divide-y divide-slate-100 p-6 pt-0 mt-4">
+                <!-- List Layanan -->
+                <div v-else class="divide-y divide-slate-100">
                     <button
                         v-for="service in filteredServices"
                         :key="service.id"
                         @click="openCheckModal(service)"
-                        class="w-full py-4.5 flex items-center justify-between gap-4 group hover:bg-slate-50/60 rounded-xl px-2 transition-colors duration-150 text-left"
+                        class="w-full py-3.5 px-6 flex items-center justify-between gap-4 group hover:bg-slate-50/60 transition-colors duration-150 text-left cursor-pointer"
                     >
-                        <div class="flex items-center gap-4 min-w-0">
-                            <div class="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0 shadow-sm transition-transform group-hover:scale-105">
-                                🏛️
+                        <div class="flex items-center gap-3.5 min-w-0">
+                            <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
                             </div>
                             <div class="min-w-0">
-                                <h4 class="text-sm font-bold text-slate-800 truncate leading-snug group-hover:text-blue-600 transition-colors">{{ service.name }}</h4>
-                                <p class="text-xs text-slate-400 truncate mt-0.5">
+                                <h4 class="text-sm font-semibold text-slate-800 truncate leading-snug group-hover:text-blue-600 transition-colors">{{ service.name }}</h4>
+                                <p class="text-[11px] text-slate-400 truncate mt-0.5">
                                     <span>{{ service.category }}</span>
-                                    <span v-if="service.url"> · {{ service.url }}</span>
+                                    <span v-if="service.url" class="text-blue-500"> · {{ service.url }}</span>
                                 </p>
                             </div>
                         </div>
 
                         <div class="shrink-0 flex items-center gap-3">
                             <span
-                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
-                                :class="service.status === 'normal' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : (service.status === 'gangguan' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-slate-100 text-slate-600')"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
+                                :class="service.status === 'normal' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : (service.status === 'gangguan' ? 'bg-rose-50 text-rose-700 border border-rose-100' : 'bg-slate-100 text-slate-500 border border-slate-200')"
                             >
-                                <span class="w-1.5 h-1.5 rounded-full" :class="service.status === 'normal' ? 'bg-emerald-400' : (service.status === 'gangguan' ? 'bg-rose-400' : 'bg-slate-400')"></span>
-                                {{ service.status === 'normal' ? 'NORMAL' : (service.status === 'gangguan' ? 'KENDALA' : 'PENDING') }}
+                                <span class="w-1.5 h-1.5 rounded-full" :class="service.status === 'normal' ? 'bg-emerald-500' : (service.status === 'gangguan' ? 'bg-rose-500' : 'bg-slate-400')"></span>
+                                {{ service.status === 'normal' ? 'Normal' : (service.status === 'gangguan' ? 'Kendala' : 'Belum Dicek') }}
                             </span>
-                            <svg class="w-5 h-5 text-slate-300 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            <svg class="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                         </div>
                     </button>
                 </div>
@@ -152,17 +149,17 @@ const filteredServices = computed(() => {
         >
             <div v-if="showCheckModal && selectedService" class="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm">
                 <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                         <div>
-                            <h3 class="text-lg font-bold text-slate-800">Cek Layanan</h3>
-                            <p class="text-xs text-slate-500">{{ selectedService.name }}</p>
+                            <h3 class="text-base font-bold text-slate-800">Cek Layanan</h3>
+                            <p class="text-xs text-slate-400">{{ selectedService.name }}</p>
                         </div>
-                        <button @click="showCheckModal = false" class="text-slate-400 hover:text-slate-600 transition-colors p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                        <button @click="showCheckModal = false" class="text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
                     </div>
 
                     <div class="p-6 overflow-y-auto space-y-5">
                         <!-- Informasi Layanan -->
-                        <div class="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                        <div class="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
                             <div>
                                 <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">URL Layanan</p>
                                 <a v-if="selectedService.url" :href="selectedService.url" target="_blank" class="text-sm font-medium text-blue-600 hover:underline inline-flex items-center gap-1.5">
@@ -219,10 +216,10 @@ const filteredServices = computed(() => {
                         </form>
                     </div>
 
-                    <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
-                        <button type="button" @click="showCheckModal = false" class="px-5 py-2.5 rounded-xl font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors">Batal</button>
-                        <button type="button" @click="submitCheck" :disabled="checkForm.processing" class="px-5 py-2.5 rounded-xl font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-all disabled:opacity-70 flex items-center gap-2">
-                            <svg v-if="checkForm.processing" class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
+                        <button type="button" @click="showCheckModal = false" class="px-4 py-2 rounded-lg font-semibold text-xs text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">Batal</button>
+                        <button type="button" @click="submitCheck" :disabled="checkForm.processing" class="px-4 py-2 rounded-lg font-semibold text-xs text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition-all disabled:opacity-70 flex items-center gap-2 cursor-pointer">
+                            <svg v-if="checkForm.processing" class="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                             Simpan Hasil
                         </button>
                     </div>

@@ -140,15 +140,13 @@ onUnmounted(() => {
         </Transition>
 
         <!-- ── Main Card Container ──────────────────────────────── -->
-        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
 
             <!-- Card Header / Toolbar (Tester View - No Create Button) -->
-            <div class="p-4 sm:px-8 sm:py-6 flex items-center justify-between gap-3 border-b border-slate-100">
-                <div>
-                    <h2 class="text-sm sm:text-base font-bold text-slate-800 truncate">
-                        {{ periods.length }} Periode terdaftar
-                    </h2>
-                </div>
+            <div class="px-6 py-4 flex items-center justify-between gap-3 border-b border-slate-100">
+                <h2 class="text-sm font-bold text-slate-800 truncate">
+                    {{ periods.length }} Periode terdaftar
+                </h2>
                 <div class="text-xs text-slate-400 font-medium hidden sm:block">
                     Pilih periode untuk melihat atau melakukan pengecekan layanan
                 </div>

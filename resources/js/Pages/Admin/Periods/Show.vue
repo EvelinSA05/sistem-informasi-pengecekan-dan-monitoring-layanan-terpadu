@@ -133,44 +133,54 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
             <!-- ═══════════════════════════════════════════════════ -->
             <!-- 1. HEADER CARD                                      -->
             <!-- ═══════════════════════════════════════════════════ -->
-            <div class="bg-white rounded-2xl border border-slate-200 p-6">
-                <!-- Kembali -->
-                <Link :href="route('admin.periods.index')" class="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-700 transition-colors group mb-4 cursor-pointer">
-                    <span class="transition-transform group-hover:-translate-x-0.5">&larr;</span>
-                    <span>Kembali</span>
-                </Link>
+            <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#1e40af] via-[#1d4ed8] to-[#1e3a8a] p-6 shadow-lg">
+                <!-- Dot texture overlay -->
+                <div class="absolute inset-0 opacity-[0.07]" style="background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px); background-size: 20px 20px;"></div>
+                <!-- Diagonal line texture -->
+                <div class="absolute inset-0 opacity-[0.04]" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,1) 35px, rgba(255,255,255,1) 36px);"></div>
+                <!-- Subtle glow circle -->
+                <div class="absolute -top-20 -right-20 w-60 h-60 bg-cyan-400/10 rounded-full blur-3xl"></div>
+                <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-300/10 rounded-full blur-2xl"></div>
 
-                <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                    <div>
-                        <div class="flex items-center gap-3 flex-wrap">
-                            <h2 class="text-xl font-bold text-slate-900">Detail Periode: {{ period.title }}</h2>
-                            <span v-if="period.status === 'proses'" class="text-[11px] font-bold uppercase tracking-wide text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-full">AKTIF</span>
-                            <span v-else class="text-[11px] font-bold uppercase tracking-wide text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">NONAKTIF</span>
+                <div class="relative z-10">
+                    <!-- Kembali -->
+                    <Link :href="route('admin.periods.index')" class="inline-flex items-center gap-1.5 text-xs text-blue-200/80 hover:text-white transition-colors group mb-4 cursor-pointer">
+                        <span class="transition-transform group-hover:-translate-x-0.5">&larr;</span>
+                        <span>Kembali</span>
+                    </Link>
+
+                    <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                        <div>
+                            <div class="flex items-center gap-3 flex-wrap">
+                                <h2 class="text-xl font-bold text-white">Detail Periode: {{ period.title }}</h2>
+                                <span v-if="period.status === 'proses'" class="text-[11px] font-bold uppercase tracking-wide text-cyan-100 bg-white/15 border border-white/20 px-2.5 py-0.5 rounded-full backdrop-blur-sm">AKTIF</span>
+                                <span v-else class="text-[11px] font-bold uppercase tracking-wide text-blue-200 bg-white/10 border border-white/15 px-2.5 py-0.5 rounded-full backdrop-blur-sm">NONAKTIF</span>
+                            </div>
+                            <p class="text-xs text-blue-200/70 mt-1.5">
+                                Dibuat pada {{ period.created_at_label }} oleh {{ period.creator_name }}
+                                <template v-if="period.deadline_date"> &bull; Tenggat Waktu: {{ period.deadline_date }}</template>
+                            </p>
                         </div>
-                        <p class="text-xs text-slate-400 mt-1.5">
-                            Dibuat pada {{ period.created_at_label }} oleh {{ period.creator_name }}
-                            <template v-if="period.deadline_date"> &bull; Tenggat Waktu: {{ period.deadline_date }}</template>
-                        </p>
-                    </div>
 
-                    <div class="flex items-center gap-2 flex-wrap shrink-0">
-                        <Link :href="route('admin.periods.edit', period.id)" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 018.586 12z"/></svg>
-                            Edit Periode
-                        </Link>
-                        <a :href="route('admin.periods.export.excel', period.id)" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                            Export Excel
-                        </a>
-                        <a :href="route('admin.periods.export.pdf', period.id)" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                            Export PDF
-                        </a>
-                        <button type="button" @click="togglePeriodStatus" :disabled="isUpdatingStatus" class="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors cursor-pointer disabled:opacity-50 shadow-sm">
-                            <svg v-if="period.status === 'proses'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            {{ isUpdatingStatus ? 'Memproses...' : (period.status === 'proses' ? 'Selesaikan Periode' : 'Buka Kembali Periode') }}
-                        </button>
+                        <div class="flex items-center gap-2 flex-wrap shrink-0">
+                            <Link :href="route('admin.periods.edit', period.id)" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/15 border border-white/20 rounded-lg hover:bg-white/25 transition-colors cursor-pointer backdrop-blur-sm">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 018.586 12z"/></svg>
+                                Edit Periode
+                            </Link>
+                            <a :href="route('admin.periods.export.excel', period.id)" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/15 border border-white/20 rounded-lg hover:bg-white/25 transition-colors cursor-pointer backdrop-blur-sm">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Export Excel
+                            </a>
+                            <a :href="route('admin.periods.export.pdf', period.id)" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/15 border border-white/20 rounded-lg hover:bg-white/25 transition-colors cursor-pointer backdrop-blur-sm">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                Export PDF
+                            </a>
+                            <button type="button" @click="togglePeriodStatus" :disabled="isUpdatingStatus" class="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-blue-700 bg-white hover:bg-blue-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50 shadow-sm">
+                                <svg v-if="period.status === 'proses'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                {{ isUpdatingStatus ? 'Memproses...' : (period.status === 'proses' ? 'Selesaikan Periode' : 'Buka Kembali Periode') }}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -336,9 +346,9 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
                                         <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100" v-html="getServiceIcon(srv.icon)"></div>
                                         <div>
                                             <p class="font-semibold text-slate-800">{{ srv.service_name }}</p>
-                                            <a v-if="srv.service_url" :href="srv.service_url" target="_blank" class="text-[11px] text-blue-500 hover:underline inline-flex items-center gap-0.5 mt-0.5">
-                                                Buka link
-                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                            <a v-if="srv.service_url" :href="srv.service_url" target="_blank" class="text-[11px] text-blue-500 hover:underline inline-flex items-center gap-0.5 mt-0.5 max-w-[220px] truncate">
+                                                {{ srv.service_url }}
+                                                <svg class="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                             </a>
                                         </div>
                                     </div>

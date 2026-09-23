@@ -195,21 +195,19 @@ function togglePeriodStatus(period) {
         </Transition>
 
         <!-- ── Main Card Container ──────────────────────────────── -->
-        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
 
             <!-- Card Header / Toolbar -->
-            <div class="p-4 sm:px-8 sm:py-6 flex items-center justify-between gap-3 border-b border-slate-100">
-                <div>
-                    <h2 class="text-sm sm:text-base font-bold text-slate-800 truncate">
-                        {{ periods.length }} Periode terdaftar
-                    </h2>
-                </div>
+            <div class="px-6 py-4 flex items-center justify-between gap-3 border-b border-slate-100">
+                <h2 class="text-sm font-bold text-slate-800 truncate">
+                    {{ periods.length }} Periode terdaftar
+                </h2>
                 <Link
                     :href="route('admin.periods.create')"
                     id="btn-buat-periode"
-                    class="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white font-bold text-xs sm:text-sm shadow-md shadow-blue-900/10 hover:shadow-lg hover:shadow-blue-900/20 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 shrink-0"
+                    class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm transition-all duration-200 shrink-0 cursor-pointer"
                 >
-                    <span class="text-base leading-none font-extrabold">+</span>
+                    <span class="text-sm leading-none font-bold">+</span>
                     <span>Buat Periode</span>
                 </Link>
             </div>
