@@ -11,7 +11,6 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -39,7 +38,7 @@ class PeriodController extends Controller
     }
 
     /**
-     * Menampilkan daftar periode pengecekan.
+     * Menampilkan daftar periode pengecekan (Screenshot 1).
      */
     public function index()
     {
@@ -90,6 +89,8 @@ class PeriodController extends Controller
                 'checked_services' => $checkedServices,
                 'total_services' => $totalServices,
                 'progress_percent' => $progressPercent,
+                'has_results' => $checkedServices > 0,
+                'has_testers' => $testers->count() > 0,
             ];
         });
 
@@ -118,7 +119,7 @@ class PeriodController extends Controller
                     : strtoupper(substr($parts[0] ?? 'T', 0, 2));
 
                 // Hitung sisa tugas pending pada periode yang sedang berstatus 'proses'
-                $pendingTasksCount = \App\Models\PeriodService::where('tester_id', $tester->id)
+                $pendingTasksCount = PeriodService::where('tester_id', $tester->id)
                     ->where('status', 'pending')
                     ->whereHas('period', function ($q) use ($excludePeriodId) {
                         $q->where('status', 'proses');
@@ -148,7 +149,7 @@ class PeriodController extends Controller
     }
 
     /**
-     * Halaman form pembuatan periode baru.
+     * Halaman form pembuatan periode baru (Screenshot 2 & 3).
      */
     public function create()
     {
@@ -165,7 +166,7 @@ class PeriodController extends Controller
     }
 
     /**
-     * Halaman form edit periode.
+     * Halaman form edit periode (Screenshot 5).
      */
     public function edit(CheckingPeriod $period)
     {
@@ -203,10 +204,10 @@ class PeriodController extends Controller
         }
 
         $request->validate([
-            'date'          => 'required|date',
+            'date' => 'required|date',
             'deadline_date' => 'nullable|date|after_or_equal:date',
-            'tester_ids'    => 'required|array|min:1',
-            'tester_ids.*'  => 'required|integer|exists:users,id',
+            'tester_ids' => 'required|array|min:1',
+            'tester_ids.*' => 'exists:users,id',
         ], [
             'date.required' => 'Tanggal pengecekan wajib diisi.',
             'date.date' => 'Format tanggal tidak valid.',
@@ -214,7 +215,6 @@ class PeriodController extends Controller
             'deadline_date.after_or_equal' => 'Tenggat waktu tidak boleh lebih awal dari tanggal periode.',
             'tester_ids.required' => 'Pilih minimal satu tester untuk periode pengecekan.',
             'tester_ids.min' => 'Pilih minimal satu tester untuk periode pengecekan.',
-            'tester_ids.*.exists' => 'Tester yang dipilih tidak valid.',
         ]);
 
         $date = Carbon::parse($request->date)->format('Y-m-d');
@@ -225,9 +225,9 @@ class PeriodController extends Controller
             ]);
         }
 
-        $testerIds = array_values(array_map('intval', array_unique((array) $request->tester_ids)));
+        $testerIds = array_values(array_unique($request->tester_ids));
         
-        $busyTesters = User::whereIn('id', $testerIds)
+        $busyTesters = \App\Models\User::whereIn('id', $testerIds)
             ->whereHas('periodServices', function ($q) {
                 $q->where('status', 'pending')
                   ->whereHas('period', function ($pq) {
@@ -235,58 +235,56 @@ class PeriodController extends Controller
                   });
             })
             ->get();
+            
+        \Log::info('PeriodController Store validation', [
+            'tester_ids' => $testerIds,
+            'busy' => $busyTesters->pluck('name')
+        ]);
 
         if ($busyTesters->isNotEmpty()) {
             $names = $busyTesters->pluck('name')->implode(', ');
             return back()->withErrors([
-                'tester_ids' => "Pembuatan dibatalkan! Tester berikut masih memiliki tugas pengecekan yang belum selesai (pending) di periode aktif lain: {$names}."
+                'tester_ids' => "Pembuatan dibatalkan! Tester berikut masih memiliki tugas pengecekan yang belum selesai (pending) di periode aktif: {$names}."
             ]);
         }
 
-        try {
-            DB::transaction(function () use ($date, $request, $testerIds) {
-                $period = CheckingPeriod::create([
-                    'date'          => $date,
-                    'deadline_date' => $request->deadline_date ? Carbon::parse($request->deadline_date)->format('Y-m-d') : null,
-                    'status'        => 'proses',
-                    'created_by'    => $request->user()->id,
+        DB::transaction(function () use ($date, $request) {
+            $period = CheckingPeriod::create([
+                'date' => $date,
+                'deadline_date' => $request->deadline_date ? Carbon::parse($request->deadline_date)->format('Y-m-d') : null,
+                'status' => 'proses',
+                'created_by' => $request->user()->id,
+            ]);
+
+            $testerIds = array_values(array_unique($request->tester_ids));
+            foreach ($testerIds as $testerId) {
+                PeriodTester::create([
+                    'period_id' => $period->id,
+                    'tester_id' => $testerId,
                 ]);
+            }
 
-                foreach ($testerIds as $testerId) {
-                    PeriodTester::create([
-                        'period_id' => $period->id,
-                        'tester_id' => $testerId,
-                    ]);
-                }
+            $services = Service::where('is_active', true)->orderBy('id')->get();
+            $testerCount = count($testerIds);
 
-                $services = Service::where('is_active', true)->orderBy('id')->get();
-                $testerCount = count($testerIds);
+            foreach ($services as $index => $service) {
+                $assignedTesterId = $testerIds[$index % $testerCount];
+                PeriodService::create([
+                    'period_id' => $period->id,
+                    'service_id' => $service->id,
+                    'tester_id' => $assignedTesterId,
+                    'status' => 'pending',
+                    'description' => null,
+                    'checked_at' => null,
+                ]);
+            }
+        });
 
-                foreach ($services as $index => $service) {
-                    $assignedTesterId = $testerIds[$index % $testerCount];
-                    PeriodService::create([
-                        'period_id'   => $period->id,
-                        'service_id'  => $service->id,
-                        'tester_id'   => $assignedTesterId,
-                        'status'      => 'pending',
-                        'description' => null,
-                        'checked_at'  => null,
-                    ]);
-                }
-            });
-
-            return redirect()->route('admin.periods.index')->with('success', 'Periode pengecekan berhasil dibuat dan layanan didistribusikan.');
-        } catch (\Throwable $e) {
-            Log::error('Gagal membuat periode pengecekan: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return back()->with('error', 'Terjadi kesalahan saat membuat periode pengecekan. Silakan coba lagi.');
-        }
+        return redirect()->route('admin.periods.index')->with('success', 'Periode pengecekan berhasil dibuat dan layanan didistribusikan.');
     }
 
     /**
-     * Menampilkan detail periode.
+     * Menampilkan detail periode (Show / Detail).
      */
     public function show(CheckingPeriod $period)
     {
@@ -319,46 +317,44 @@ class PeriodController extends Controller
 
             $assignedServices = $period->periodServices->where('tester_id', $tester->id)->map(function ($ps) {
                 return [
-                    'id'           => $ps->id,
-                    'service_id'   => $ps->service_id,
+                    'id' => $ps->id,
+                    'service_id' => $ps->service_id,
                     'service_name' => $ps->service?->service_name ?? 'Layanan',
-                    'category'     => $ps->service?->category ?? 'Umum',
-                    'icon'         => $ps->service?->icon ?? 'globe',
-                    'service_url'  => $ps->service?->service_url,
-                    'status'       => $ps->status,
-                    'description'  => $ps->description,
-                    'checked_at'   => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y H:i') : null,
+                    'category' => $ps->service?->category ?? 'Umum',
+                    'icon' => $ps->service?->icon ?? 'globe',
+                    'service_url' => $ps->service?->service_url,
+                    'status' => $ps->status,
+                    'description' => $ps->description,
+                    'checked_at' => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y H:i') : null,
                 ];
             })->values();
 
             $distribution[] = [
-                'tester_id'        => $tester->id,
-                'name'             => $tester->name,
-                'email'            => $tester->email,
-                'initials'         => $initials,
-                'total_services'   => $assignedServices->count(),
+                'tester_id' => $tester->id,
+                'name' => $tester->name,
+                'email' => $tester->email,
+                'initials' => $initials,
+                'total_services' => $assignedServices->count(),
                 'checked_services' => $assignedServices->filter(fn($s) => $s['status'] !== 'pending')->count(),
-                'services'         => $assignedServices,
+                'services' => $assignedServices,
             ];
         }
 
         return Inertia::render('Admin/Periods/Show', [
             'period' => [
-                'id'               => $period->id,
-                'title'            => $periodTitle,
-                'date'             => $carbonDate->format('Y-m-d'),
-                'deadline_date'    => $period->deadline_date ? Carbon::parse($period->deadline_date)->format('d F Y') : null,
-                'status'           => $period->status,
+                'id' => $period->id,
+                'title' => $periodTitle,
+                'date' => $carbonDate->format('Y-m-d'),
+                'deadline_date' => $period->deadline_date ? Carbon::parse($period->deadline_date)->format('d F Y') : null,
+                'status' => $period->status,
                 'created_at_label' => Carbon::parse($period->created_at)->format('d F Y H:i'),
-                'creator_name'     => $period->creator?->name ?? 'Admin',
-                'total_services'   => $totalServices,
+                'creator_name' => $period->creator?->name ?? 'Admin',
+                'total_services' => $totalServices,
                 'checked_services' => $checkedServices,
-                'normal_services'  => $normalServices,
-                'issues_services'  => $issuesServices,
+                'normal_services' => $normalServices,
+                'issues_services' => $issuesServices,
                 'pending_services' => $pendingServices,
                 'progress_percent' => $totalServices > 0 ? round(($checkedServices / $totalServices) * 100) : 0,
-                'has_results'      => $checkedServices > 0,
-                'has_testers'      => $period->periodTesters->count() > 0,
             ],
             'distribution' => $distribution,
         ]);
@@ -369,7 +365,7 @@ class PeriodController extends Controller
      */
     public function update(Request $request, CheckingPeriod $period)
     {
-        // Kasus 1: Toggle status dari halaman Show
+        // Kasus 1: Toggle status dari tabel Index atau halaman Show
         if ($request->has('status') && !$request->has('tester_ids') && !$request->has('date') && !$request->has('tanggal_periode')) {
             $request->validate([
                 'status' => 'required|in:proses,selesai,aktif,nonaktif',
@@ -381,20 +377,12 @@ class PeriodController extends Controller
                 default => $request->status,
             };
 
-            try {
-                $period->update([
-                    'status' => $statusVal,
-                ]);
+            $period->update([
+                'status' => $statusVal,
+            ]);
 
-                $label = $statusVal === 'proses' ? 'diaktifkan' : 'dinonaktifkan';
-                return back()->with('success', "Periode berhasil {$label}.");
-            } catch (\Throwable $e) {
-                Log::error('Gagal memperbarui status periode: ' . $e->getMessage(), [
-                    'period_id' => $period->id,
-                ]);
-
-                return back()->with('error', 'Terjadi kesalahan saat memperbarui status periode.');
-            }
+            $label = $statusVal === 'proses' ? 'diaktifkan' : 'dinonaktifkan';
+            return back()->with('success', "Periode berhasil {$label}.");
         }
 
         // Kasus 2: Update dari Form Edit Periode (Tanggal, Tester & Distribusi)
@@ -403,10 +391,10 @@ class PeriodController extends Controller
         }
 
         $request->validate([
-            'date'          => 'required|date',
+            'date' => 'required|date',
             'deadline_date' => 'nullable|date|after_or_equal:date',
-            'tester_ids'    => 'required|array|min:1',
-            'tester_ids.*'  => 'required|integer|exists:users,id',
+            'tester_ids' => 'required|array|min:1',
+            'tester_ids.*' => 'exists:users,id',
         ], [
             'date.required' => 'Tanggal pengecekan wajib diisi.',
             'date.date' => 'Format tanggal tidak valid.',
@@ -414,7 +402,6 @@ class PeriodController extends Controller
             'deadline_date.after_or_equal' => 'Tenggat waktu tidak boleh lebih awal dari tanggal periode.',
             'tester_ids.required' => 'Pilih minimal satu tester untuk periode pengecekan.',
             'tester_ids.min' => 'Pilih minimal satu tester untuk periode pengecekan.',
-            'tester_ids.*.exists' => 'Tester yang dipilih tidak valid.',
         ]);
 
         $date = Carbon::parse($request->date)->format('Y-m-d');
@@ -426,9 +413,9 @@ class PeriodController extends Controller
             ]);
         }
 
-        $testerIds = array_values(array_map('intval', array_unique((array) $request->tester_ids)));
+        $testerIds = array_values(array_unique($request->tester_ids));
         
-        $busyTesters = User::whereIn('id', $testerIds)
+        $busyTesters = \App\Models\User::whereIn('id', $testerIds)
             ->whereHas('periodServices', function ($q) use ($period) {
                 $q->where('status', 'pending')
                   ->whereHas('period', function ($pq) use ($period) {
@@ -436,6 +423,12 @@ class PeriodController extends Controller
                   });
             })
             ->get();
+            
+        \Log::info('PeriodController Update validation', [
+            'period_id' => $period->id,
+            'tester_ids' => $testerIds,
+            'busy' => $busyTesters->pluck('name')
+        ]);
 
         if ($busyTesters->isNotEmpty()) {
             $names = $busyTesters->pluck('name')->implode(', ');
@@ -444,58 +437,52 @@ class PeriodController extends Controller
             ]);
         }
 
-        try {
-            DB::transaction(function () use ($period, $date, $request, $testerIds) {
-                $period->update([
-                    'date'          => $date,
-                    'deadline_date' => $request->deadline_date ? Carbon::parse($request->deadline_date)->format('Y-m-d') : null,
-                ]);
-
-                // Simpan status cek yang sudah ada sebelum redistribusi agar catatan tidak hilang
-                $existingServices = PeriodService::where('period_id', $period->id)->get()->keyBy('service_id');
-
-                // Perbarui tester periode
-                PeriodTester::where('period_id', $period->id)->delete();
-                foreach ($testerIds as $testerId) {
-                    PeriodTester::create([
-                        'period_id' => $period->id,
-                        'tester_id' => $testerId,
-                    ]);
-                }
-
-                // Redistribusi layanan aktif
-                $services = Service::where('is_active', true)->orderBy('id')->get();
-                $testerCount = count($testerIds);
-
-                PeriodService::where('period_id', $period->id)->delete();
-                foreach ($services as $index => $service) {
-                    $assignedTesterId = $testerIds[$index % $testerCount];
-                    $prev = $existingServices->get($service->id);
-
-                    PeriodService::create([
-                        'period_id'   => $period->id,
-                        'service_id'  => $service->id,
-                        'tester_id'   => $assignedTesterId,
-                        'status'      => $prev ? $prev->status : 'pending',
-                        'description' => $prev ? $prev->description : null,
-                        'checked_at'  => $prev ? $prev->checked_at : null,
-                    ]);
-                }
-            });
-
-            return redirect()->route('admin.periods.index')->with('success', 'Data periode berhasil diperbarui.');
-        } catch (\Throwable $e) {
-            Log::error('Gagal memperbarui periode pengecekan: ' . $e->getMessage(), [
-                'period_id' => $period->id,
-                'trace'     => $e->getTraceAsString(),
+        DB::transaction(function () use ($period, $date, $request) {
+            $period->update([
+                'date' => $date,
+                'deadline_date' => $request->deadline_date ? Carbon::parse($request->deadline_date)->format('Y-m-d') : null,
             ]);
 
-            return back()->with('error', 'Terjadi kesalahan saat memperbarui periode pengecekan. Silakan coba lagi.');
-        }
+            // Simpan status cek yang sudah ada sebelum redistribusi agar catatan tidak hilang
+            $existingServices = PeriodService::where('period_id', $period->id)->get()->keyBy('service_id');
+
+            // Perbarui tester periode
+            $testerIds = array_values(array_unique($request->tester_ids));
+            PeriodTester::where('period_id', $period->id)->delete();
+            foreach ($testerIds as $testerId) {
+                PeriodTester::create([
+                    'period_id' => $period->id,
+                    'tester_id' => $testerId,
+                ]);
+            }
+
+            // Redistribusi layanan aktif
+            $services = Service::where('is_active', true)->orderBy('id')->get();
+            $testerCount = count($testerIds);
+
+            PeriodService::where('period_id', $period->id)->delete();
+            foreach ($services as $index => $service) {
+                $assignedTesterId = $testerIds[$index % $testerCount];
+                $prev = $existingServices->get($service->id);
+
+                PeriodService::create([
+                    'period_id' => $period->id,
+                    'service_id' => $service->id,
+                    'tester_id' => $assignedTesterId,
+                    'status' => $prev ? $prev->status : 'pending',
+                    'description' => $prev ? $prev->description : null,
+                    'checked_at' => $prev ? $prev->checked_at : null,
+                ]);
+            }
+        });
+
+        return redirect()->route('admin.periods.index')->with('success', 'Data periode berhasil diperbarui.');
     }
 
     /**
-     * Menghapus periode pengecekan.
+     * Menghapus periode pengecekan (Hapus).
+     * 2. Periode yang sudah ada tester tapi BELUM melakukan pengecekan -> MASIH BISA DIHAPUS
+     * 3. Periode yang sudah memiliki HASIL pengecekan -> TIDAK BISA DIHAPUS
      */
     public function destroy(CheckingPeriod $period)
     {
@@ -523,14 +510,11 @@ class PeriodController extends Controller
                 $period->delete();
             });
 
-            return redirect()->route('admin.periods.index')->with('success', 'Periode pengecekan berhasil dihapus.');
-        } catch (\Throwable $e) {
-            Log::error('Gagal menghapus periode pengecekan: ' . $e->getMessage(), [
-                'period_id' => $period->id,
-                'trace'     => $e->getTraceAsString(),
-            ]);
-
-            return redirect()->route('admin.periods.index')->with('error', 'Gagal menghapus periode. Data mungkin masih terkait riwayat pengujian.');
+            return redirect()->route('admin.periods.index')
+                ->with('success', 'Periode pengecekan berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.periods.index')
+                ->with('error', 'Gagal menghapus periode: ' . $e->getMessage());
         }
     }
 

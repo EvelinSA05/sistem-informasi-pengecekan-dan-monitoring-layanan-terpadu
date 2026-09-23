@@ -20,12 +20,28 @@ const form = useForm({
 });
 
 // ─── Toggle Tester Selection ─────────────────────────────────────
-function toggleTester(testerId) {
-    const idx = form.tester_ids.indexOf(testerId);
+const availableTesters = computed(() => props.testers.filter(t => t.is_available !== false));
+const allAvailableSelected = computed(() => {
+    return availableTesters.value.length > 0 && availableTesters.value.every(t => form.tester_ids.includes(t.id));
+});
+
+function toggleSelectAllAvailable() {
+    if (allAvailableSelected.value) {
+        form.tester_ids = [];
+    } else {
+        form.tester_ids = availableTesters.value.map(t => t.id);
+    }
+}
+
+function toggleTester(tester) {
+    if (tester.is_available === false && !isTesterSelected(tester.id)) {
+        return;
+    }
+    const idx = form.tester_ids.indexOf(tester.id);
     if (idx > -1) {
         form.tester_ids.splice(idx, 1);
     } else {
-        form.tester_ids.push(testerId);
+        form.tester_ids.push(tester.id);
     }
 }
 
@@ -93,9 +109,8 @@ function getServiceIcon(iconKey) {
     return serviceIcons[iconKey] || serviceIcons['globe'];
 }
 
-// ─── Reactive Automatic Distribution Calculation ───────────────
-const selectedTestersList = computed(() => props.testers.filter(t => form.tester_ids.includes(t.id)));
-const selectedTestersCount = computed(() => selectedTestersList.value.length);
+// ─── Reactive Automatic Distribution Calculation ─────────────────
+const selectedTestersCount = computed(() => form.tester_ids.length);
 
 const perTesterEstimate = computed(() => {
     if (selectedTestersCount.value === 0) return 0;
@@ -105,7 +120,8 @@ const perTesterEstimate = computed(() => {
 const distributedGroups = computed(() => {
     if (selectedTestersCount.value === 0) return [];
 
-    const groups = selectedTestersList.value.map(tester => ({
+    const selectedTestersList = props.testers.filter(t => form.tester_ids.includes(t.id));
+    const groups = selectedTestersList.map(tester => ({
         tester,
         services: [],
     }));
@@ -210,9 +226,19 @@ function submitForm() {
                     <!-- Section: PILIH TESTER -->
                     <div>
                         <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                PILIH TESTER <span class="text-rose-500">*</span>
-                            </h3>
+                            <div class="flex items-center gap-2.5">
+                                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                    PILIH TESTER <span class="text-rose-500">*</span>
+                                </h3>
+                                <button
+                                    v-if="availableTesters.length > 0"
+                                    type="button"
+                                    @click="toggleSelectAllAvailable"
+                                    class="text-[11px] font-bold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer underline underline-offset-2"
+                                >
+                                    {{ allAvailableSelected ? 'Batal Pilih Semua' : 'Pilih Semua Tersedia' }}
+                                </button>
+                            </div>
                             <span v-if="selectedTestersCount > 0" class="text-xs font-semibold text-blue-600">
                                 {{ selectedTestersCount }} dipilih
                             </span>
@@ -223,22 +249,24 @@ function submitForm() {
                             <div
                                 v-for="tester in testers"
                                 :key="tester.id"
-                                @click="toggleTester(tester.id)"
+                                @click="toggleTester(tester)"
                                 :class="[
-                                    'cursor-pointer select-none rounded-2xl p-4 border transition-all duration-150 flex items-center justify-between',
-                                    isTesterSelected(tester.id)
-                                        ? 'bg-blue-50/30 border-blue-500 ring-1 ring-blue-500/20 shadow-xs'
-                                        : 'bg-white border-slate-200/80 hover:border-slate-300 hover:bg-slate-50/50'
+                                    'select-none rounded-2xl p-4 border transition-all duration-150 flex items-center justify-between',
+                                    tester.is_available === false && !isTesterSelected(tester.id)
+                                        ? 'bg-slate-50/70 border-slate-200/70 opacity-60 cursor-not-allowed'
+                                        : (isTesterSelected(tester.id)
+                                            ? 'cursor-pointer bg-blue-50/30 border-blue-500 ring-1 ring-blue-500/20 shadow-xs'
+                                            : 'cursor-pointer bg-white border-slate-200/80 hover:border-slate-300 hover:bg-slate-50/50')
                                 ]"
                             >
                                 <div class="flex items-center gap-3.5">
-                                    <!-- Checkbox circle -->
+                                    <!-- Checkbox circle / Lock icon -->
                                     <div
                                         :class="[
                                             'w-5 h-5 rounded-full flex items-center justify-center transition-colors',
                                             isTesterSelected(tester.id)
                                                 ? 'bg-[#1e3a8a] text-white'
-                                                : 'border-2 border-slate-300 bg-white'
+                                                : (tester.is_available === false ? 'border-2 border-slate-200 bg-slate-100 text-slate-400' : 'border-2 border-slate-300 bg-white')
                                         ]"
                                     >
                                         <svg
