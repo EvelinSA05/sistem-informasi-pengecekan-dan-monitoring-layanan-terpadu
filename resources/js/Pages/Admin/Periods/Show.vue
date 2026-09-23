@@ -215,13 +215,16 @@ function getServiceIcon(iconKey) {
         </Transition>
 
         <div class="space-y-6 max-w-7xl mx-auto">
-            <!-- ── 1. Top Header Card (Clean & Minimal Sesuai Mockup) ── -->
-            <div class="bg-white rounded-2xl border border-slate-200/70 p-6 shadow-2xs">
+            <!-- ── 1. Top Header Card (Aesthetic, Clean & Minimal) ──── -->
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-xs relative overflow-hidden">
+                <!-- Ambient Subtle Glow -->
+                <div class="absolute -right-16 -top-16 w-56 h-56 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
                 <!-- Back Link -->
-                <div class="mb-3.5">
+                <div class="mb-3.5 relative z-10">
                     <Link
                         :href="route('admin.periods.index')"
-                        class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors group cursor-pointer"
+                        class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-blue-600 transition-colors group cursor-pointer"
                     >
                         <span class="text-xs transition-transform group-hover:-translate-x-0.5">&larr;</span>
                         <span>Kembali</span>
@@ -229,83 +232,85 @@ function getServiceIcon(iconKey) {
                 </div>
 
                 <!-- Main Row: Title & Action Toolbar -->
-                <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 relative z-10">
                     <!-- Left: Title, Badge & Meta -->
                     <div class="min-w-0">
-                        <div class="flex items-center gap-2.5 flex-wrap">
+                        <div class="flex items-center gap-3 flex-wrap">
                             <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                                 Detail Periode: {{ period.title }}
                             </h2>
                             <!-- Soft Blue Badge for AKTIF / Slate for NONAKTIF -->
                             <span
                                 v-if="period.status === 'proses'"
-                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 border border-blue-200/60 text-blue-600"
+                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-blue-50 border border-blue-200 text-blue-700 shadow-2xs"
                             >
+                                <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
                                 AKTIF
                             </span>
                             <span
                                 v-else
-                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 border border-slate-200 text-slate-500"
+                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-slate-100 border border-slate-200 text-slate-600 shadow-2xs"
                             >
+                                <span class="w-2 h-2 rounded-full bg-slate-400"></span>
                                 NONAKTIF
                             </span>
                         </div>
-                        <p class="text-xs text-slate-400 mt-1.5 font-normal">
+                        <p class="text-xs text-slate-500 mt-2 font-medium">
                             Dibuat pada {{ period.created_at_label }} oleh {{ period.creator_name }}
                             <span v-if="period.deadline_date">
-                                &bull; <span class="text-amber-600 font-medium">Tenggat Waktu: {{ period.deadline_date }}</span>
+                                &bull; <span class="text-amber-600 font-bold">Tenggat Waktu: {{ period.deadline_date }}</span>
                             </span>
                         </p>
                     </div>
 
-                    <!-- Right: Action Buttons Group (Clean Outlined & Solid Blue) -->
+                    <!-- Right: Action Buttons Group (Pastel Tints & Primary Solid Blue) -->
                     <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap shrink-0">
                         <!-- Edit Periode -->
                         <Link
                             :href="route('admin.periods.edit', period.id)"
-                            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium shadow-2xs transition-all cursor-pointer"
+                            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs hover:border-slate-300 transition-all cursor-pointer"
                         >
-                            <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 018.586 12z"/>
                             </svg>
                             <span>Edit Periode</span>
                         </Link>
 
-                        <!-- Export Excel -->
+                        <!-- Export Excel (Soft Pastel Emerald) -->
                         <a
                             :href="route('admin.periods.export.excel', period.id)"
                             target="_blank"
-                            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium shadow-2xs transition-all cursor-pointer"
+                            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-emerald-200/80 bg-emerald-50/50 hover:bg-emerald-100/60 text-emerald-700 text-xs font-semibold shadow-2xs hover:border-emerald-300 transition-all cursor-pointer"
                         >
-                            <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                             </svg>
                             <span>Export Excel</span>
                         </a>
 
-                        <!-- Export PDF -->
+                        <!-- Export PDF (Soft Pastel Rose) -->
                         <a
                             :href="route('admin.periods.export.pdf', period.id)"
                             target="_blank"
-                            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium shadow-2xs transition-all cursor-pointer"
+                            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-rose-200/80 bg-rose-50/50 hover:bg-rose-100/60 text-rose-700 text-xs font-semibold shadow-2xs hover:border-rose-300 transition-all cursor-pointer"
                         >
-                            <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <svg class="w-3.5 h-3.5 text-rose-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg>
                             <span>Export PDF</span>
                         </a>
 
-                        <!-- Selesaikan / Buka Kembali (Primary CTA) -->
+                        <!-- Selesaikan / Buka Kembali (Primary CTA: Solid Blue) -->
                         <button
                             type="button"
                             @click="togglePeriodStatus"
                             :disabled="isUpdatingStatus"
-                            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-xs transition-all cursor-pointer disabled:opacity-60 shrink-0"
+                            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-md shadow-blue-600/20 transition-all cursor-pointer disabled:opacity-60 shrink-0"
                         >
-                            <svg v-if="period.status === 'proses'" class="w-3.5 h-3.5 stroke-[2.2] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg v-if="period.status === 'proses'" class="w-3.5 h-3.5 stroke-[2.4] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <svg v-else class="w-3.5 h-3.5 stroke-[2.2] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg v-else class="w-3.5 h-3.5 stroke-[2.4] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                             </svg>
                             <span>{{ isUpdatingStatus ? 'Memproses...' : (period.status === 'proses' ? 'Selesaikan Periode' : 'Buka Kembali Periode') }}</span>
@@ -317,72 +322,90 @@ function getServiceIcon(iconKey) {
             <!-- ── 2. 4 Infographic Executive KPI Cards ────────────── -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <!-- TOTAL LAYANAN -->
-                <div class="bg-white rounded-2xl border border-slate-200/70 p-5 shadow-2xs flex flex-col justify-between min-h-[135px]">
+                <div class="bg-gradient-to-br from-white via-white to-blue-50/30 rounded-2xl border border-blue-100 shadow-xs p-5 flex flex-col justify-between min-h-[135px]">
                     <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-semibold text-slate-400 tracking-wider">TOTAL LAYANAN</span>
-                        <div class="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">TOTAL LAYANAN</span>
+                        <div class="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shadow-2xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <rect x="2" y="3" width="20" height="14" rx="2"/><path stroke-linecap="round" d="M8 21h8M12 17v4"/>
                             </svg>
                         </div>
                     </div>
                     <div>
-                        <p class="text-3xl font-bold text-slate-900 mt-2">{{ period.total_services }}</p>
-                        <p class="text-xs text-slate-400 mt-1 font-normal">Layanan Digital Jatim</p>
+                        <p class="text-3xl font-extrabold text-slate-900 mt-2">{{ period.total_services }}</p>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Layanan Digital Jatim</p>
                     </div>
                 </div>
 
                 <!-- LAYANAN NORMAL -->
-                <div class="bg-white rounded-2xl border border-slate-200/70 p-5 shadow-2xs flex flex-col justify-between min-h-[135px]">
+                <div class="bg-gradient-to-br from-white via-white to-emerald-50/40 rounded-2xl border border-emerald-200/70 shadow-xs p-5 flex flex-col justify-between min-h-[135px]">
                     <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-semibold text-slate-400 tracking-wider">LAYANAN NORMAL</span>
-                        <div class="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100/70 flex items-center justify-center text-blue-500">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <span class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">LAYANAN NORMAL</span>
+                        <div class="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shadow-2xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                             </svg>
                         </div>
                     </div>
                     <div>
-                        <p class="text-3xl font-bold text-slate-900 mt-2">{{ period.normal_services }}</p>
-                        <p class="text-xs text-blue-600 font-medium mt-1 flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                        <p class="text-3xl font-extrabold text-emerald-700 mt-2">{{ period.normal_services }}</p>
+                        <p class="text-xs text-emerald-700 font-bold mt-1 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                             <span>Berjalan Optimal</span>
                         </p>
                     </div>
                 </div>
 
                 <!-- TERKENDALA -->
-                <div class="bg-white rounded-2xl border border-slate-200/70 p-5 shadow-2xs flex flex-col justify-between min-h-[135px]">
+                <div
+                    :class="[
+                        'rounded-2xl border shadow-xs p-5 flex flex-col justify-between min-h-[135px]',
+                        period.issues_services > 0
+                            ? 'bg-gradient-to-br from-white via-white to-rose-50/50 border-rose-200'
+                            : 'bg-gradient-to-br from-white via-white to-slate-50/50 border-slate-200/80'
+                    ]"
+                >
                     <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-semibold text-slate-400 tracking-wider">TERKENDALA</span>
-                        <div class="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <span :class="['text-[11px] font-bold uppercase tracking-wider', period.issues_services > 0 ? 'text-rose-700' : 'text-slate-500']">
+                            TERKENDALA
+                        </span>
+                        <div
+                            :class="[
+                                'w-8 h-8 rounded-xl flex items-center justify-center shadow-2xs border',
+                                period.issues_services > 0 ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-slate-100 border-slate-200 text-slate-500'
+                            ]"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                             </svg>
                         </div>
                     </div>
                     <div>
-                        <p class="text-3xl font-bold text-slate-900 mt-2">{{ period.issues_services }}</p>
-                        <p class="text-xs text-slate-400 mt-1 font-normal">Perlu Penanganan</p>
+                        <p :class="['text-3xl font-extrabold mt-2', period.issues_services > 0 ? 'text-rose-600' : 'text-slate-900']">
+                            {{ period.issues_services }}
+                        </p>
+                        <p :class="['text-xs font-semibold mt-1', period.issues_services > 0 ? 'text-rose-600' : 'text-slate-400']">
+                            {{ period.issues_services > 0 ? 'Perlu Penanganan Cepat' : 'Tidak Ada Kendala' }}
+                        </p>
                     </div>
                 </div>
 
                 <!-- PROGRESS CEK -->
-                <div class="bg-white rounded-2xl border border-slate-200/70 p-5 shadow-2xs flex flex-col justify-between min-h-[135px]">
+                <div class="bg-gradient-to-br from-white via-white to-blue-50/50 rounded-2xl border border-blue-200/80 shadow-xs p-5 flex flex-col justify-between min-h-[135px]">
                     <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-semibold text-slate-400 tracking-wider">PROGRESS CEK</span>
-                        <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                        <span class="text-[11px] font-bold text-blue-700 uppercase tracking-wider">PROGRESS CEK</span>
+                        <span class="text-xs font-bold text-blue-700 bg-blue-100/90 border border-blue-200/80 px-2.5 py-0.5 rounded-lg shadow-2xs">
                             {{ period.checked_services }}/{{ period.total_services }}
                         </span>
                     </div>
                     <div>
                         <div class="flex items-baseline justify-between mt-2">
-                            <span class="text-3xl font-bold text-slate-900">{{ period.progress_percent }}%</span>
-                            <span class="text-xs text-slate-400 font-normal">dari total layanan</span>
+                            <span class="text-3xl font-extrabold text-blue-900">{{ period.progress_percent }}%</span>
+                            <span class="text-xs text-blue-700/80 font-medium">dari total layanan</span>
                         </div>
-                        <div class="w-full h-1.5 bg-slate-100 rounded-full mt-2 overflow-hidden">
+                        <div class="w-full h-2 bg-blue-100/80 rounded-full mt-2 overflow-hidden shadow-inner">
                             <div
-                                class="h-full bg-blue-600 rounded-full transition-all duration-500"
+                                class="h-full bg-blue-600 rounded-full transition-all duration-500 shadow-xs"
                                 :style="{ width: `${period.progress_percent}%` }"
                             ></div>
                         </div>
@@ -391,18 +414,18 @@ function getServiceIcon(iconKey) {
             </div>
 
             <!-- ── 3. Distribusi & Beban Kerja Tester ──────────────── -->
-            <div class="bg-white rounded-2xl border border-slate-200/70 p-6 shadow-2xs">
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-xs relative overflow-hidden">
                 <!-- Section Header -->
                 <div class="flex items-center justify-between">
                     <div>
-                        <h3 class="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">
                             DISTRIBUSI & BEBAN KERJA TESTER
                         </h3>
                         <p class="text-xs text-slate-400 mt-0.5 font-normal">
                             Penugasan pengecekan performa dan status layanan
                         </p>
                     </div>
-                    <span class="text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                    <span class="text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1 rounded-full shadow-2xs">
                         {{ distribution.length }} Personel
                     </span>
                 </div>
@@ -412,21 +435,32 @@ function getServiceIcon(iconKey) {
                     <div
                         v-for="group in distribution"
                         :key="group.tester_id"
-                        class="rounded-2xl border border-slate-200/70 bg-white p-4.5 flex flex-col justify-between hover:border-slate-300 transition-all shadow-2xs"
+                        :class="[
+                            'rounded-2xl p-4.5 flex flex-col justify-between transition-all duration-200 border shadow-2xs hover:shadow-xs',
+                            getTesterProgress(group) === 100
+                                ? 'bg-gradient-to-br from-white to-blue-50/40 border-blue-200'
+                                : (getTesterProgress(group) > 0
+                                    ? 'bg-gradient-to-br from-white to-blue-50/20 border-blue-200/80'
+                                    : 'bg-slate-50/70 border-slate-200 hover:bg-white hover:border-slate-300')
+                        ]"
                     >
-                        <!-- Row 1: Avatar, Name, Email & Tasks Pill -->
-                        <div class="flex items-start justify-between gap-3">
+                        <!-- Row 1: Avatar, Name, Email & Tasks Pill (NO 'layanan selesai' label) -->
+                        <div class="flex items-center justify-between gap-3">
                             <div class="flex items-center gap-3 min-w-0">
                                 <div
                                     :class="[
-                                        'w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0',
-                                        getTesterProgress(group) > 0 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
+                                        'w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 shadow-xs',
+                                        getTesterProgress(group) === 100
+                                            ? 'bg-emerald-500 text-white'
+                                            : (getTesterProgress(group) > 0
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-slate-200 text-slate-700')
                                     ]"
                                 >
                                     {{ group.initials }}
                                 </div>
                                 <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-slate-900 leading-tight truncate" :title="group.name">
+                                    <p class="text-sm font-bold text-slate-800 leading-tight truncate" :title="group.name">
                                         {{ group.name }}
                                     </p>
                                     <p class="text-xs text-slate-400 truncate mt-0.5 font-normal" :title="group.email">
@@ -434,38 +468,63 @@ function getServiceIcon(iconKey) {
                                     </p>
                                 </div>
                             </div>
-                            <div class="text-right shrink-0">
+                            <div class="shrink-0">
                                 <span
                                     :class="[
-                                        'inline-block text-xs font-semibold px-2 py-0.5 rounded-md',
-                                        getTesterProgress(group) > 0
-                                            ? 'bg-blue-50 text-blue-600 border border-blue-100'
-                                            : 'bg-slate-100 text-slate-500'
+                                        'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold shadow-2xs border',
+                                        getTesterProgress(group) === 100
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                            : (getTesterProgress(group) > 0
+                                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                : 'bg-white text-slate-600 border-slate-200')
                                     ]"
                                 >
-                                    {{ group.checked_services }}/{{ group.total_services }}
+                                    {{ group.checked_services }} / {{ group.total_services }}
                                 </span>
-                                <span class="text-[10px] text-slate-400 block text-right mt-0.5 font-normal">layanan selesai</span>
                             </div>
                         </div>
 
-                        <!-- Row 2: Progress Bar Line -->
-                        <div class="w-full h-1 bg-slate-100 rounded-full mt-4 overflow-hidden">
+                        <!-- Row 2: Clean Progress Bar Line -->
+                        <div class="w-full h-1.5 bg-slate-200/70 rounded-full mt-4 overflow-hidden shadow-inner">
                             <div
-                                class="h-full bg-blue-600 rounded-full transition-all duration-300"
+                                :class="[
+                                    'h-full rounded-full transition-all duration-300 shadow-xs',
+                                    getTesterProgress(group) === 100 ? 'bg-emerald-500' : 'bg-blue-600'
+                                ]"
                                 :style="{ width: `${getTesterProgress(group)}%` }"
                             ></div>
                         </div>
 
-                        <!-- Row 3: Status Text & Percentage -->
-                        <div class="flex items-center justify-between text-xs mt-2.5">
-                            <span class="text-[11px] text-slate-400 font-normal">
-                                {{ getTesterStatusLabel(group) }}
+                        <!-- Row 3: Status Badge Pill & Percentage -->
+                        <div class="flex items-center justify-between mt-3">
+                            <span
+                                v-if="getTesterProgress(group) === 100"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80"
+                            >
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Selesai
                             </span>
                             <span
+                                v-else-if="getTesterProgress(group) > 0"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200/80"
+                            >
+                                <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+                                Proses
+                            </span>
+                            <span
+                                v-else
+                                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200/80"
+                            >
+                                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                Menunggu
+                            </span>
+
+                            <span
                                 :class="[
-                                    'text-xs font-semibold',
-                                    getTesterProgress(group) > 0 ? 'text-blue-600' : 'text-slate-400'
+                                    'text-xs font-extrabold',
+                                    getTesterProgress(group) === 100
+                                        ? 'text-emerald-700'
+                                        : (getTesterProgress(group) > 0 ? 'text-blue-600' : 'text-slate-400')
                                 ]"
                             >
                                 {{ getTesterProgress(group) }}%
@@ -476,17 +535,19 @@ function getServiceIcon(iconKey) {
             </div>
 
             <!-- ── 4. Detailed Service Checklist Table ─────────────── -->
-            <div class="bg-white rounded-2xl border border-slate-200/70 shadow-2xs overflow-hidden">
-                <!-- Collapsible Header / Toolbar -->
-                <div class="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+                <!-- Header Toolbar with Clean Background -->
+                <div class="bg-slate-50/70 px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
                         <button
                             type="button"
                             @click="isTableVisible = !isTableVisible"
-                            class="inline-flex items-center gap-2 text-sm font-semibold text-slate-800 hover:text-blue-600 transition-colors cursor-pointer"
+                            class="inline-flex items-center gap-2 text-sm font-bold text-slate-800 hover:text-blue-600 transition-colors cursor-pointer"
                         >
-                            <span>Daftar Layanan</span>
-                            <span class="text-xs text-slate-400 font-normal">({{ filteredServices.length }} dari {{ allServices.length }})</span>
+                            <span>Daftar Layanan Ditugaskan</span>
+                            <span class="text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">
+                                {{ filteredServices.length }} Layanan
+                            </span>
                             <svg
                                 class="w-4 h-4 text-slate-400 transition-transform duration-200"
                                 :class="isTableVisible ? 'rotate-180' : ''"
@@ -502,14 +563,14 @@ function getServiceIcon(iconKey) {
                     <!-- Filter Tabs & Search Box -->
                     <div v-if="isTableVisible" class="flex items-center gap-2 flex-wrap">
                         <!-- Status Filter Tabs -->
-                        <div class="inline-flex p-1 bg-slate-100/90 rounded-xl text-xs font-medium text-slate-600">
+                        <div class="inline-flex p-1 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 shadow-2xs">
                             <button
                                 type="button"
                                 @click="statusFilter = 'all'"
                                 :class="[
                                     'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
                                     statusFilter === 'all'
-                                        ? 'bg-white text-blue-600 shadow-2xs font-semibold'
+                                        ? 'bg-blue-600 text-white shadow-xs font-bold'
                                         : 'text-slate-500 hover:text-slate-800'
                                 ]"
                             >
@@ -521,7 +582,7 @@ function getServiceIcon(iconKey) {
                                 :class="[
                                     'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
                                     statusFilter === 'normal'
-                                        ? 'bg-white text-blue-600 shadow-2xs font-semibold'
+                                        ? 'bg-emerald-600 text-white shadow-xs font-bold'
                                         : 'text-slate-500 hover:text-slate-800'
                                 ]"
                             >
@@ -533,7 +594,7 @@ function getServiceIcon(iconKey) {
                                 :class="[
                                     'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
                                     statusFilter === 'gangguan'
-                                        ? 'bg-white text-rose-700 shadow-2xs font-semibold'
+                                        ? 'bg-rose-600 text-white shadow-xs font-bold'
                                         : 'text-slate-500 hover:text-slate-800'
                                 ]"
                             >
@@ -545,7 +606,7 @@ function getServiceIcon(iconKey) {
                                 :class="[
                                     'px-2.5 py-1 rounded-lg transition-all cursor-pointer',
                                     statusFilter === 'pending'
-                                        ? 'bg-white text-slate-700 shadow-2xs font-semibold'
+                                        ? 'bg-slate-700 text-white shadow-xs font-bold'
                                         : 'text-slate-500 hover:text-slate-800'
                                 ]"
                             >
@@ -559,7 +620,7 @@ function getServiceIcon(iconKey) {
                                 v-model="searchQuery"
                                 type="text"
                                 placeholder="Cari layanan / tester..."
-                                class="pl-8 pr-3.5 py-1.5 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white w-44 sm:w-52 transition-all"
+                                class="pl-8 pr-3.5 py-1.5 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 w-44 sm:w-52 transition-all shadow-2xs"
                             />
                             <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -572,7 +633,7 @@ function getServiceIcon(iconKey) {
                 <div v-show="isTableVisible" class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="border-b border-slate-100 bg-slate-50/50 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                            <tr class="border-b border-slate-200/80 bg-slate-100/50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                 <th class="py-3.5 px-6">LAYANAN</th>
                                 <th class="py-3.5 px-6">KATEGORI</th>
                                 <th class="py-3.5 px-6">PENANGGUNG JAWAB</th>
@@ -585,20 +646,20 @@ function getServiceIcon(iconKey) {
                             <tr
                                 v-for="srv in filteredServices"
                                 :key="srv.id"
-                                class="hover:bg-slate-50/60 transition-colors"
+                                class="hover:bg-blue-50/20 transition-colors"
                             >
                                 <!-- Layanan -->
                                 <td class="py-3.5 px-6">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200/50" v-html="getServiceIcon(srv.icon)">
+                                        <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200/70" v-html="getServiceIcon(srv.icon)">
                                         </div>
                                         <div>
-                                            <p class="font-semibold text-slate-800 leading-tight">{{ srv.service_name }}</p>
+                                            <p class="font-bold text-slate-800 leading-tight">{{ srv.service_name }}</p>
                                             <a
                                                 v-if="srv.service_url"
                                                 :href="srv.service_url"
                                                 target="_blank"
-                                                class="text-[11px] text-blue-500 hover:underline inline-flex items-center gap-0.5 mt-0.5"
+                                                class="text-[11px] text-blue-600 font-medium hover:underline inline-flex items-center gap-0.5 mt-0.5"
                                             >
                                                 <span>Buka link</span>
                                                 <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -611,7 +672,7 @@ function getServiceIcon(iconKey) {
 
                                 <!-- Kategori -->
                                 <td class="py-3.5 px-6">
-                                    <span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-medium">
+                                    <span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-semibold border border-slate-200/60">
                                         {{ srv.category }}
                                     </span>
                                 </td>
@@ -621,13 +682,13 @@ function getServiceIcon(iconKey) {
                                     <div class="flex items-center gap-2">
                                         <div
                                             :class="[
-                                                'w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0',
+                                                'w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 shadow-2xs',
                                                 getTesterAvatarColor(srv.tester_initials, srv.tester_name)
                                             ]"
                                         >
                                             {{ srv.tester_initials }}
                                         </div>
-                                        <span class="font-medium text-slate-700">{{ srv.tester_name }}</span>
+                                        <span class="font-semibold text-slate-700">{{ srv.tester_name }}</span>
                                     </div>
                                 </td>
 
@@ -635,21 +696,21 @@ function getServiceIcon(iconKey) {
                                 <td class="py-3.5 px-6">
                                     <span
                                         v-if="srv.status === 'normal'"
-                                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-semibold text-[10.5px] bg-blue-50 text-blue-700 border border-blue-200/70"
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-bold text-[10.5px] bg-emerald-50 text-emerald-700 border border-emerald-200"
                                     >
-                                        <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                         Normal
                                     </span>
                                     <span
                                         v-else-if="srv.status === 'gangguan'"
-                                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-semibold text-[10.5px] bg-rose-50 text-rose-700 border border-rose-200/70"
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-bold text-[10.5px] bg-rose-50 text-rose-700 border border-rose-200"
                                     >
                                         <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                                         Kendala
                                     </span>
                                     <span
                                         v-else
-                                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-semibold text-[10.5px] bg-slate-100 text-slate-500 border border-slate-200"
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-bold text-[10.5px] bg-slate-100 text-slate-600 border border-slate-200"
                                     >
                                         <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                                         Belum Dicek
@@ -657,12 +718,12 @@ function getServiceIcon(iconKey) {
                                 </td>
 
                                 <!-- Waktu Cek -->
-                                <td class="py-3.5 px-6 text-slate-400 font-normal">
+                                <td class="py-3.5 px-6 text-slate-500 font-medium">
                                     {{ srv.checked_at || '-' }}
                                 </td>
 
                                 <!-- Keterangan -->
-                                <td class="py-3.5 px-6 text-slate-600 font-normal max-w-xs truncate">
+                                <td class="py-3.5 px-6 text-slate-600 font-medium max-w-xs truncate">
                                     {{ srv.description || '-' }}
                                 </td>
                             </tr>
