@@ -232,6 +232,9 @@ function submitForm() {
                                         : 'border-slate-200 hover:border-slate-300'"
                                 />
                             </div>
+                            <p v-if="form.errors.date" class="text-xs text-rose-500 mt-1 font-medium">
+                                {{ form.errors.date }}
+                            </p>
                         </div>
 
                         <div class="mt-4">
@@ -249,6 +252,9 @@ function submitForm() {
                                         : 'border-slate-200 hover:border-slate-300'"
                                 />
                             </div>
+                            <p v-if="form.errors.deadline_date" class="text-xs text-rose-500 mt-1 font-medium">
+                                {{ form.errors.deadline_date }}
+                            </p>
                         </div>
                     </div>
 
