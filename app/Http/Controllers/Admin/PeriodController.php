@@ -238,6 +238,7 @@ class PeriodController extends Controller
                 $q->where('status', 'pending')
                   ->whereHas('period', function ($pq) use ($targetDateObj) {
                       $pq->where('status', 'proses')
+                         ->where('date', '<=', $targetDateObj)
                          ->where(function ($query) use ($targetDateObj) {
                              $query->whereNull('deadline_date')
                                    ->orWhere('deadline_date', '>=', $targetDateObj);
@@ -397,6 +398,7 @@ class PeriodController extends Controller
                           ->whereHas('period', function ($pq) use ($period, $targetDateObj) {
                               $pq->where('status', 'proses')
                                  ->where('checking_periods.id', '!=', $period->id)
+                                 ->where('date', '<=', $targetDateObj)
                                  ->where(function ($query) use ($targetDateObj) {
                                      $query->whereNull('deadline_date')
                                            ->orWhere('deadline_date', '>=', $targetDateObj);
@@ -456,6 +458,7 @@ class PeriodController extends Controller
                   ->whereHas('period', function ($pq) use ($period, $targetDateObj) {
                       $pq->where('status', 'proses')
                          ->where('checking_periods.id', '!=', $period->id)
+                         ->where('date', '<=', $targetDateObj)
                          ->where(function ($query) use ($targetDateObj) {
                              $query->whereNull('deadline_date')
                                    ->orWhere('deadline_date', '>=', $targetDateObj);
