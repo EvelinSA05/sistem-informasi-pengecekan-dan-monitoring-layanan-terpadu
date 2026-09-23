@@ -51,6 +51,7 @@ class AuthenticatedSessionController extends Controller
 
         if ($request->has('timeout') || $request->input('timeout')) {
             $request->session()->flash('session_expired', 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit. Silakan login kembali.');
+            return redirect('/?timeout=1');
         }
 
         return redirect('/');

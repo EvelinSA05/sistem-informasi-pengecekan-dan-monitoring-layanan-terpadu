@@ -14,10 +14,19 @@ defineProps({
 
 const page = usePage();
 
-// Baca session_expired dari flash props yang dibagikan oleh HandleInertiaRequests.
-// Ini bekerja untuk semua skenario: full-page load, Inertia::location() redirect,
-// maupun redirect biasa — karena HandleInertiaRequests::share() selalu membaca session.
-const sessionExpiredMessage = computed(() => page.props.flash?.session_expired ?? null);
+// Baca session_expired dari flash props yang dibagikan oleh HandleInertiaRequests,
+// ATAU dari query parameter URL jika platform hosting (seperti Vercel) tidak menyimpan session dengan baik.
+const sessionExpiredMessage = computed(() => {
+    if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('timeout')) {
+            // Hapus parameter ?timeout dari URL agar rapi dan tidak muncul terus jika direfresh
+            window.history.replaceState({}, document.title, window.location.pathname);
+            return 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit. Silakan login kembali.';
+        }
+    }
+    return page.props.flash?.session_expired ?? null;
+});
 
 const showPassword = ref(false);
 
