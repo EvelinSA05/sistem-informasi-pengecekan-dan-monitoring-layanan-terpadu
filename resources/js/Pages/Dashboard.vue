@@ -798,7 +798,7 @@ function submitCheck() {
  type="button"
  @click="setCategoryPage(p)"
  class="relative inline-flex items-center px-3.5 py-1.5 text-xs font-semibold transition-colors border-r border-slate-200 last:border-r-0"
- :class="p === categoryPage ? 'z-10 bg-primary text-primary font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-primary cursor-pointer'"
+ :class="p === categoryPage ? 'z-10 bg-primary text-white font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-primary cursor-pointer'"
  >
  {{ p }}
  </button>
