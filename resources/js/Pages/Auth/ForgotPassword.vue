@@ -117,7 +117,7 @@ const submit = () => {
  </form>
 
  <!-- Back to Login Link -->
- <div class="mt-6 pt-5 border-t border-slate-100 text-center">
+ <div class="mt-3 text-center">
  <Link
  :href="route('login')"
  class="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl border border-slate-200 bg-slate-50/80 text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 hover:text-primary hover:border-slate-300 transition-all duration-150"
