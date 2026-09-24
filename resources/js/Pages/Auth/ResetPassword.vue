@@ -197,7 +197,7 @@ const submit = () => {
  <div class="mt-6 pt-5 border-t border-slate-100 text-center">
  <Link
  :href="route('login')"
- class="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-primary transition-colors"
+ class="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl border border-slate-200 bg-slate-50/80 text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 hover:text-primary hover:border-slate-300 transition-all duration-150"
  >
  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
  <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
