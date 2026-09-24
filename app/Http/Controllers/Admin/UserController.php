@@ -61,7 +61,7 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'name'     => 'required|string|max:100',
-            'email'    => 'required|string|lowercase|email|max:150|unique:users,email',
+            'email'    => 'required|string|lowercase|email:rfc,dns|max:150|unique:users,email',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'status'   => 'required|in:aktif,tidak aktif',
         ]);
@@ -99,7 +99,7 @@ class UserController extends Controller
                 'required',
                 'string',
                 'lowercase',
-                'email',
+                'email:rfc,dns',
                 'max:150',
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
