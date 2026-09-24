@@ -41,13 +41,35 @@ const form = useForm({
 });
 
 onMounted(() => {
+    if (!siteKey) return;
+
+    const renderRecaptcha = () => {
+        if (window.grecaptcha && window.grecaptcha.render) {
+            const container = document.getElementById('recaptcha-container');
+            if (container && container.innerHTML === '') {
+                window.grecaptcha.render('recaptcha-container', {
+                    'sitekey': siteKey
+                });
+            }
+        }
+    };
+
     if (!document.getElementById('recaptcha-script')) {
+        window.onRecaptchaLoadCallback = renderRecaptcha;
         const script = document.createElement('script');
         script.id = 'recaptcha-script';
-        script.src = 'https://www.google.com/recaptcha/api.js';
+        script.src = 'https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoadCallback&render=explicit';
         script.async = true;
         script.defer = true;
         document.head.appendChild(script);
+    } else {
+        setTimeout(() => {
+            if (window.grecaptcha && window.grecaptcha.ready) {
+                window.grecaptcha.ready(renderRecaptcha);
+            } else {
+                renderRecaptcha();
+            }
+        }, 100);
     }
 });
 
@@ -309,7 +331,7 @@ const submit = () => {
 
  <!-- Google reCAPTCHA -->
  <div v-if="siteKey" class="flex justify-center mt-3 mb-2">
- <div class="g-recaptcha" :data-sitekey="siteKey"></div>
+ <div id="recaptcha-container" class="g-recaptcha" :data-sitekey="siteKey"></div>
  </div>
  <InputError class="mt-1" :message="form.errors['g-recaptcha-response']" />
 
