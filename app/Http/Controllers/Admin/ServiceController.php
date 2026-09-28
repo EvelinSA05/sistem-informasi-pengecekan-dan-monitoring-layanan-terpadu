@@ -32,9 +32,10 @@ class ServiceController extends Controller
         $services = Service::query()
             ->withCount('periodServices')
             ->when(!empty($search), function ($query) use ($search) {
-                $query->where(function($q) use ($search) {
-                    $q->where('service_name', 'like', "%{$search}%")
-                      ->orWhere('category', 'like', "%{$search}%");
+                $searchTerm = strtolower($search);
+                $query->where(function($q) use ($searchTerm) {
+                    $q->whereRaw('LOWER(service_name) LIKE ?', ["%{$searchTerm}%"])
+                      ->orWhereRaw('LOWER(category) LIKE ?', ["%{$searchTerm}%"]);
                 });
             })
             ->when(!empty($status) && in_array($status, Service::VALID_STATUSES, true), function ($query) use ($status) {
