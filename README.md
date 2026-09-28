@@ -12,7 +12,7 @@ The application is built using a modern monolithic architecture with a reactive 
 - **Frontend**: Vue.js 3 with Composition API
 - **Routing & State**: Inertia.js
 - **Styling**: Tailwind CSS
-- **Database**: PostgreSQL (Production) / MySQL (Local)
+- **Database**: PostgreSQL
 
 ## Key Features
 
