@@ -1,0 +1,2031 @@
+﻿commit 638f2fe67a0841f44b4af60cd0424bb1b752fe58
+Author: tian <listiaseptian11@gmail.com>
+Date:   Tue Sep 22 22:02:35 2026 +0700
+
+    fix: add deletion validation for periods and services
+
+diff --git a/app/Http/Controllers/Admin/PeriodController.php b/app/Http/Controllers/Admin/PeriodController.php
+index 53fa651..d45d9d8 100644
+--- a/app/Http/Controllers/Admin/PeriodController.php
++++ b/app/Http/Controllers/Admin/PeriodController.php
+@@ -89,6 +89,8 @@ public function index()
+                 'checked_services' => $checkedServices,
+                 'total_services' => $totalServices,
+                 'progress_percent' => $progressPercent,
++                'has_results' => $checkedServices > 0,
++                'has_testers' => $testers->count() > 0,
+             ];
+         });
+ 
+@@ -468,12 +470,41 @@ public function update(Request $request, CheckingPeriod $period)
+ 
+     /**
+      * Menghapus periode pengecekan (Hapus).
++     * 2. Periode yang sudah ada tester tapi BELUM melakukan pengecekan -> MASIH BISA DIHAPUS
++     * 3. Periode yang sudah memiliki HASIL pengecekan -> TIDAK BISA DIHAPUS
+      */
+     public function destroy(CheckingPeriod $period)
+     {
+-        $period->delete();
++        // Cek apakah ada layanan yang sudah memiliki hasil pengecekan
++        $hasResults = $period->periodServices()
++            ->where(function ($q) {
++                $q->where('status', '!=', 'pending')
++                  ->orWhereNotNull('checked_at');
++            })
++            ->exists()
++            || \App\Models\ServiceCheckLog::whereIn(
++                'period_service_id',
++                $period->periodServices()->pluck('id')
++            )->exists();
++
++        if ($hasResults) {
++            return redirect()->route('admin.periods.index')
++                ->with('error', 'Periode tidak dapat dihapus karena sudah memiliki hasil pengecekan.');
++        }
+ 
+-        return redirect()->route('admin.periods.index')->with('success', 'Periode pengecekan berhasil dihapus.');
++        try {
++            DB::transaction(function () use ($period) {
++                $period->periodServices()->delete();
++                $period->periodTesters()->delete();
++                $period->delete();
++            });
++
++            return redirect()->route('admin.periods.index')
++                ->with('success', 'Periode pengecekan berhasil dihapus.');
++        } catch (\Exception $e) {
++            return redirect()->route('admin.periods.index')
++                ->with('error', 'Gagal menghapus periode: ' . $e->getMessage());
++        }
+     }
+ 
+     /**
+diff --git a/app/Http/Controllers/Admin/ServiceController.php b/app/Http/Controllers/Admin/ServiceController.php
+index f896b92..4ea7a27 100644
+--- a/app/Http/Controllers/Admin/ServiceController.php
++++ b/app/Http/Controllers/Admin/ServiceController.php
+@@ -23,6 +23,7 @@ public function index(Request $request): Response
+         $level  = $request->get('level', '');
+ 
+         $services = Service::query()
++            ->withCount('periodServices')
+             ->when($request->filled('search'), function ($query) use ($request) {
+                 $search = strtolower($request->input('search'));
+                 $query->where(function($q) use ($search) {
+@@ -154,6 +155,13 @@ public function update(Request $request, Service $service): RedirectResponse
+      */
+     public function destroy(Service $service): RedirectResponse
+     {
++        // 1. Layanan yang sudah masuk periode pengecekan -> TIDAK BISA DIHAPUS
++        $isInPeriod = \App\Models\PeriodService::where('service_id', $service->id)->exists();
++        if ($isInPeriod) {
++            return redirect()->route('admin.services.index')
++                ->with('error', 'Layanan tidak dapat dihapus karena sudah masuk ke dalam periode pengecekan.');
++        }
++
+         try {
+             $service->delete();
+ 
+@@ -161,7 +169,7 @@ public function destroy(Service $service): RedirectResponse
+                 ->with('success', 'Layanan berhasil dihapus.');
+         } catch (\Exception $e) {
+             return redirect()->route('admin.services.index')
+-                ->with('error', 'Gagal menghapus layanan.');
++                ->with('error', 'Gagal menghapus layanan: ' . $e->getMessage());
+         }
+     }
+ 
+diff --git a/resources/js/Pages/Admin/MasterLayanan.vue b/resources/js/Pages/Admin/MasterLayanan.vue
+index 8661f4b..c9cf86e 100644
+--- a/resources/js/Pages/Admin/MasterLayanan.vue
++++ b/resources/js/Pages/Admin/MasterLayanan.vue
+@@ -772,17 +772,40 @@ function confirmDelete() {
+         >
+             <div v-if="showDeleteModal && selectedService" class="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
+                 <div class="bg-white rounded-3xl shadow-xl w-full max-w-sm overflow-hidden text-center p-8">
+-                    <div class="w-16 h-16 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-5">
+-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+-                        </svg>
+-                    </div>
+-                    <h3 class="text-xl font-bold text-slate-800 mb-2">Hapus Layanan?</h3>
+-                    <p class="text-sm text-slate-500 mb-6">Anda yakin ingin menghapus data layanan <span class="font-bold text-slate-700">"{{ selectedService.service_name }}"</span>? Tindakan ini tidak dapat dibatalkan.</p>
+-                    <div class="flex flex-col sm:flex-row gap-3">
+-                        <button type="button" @click="showDeleteModal = false" class="w-full px-5 py-3 rounded-xl font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors">Batal</button>
+-                        <button type="button" @click="confirmDelete" class="w-full px-5 py-3 rounded-xl font-semibold text-white bg-rose-500 hover:bg-rose-600 shadow-md shadow-rose-500/20 transition-colors">Ya, Hapus</button>
+-                    </div>
++                    <!-- 1. Layanan yang sudah masuk periode pengecekan -> TIDAK BISA DIHAPUS -->
++                    <template v-if="selectedService.period_services_count > 0">
++                        <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-5 border border-amber-200 shadow-xs">
++                            <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
++                            </svg>
++                        </div>
++                        <h3 class="text-xl font-bold text-slate-800 mb-2">Tidak Bisa Dihapus</h3>
++                        <p class="text-sm text-slate-500 mb-6 leading-relaxed">
++                            Layanan <span class="font-bold text-slate-700">"{{ selectedService.service_name }}"</span> sudah masuk ke dalam periode pengecekan. Data tetap disimpan karena sudah digunakan dalam proses pengecekan.
++                        </p>
++                        <button
++                            type="button"
++                            @click="showDeleteModal = false"
++                            class="w-full px-5 py-3 rounded-xl font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
++                        >
++                            Tutup
++                        </button>
++                    </template>
++
++                    <!-- Layanan belum masuk periode apapun -> Bisa dihapus -->
++                    <template v-else>
++                        <div class="w-16 h-16 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-5">
++                            <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z"/>
++                            </svg>
++                        </div>
++                        <h3 class="text-xl font-bold text-slate-800 mb-2">Hapus Layanan?</h3>
++                        <p class="text-sm text-slate-500 mb-6">Anda yakin ingin menghapus data layanan <span class="font-bold text-slate-700">"{{ selectedService.service_name }}"</span>? Tindakan ini tidak dapat dibatalkan.</p>
++                        <div class="flex flex-col sm:flex-row gap-3">
++                            <button type="button" @click="showDeleteModal = false" class="w-full px-5 py-3 rounded-xl font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">Batal</button>
++                            <button type="button" @click="confirmDelete" class="w-full px-5 py-3 rounded-xl font-semibold text-white bg-rose-500 hover:bg-rose-600 shadow-md shadow-rose-500/20 transition-colors cursor-pointer">Ya, Hapus</button>
++                        </div>
++                    </template>
+                 </div>
+             </div>
+         </Transition>
+diff --git a/resources/js/Pages/Admin/Periods/Index.vue b/resources/js/Pages/Admin/Periods/Index.vue
+index 52febff..4d33e91 100644
+--- a/resources/js/Pages/Admin/Periods/Index.vue
++++ b/resources/js/Pages/Admin/Periods/Index.vue
+@@ -364,32 +364,86 @@ function confirmDelete() {
+             >
+                 <div v-if="showDeleteModal && periodToDelete" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showDeleteModal = false"></div>
+-                    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 z-10">
+-                        <div class="flex flex-col items-center text-center mb-5">
+-                            <div class="w-14 h-14 rounded-2xl bg-rose-100 flex items-center justify-center mb-4 text-rose-500">
+-                                <svg class="w-7 h-7 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z"/>
++                    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 sm:p-7 z-10 text-center">
++                        
++                        <!-- KONDISI 3: Periode yang sudah memiliki HASIL pengecekan -> TIDAK BISA DIHAPUS -->
++                        <template v-if="periodToDelete.checked_services > 0 || periodToDelete.has_results">
++                            <div class="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4 border border-rose-200 shadow-xs">
++                                <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                 </svg>
+                             </div>
+-                            <h3 class="text-base font-bold text-slate-800">Hapus Periode?</h3>
+-                            <p class="text-sm text-slate-500 mt-1.5 leading-relaxed">
+-                                Periode <span class="font-semibold text-slate-700">{{ periodToDelete.period_title }}</span> dan seluruh penugasan layanan di dalamnya akan dihapus permanen.
++                            <h3 class="text-lg font-bold text-slate-800">Tidak Bisa Dihapus</h3>
++                            <p class="text-sm text-slate-500 mt-2 leading-relaxed mb-6">
++                                Periode <span class="font-semibold text-slate-700">"{{ periodToDelete.period_title }}"</span> sudah memiliki <span class="font-bold text-slate-700">{{ periodToDelete.checked_services }} hasil pengecekan</span>. Periode ini tidak dapat dihapus karena sudah menjadi histori dan rekap pengecekan.
+                             </p>
+-                        </div>
+-                        <div class="flex gap-3">
+                             <button
++                                type="button"
+                                 @click="showDeleteModal = false"
+-                                class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all"
++                                class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
+                             >
+-                                Batal
++                                Tutup
+                             </button>
+-                            <button
+-                                @click="confirmDelete"
+-                                class="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold shadow-sm transition-all"
+-                            >
+-                                Ya, Hapus
+-                            </button>
+-                        </div>
++                        </template>
++
++                        <!-- KONDISI 2: Periode yang sudah ada tester tapi BELUM melakukan pengecekan -> MASIH BISA DIHAPUS DENGAN CONFIRMATION WARNING -->
++                        <template v-else-if="periodToDelete.testers && periodToDelete.testers.length > 0">
++                            <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-200 shadow-xs">
++                                <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
++                                </svg>
++                            </div>
++                            <h3 class="text-lg font-bold text-slate-800">Hapus Periode?</h3>
++                            <p class="text-sm text-slate-500 mt-2 leading-relaxed mb-6">
++                                Periode ini sudah memiliki <span class="font-bold text-slate-700">{{ periodToDelete.testers.length }} tester</span> yang ditugaskan. Apakah Anda yakin ingin menghapus periode? Seluruh penugasan layanan di dalamnya akan ikut dihapus.
++                            </p>
++                            <div class="flex gap-3">
++                                <button
++                                    type="button"
++                                    @click="showDeleteModal = false"
++                                    class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
++                                >
++                                    Batal
++                                </button>
++                                <button
++                                    type="button"
++                                    @click="confirmDelete"
++                                    class="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold shadow-sm transition-all cursor-pointer"
++                                >
++                                    Ya, Hapus
++                                </button>
++                            </div>
++                        </template>
++
++                        <!-- KONDISI STANDAR: Belum ada tester dan belum ada hasil -->
++                        <template v-else>
++                            <div class="w-16 h-16 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-4 border border-rose-100 shadow-xs">
++                                <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z"/>
++                                </svg>
++                            </div>
++                            <h3 class="text-lg font-bold text-slate-800">Hapus Periode?</h3>
++                            <p class="text-sm text-slate-500 mt-2 leading-relaxed mb-6">
++                                Periode <span class="font-semibold text-slate-700">"{{ periodToDelete.period_title }}"</span> dan seluruh penugasan layanan di dalamnya akan dihapus permanen.
++                            </p>
++                            <div class="flex gap-3">
++                                <button
++                                    type="button"
++                                    @click="showDeleteModal = false"
++                                    class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
++                                >
++                                    Batal
++                                </button>
++                                <button
++                                    type="button"
++                                    @click="confirmDelete"
++                                    class="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold shadow-sm transition-all cursor-pointer"
++                                >
++                                    Ya, Hapus
++                                </button>
++                            </div>
++                        </template>
++
+                     </div>
+                 </div>
+             </Transition>
+
+commit f3d80be77fca0398328ee09cb834bd67d57d0471
+Author: tian <listiaseptian11@gmail.com>
+Date:   Tue Sep 22 22:25:20 2026 +0700
+
+    fix: add period activation toggle and deletion validation
+
+diff --git a/app/Http/Controllers/Admin/PeriodController.php b/app/Http/Controllers/Admin/PeriodController.php
+index d45d9d8..4722f86 100644
+--- a/app/Http/Controllers/Admin/PeriodController.php
++++ b/app/Http/Controllers/Admin/PeriodController.php
+@@ -349,13 +349,19 @@ public function show(CheckingPeriod $period)
+      */
+     public function update(Request $request, CheckingPeriod $period)
+     {
+-        // Kasus 1: Toggle status dari halaman Show
++        // Kasus 1: Toggle status dari tabel Index atau halaman Show
+         if ($request->has('status') && !$request->has('tester_ids') && !$request->has('date') && !$request->has('tanggal_periode')) {
+             $request->validate([
+-                'status' => 'required|in:proses,selesai',
++                'status' => 'required|in:proses,selesai,aktif,nonaktif',
+             ]);
++
++            $statusVal = match($request->status) {
++                'aktif' => 'proses',
++                'nonaktif' => 'selesai',
++                default => $request->status,
++            };
+             
+-            if ($request->status === 'proses') {
++            if ($statusVal === 'proses') {
+                 $testerIds = $period->periodTesters()->pluck('tester_id')->toArray();
+                 
+                 $busyTesters = \App\Models\User::whereIn('id', $testerIds)
+@@ -366,15 +372,16 @@ public function update(Request $request, CheckingPeriod $period)
+                     
+                 if ($busyTesters->isNotEmpty()) {
+                     $names = $busyTesters->pluck('name')->implode(', ');
+-                    return back()->withErrors(['status' => "Gagal membuka kembali! Tester berikut masih memiliki tugas di periode aktif lain: {$names}."]);
++                    return back()->with('error', "Gagal mengaktifkan periode! Tester berikut masih memiliki penugasan di periode aktif lain: {$names}.");
+                 }
+             }
+ 
+             $period->update([
+-                'status' => $request->status,
++                'status' => $statusVal,
+             ]);
+ 
+-            return back()->with('success', 'Status periode berhasil diperbarui.');
++            $label = $statusVal === 'proses' ? 'diaktifkan' : 'dinonaktifkan';
++            return back()->with('success', "Periode berhasil {$label}.");
+         }
+ 
+         // Kasus 2: Update dari Form Edit Periode (Tanggal, Tester & Distribusi)
+diff --git a/app/Http/Controllers/Tester/AssignedServiceController.php b/app/Http/Controllers/Tester/AssignedServiceController.php
+index d86b244..90407f4 100644
+--- a/app/Http/Controllers/Tester/AssignedServiceController.php
++++ b/app/Http/Controllers/Tester/AssignedServiceController.php
+@@ -39,14 +39,17 @@ private function formatIndonesianDate(Carbon $date): string
+ 
+     public function index(Request $request)
+     {
++        $user = $request->user();
++
+         // Jika ada parameter period_id, langsung alihkan atau tampilkan periode terkait
+         if ($request->filled('period_id')) {
+             $period = CheckingPeriod::findOrFail($request->input('period_id'));
++            if ($user->role !== 'admin' && $period->status !== 'proses') {
++                return redirect()->route('tester.services.index')->with('error', 'Periode pengecekan ini sedang dinonaktifkan.');
++            }
+             return $this->showPeriod($request, $period);
+         }
+ 
+-        $user = $request->user();
+-
+         $periods = CheckingPeriod::with([
+             'periodTesters.tester:id,name,bidang,email',
+             'periodServices' => function ($q) use ($user) {
+@@ -65,6 +68,9 @@ public function index(Request $request)
+                 $sq->where('tester_id', $user->id);
+             });
+         })
++        ->when($user->role !== 'admin', function ($q) {
++            $q->where('status', 'proses');
++        })
+         ->orderBy('date', 'desc')
+         ->get()
+         ->map(function ($period) use ($user) {
+@@ -139,6 +145,10 @@ public function showPeriod(Request $request, CheckingPeriod $period)
+ 
+         // Validasi hak akses penugasan periode jika tester
+         if ($user->role !== 'admin') {
++            if ($period->status !== 'proses') {
++                return redirect()->route('tester.services.index')->with('error', 'Periode pengecekan ini sedang dinonaktifkan.');
++            }
++
+             $isAssigned = $period->periodTesters()->where('tester_id', $user->id)->exists()
+                 || $period->periodServices()->where('tester_id', $user->id)->exists();
+ 
+@@ -342,9 +352,9 @@ public function submitCheck(
+             );
+         }
+ 
+-        // Jangan izinkan pengecekan jika periode sudah selesai (hanya untuk tester, admin bebas jika perlu)
+-        if ($user->role !== 'admin' && $periodService->period->status === 'selesai') {
+-            abort(403, 'Periode pengecekan sudah selesai dan dikunci.');
++        // Jangan izinkan pengecekan jika periode dinonaktifkan (hanya untuk tester, admin bebas jika perlu)
++        if ($user->role !== 'admin' && $periodService->period->status !== 'proses') {
++            abort(403, 'Periode pengecekan sedang dinonaktifkan.');
+         }
+ 
+         $request->validate([
+diff --git a/resources/js/Pages/Admin/Periods/Index.vue b/resources/js/Pages/Admin/Periods/Index.vue
+index 4d33e91..b9d27ff 100644
+--- a/resources/js/Pages/Admin/Periods/Index.vue
++++ b/resources/js/Pages/Admin/Periods/Index.vue
+@@ -109,6 +109,26 @@ function confirmDelete() {
+         },
+     });
+ }
++
++// ΓöÇΓöÇΓöÇ Status Toggle (Aktif / Nonaktif) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++const updatingPeriodId = ref(null);
++
++function togglePeriodStatus(period) {
++    const nextStatus = period.status === 'proses' ? 'selesai' : 'proses';
++    updatingPeriodId.value = period.id;
++    router.put(route('admin.periods.update', period.id), {
++        status: nextStatus,
++    }, {
++        preserveScroll: true,
++        onError: (errors) => {
++            const err = errors.status || Object.values(errors)[0] || 'Gagal mengubah status periode.';
++            showFlash(err, 'error');
++        },
++        onFinish: () => {
++            updatingPeriodId.value = null;
++        }
++    });
++}
+ </script>
+ 
+ <template>
+@@ -227,26 +247,21 @@ function confirmDelete() {
+                                 </Link>
+                             </td>
+ 
+-                            <!-- Status -->
++                            <!-- Status Badge -->
+                             <td class="px-5 py-3.5 text-center">
+-                                <!-- Status PROSES -->
+                                 <span
+-                                    v-if="period.status === 'proses'"
+-                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold uppercase bg-[#1e3a8a] text-white shadow-xs"
++                                    :class="[
++                                        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider',
++                                        period.status === 'proses'
++                                            ? 'bg-blue-50 text-[#1e3a8a] border border-blue-200/80 shadow-2xs'
++                                            : 'bg-slate-100 text-slate-500 border border-slate-200/80'
++                                    ]"
+                                 >
+-                                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse"></span>
+-                                    PROSES
+-                                </span>
+-
+-                                <!-- Status SELESAI -->
+-                                <span
+-                                    v-else
+-                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold uppercase bg-slate-100 border border-slate-200 text-slate-600"
+-                                >
+-                                    <svg class="w-3 h-3 text-slate-500 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+-                                    </svg>
+-                                    SELESAI
++                                    <span
++                                        class="w-1.5 h-1.5 rounded-full"
++                                        :class="period.status === 'proses' ? 'bg-[#1e3a8a] animate-pulse' : 'bg-slate-400'"
++                                    ></span>
++                                    {{ period.status === 'proses' ? 'Aktif' : 'Nonaktif' }}
+                                 </span>
+                             </td>
+ 
+@@ -287,15 +302,35 @@ function confirmDelete() {
+                                 </div>
+                             </td>
+ 
+-                            <!-- Aksi (Show, Edit, Hapus) -->
++                            <!-- Aksi (Toggle Aktif/Nonaktif, Show, Edit, Hapus) -->
+                             <td class="px-5 py-3.5 text-center">
+-                                <div class="flex items-center justify-center gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150">
++                                <div class="flex items-center justify-center gap-2">
++                                    <!-- Toggle Switch Status (Aktif / Nonaktif) -->
++                                    <button
++                                        type="button"
++                                        role="switch"
++                                        :aria-checked="period.status === 'proses'"
++                                        @click="togglePeriodStatus(period)"
++                                        :disabled="updatingPeriodId === period.id"
++                                        :title="period.status === 'proses' ? 'Klik untuk menonaktifkan periode' : 'Klik untuk mengaktifkan periode'"
++                                        class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:ring-offset-1 disabled:opacity-50"
++                                        :class="period.status === 'proses' ? 'bg-[#1e3a8a]' : 'bg-slate-300'"
++                                    >
++                                        <span
++                                            class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out"
++                                            :class="period.status === 'proses' ? 'translate-x-4' : 'translate-x-0'"
++                                        />
++                                    </button>
++
++                                    <!-- Divider Halus -->
++                                    <div class="h-4 w-px bg-slate-200"></div>
++
+                                     <!-- Detail (Show) -->
+                                     <Link
+                                         :href="route('admin.periods.show', period.id)"
+                                         title="Lihat detail"
+                                         aria-label="Lihat detail"
+-                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-blue-600 bg-blue-50/90 sm:bg-transparent sm:text-slate-400 hover:text-blue-600 hover:bg-blue-100/70 transition-all active:scale-95"
++                                        class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all active:scale-95"
+                                     >
+                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+@@ -308,7 +343,7 @@ function confirmDelete() {
+                                         :href="route('admin.periods.edit', period.id)"
+                                         title="Edit periode"
+                                         aria-label="Edit periode"
+-                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-amber-600 bg-amber-50/90 sm:bg-transparent sm:text-amber-500 hover:text-amber-700 hover:bg-amber-100/70 transition-all active:scale-95"
++                                        class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-all active:scale-95"
+                                     >
+                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 018.586 12z"/>
+@@ -320,7 +355,7 @@ function confirmDelete() {
+                                         @click="openDeleteModal(period)"
+                                         title="Hapus periode"
+                                         aria-label="Hapus periode"
+-                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-rose-600 bg-rose-50/90 sm:bg-transparent sm:text-rose-400 hover:text-rose-600 hover:bg-rose-100/70 transition-all active:scale-95"
++                                        class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all active:scale-95 cursor-pointer"
+                                     >
+                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z"/>
+diff --git a/resources/js/Pages/Admin/Periods/Show.vue b/resources/js/Pages/Admin/Periods/Show.vue
+index 4d74ba9..ef21580 100644
+--- a/resources/js/Pages/Admin/Periods/Show.vue
++++ b/resources/js/Pages/Admin/Periods/Show.vue
+@@ -8,7 +8,6 @@ const props = defineProps({
+     distribution: { type: Array,  default: () => [] },
+ });
+ 
+-const isUpdatingStatus = ref(false);
+ const statusFilter = ref('all');
+ const searchQuery = ref('');
+ 
+@@ -24,24 +23,6 @@ function showToast(msg, type = 'success') {
+     toastTimer = setTimeout(() => { toast.value = ''; }, 4000);
+ }
+ 
+-function toggleStatus() {
+-    const nextStatus = props.period.status === 'proses' ? 'selesai' : 'proses';
+-    isUpdatingStatus.value = true;
+-    router.put(route('admin.periods.update', props.period.id), {
+-        status: nextStatus,
+-    }, {
+-        preserveScroll: true,
+-        onError: (errors) => {
+-            if (errors.status) {
+-                showToast(errors.status, 'error');
+-            }
+-        },
+-        onFinish: () => {
+-            isUpdatingStatus.value = false;
+-        }
+-    });
+-}
+-
+ // ΓöÇΓöÇΓöÇ Filtered Services ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ const allServices = computed(() => {
+     const list = [];
+@@ -202,16 +183,14 @@ function getServiceIcon(iconKey) {
+                             class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-[#1e3a8a] text-white shadow-xs"
+                         >
+                             <span class="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse"></span>
+-                            PROSES
++                            AKTIF
+                         </span>
+                         <span
+                             v-else
+-                            class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-slate-100 border border-slate-200/80 text-slate-600"
++                            class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-slate-100 border border-slate-200/80 text-slate-500"
+                         >
+-                            <svg class="w-3 h-3 text-slate-500 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+-                            </svg>
+-                            SELESAI
++                            <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
++                            NONAKTIF
+                         </span>
+                     </div>
+                     <p class="text-xs text-slate-400 mt-1 font-medium">
+@@ -257,15 +236,6 @@ function getServiceIcon(iconKey) {
+                     </svg>
+                     <span>Edit Periode</span>
+                 </Link>
+-
+-                <!-- Quick Toggle Status -->
+-                <button
+-                    @click="toggleStatus"
+-                    :disabled="isUpdatingStatus"
+-                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white text-xs font-bold shadow-xs hover:shadow-sm transition-all duration-150"
+-                >
+-                    <span>{{ period.status === 'proses' ? 'Tandai Selesai' : 'Buka Kembali' }}</span>
+-                </button>
+             </div>
+         </div>
+ 
+diff --git a/resources/js/Pages/Tester/Periods/Index.vue b/resources/js/Pages/Tester/Periods/Index.vue
+index 0604369..5d5272c 100644
+--- a/resources/js/Pages/Tester/Periods/Index.vue
++++ b/resources/js/Pages/Tester/Periods/Index.vue
+@@ -197,16 +197,16 @@ onUnmounted(() => {
+ 
+                             <!-- Status -->
+                             <td class="px-5 py-3.5 text-center">
+-                                <!-- Status PROSES -->
++                                <!-- Status AKTIF -->
+                                 <span
+                                     v-if="period.status === 'proses'"
+                                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold uppercase bg-[#1e3a8a] text-white shadow-xs"
+                                 >
+                                     <span class="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse"></span>
+-                                    PROSES
++                                    AKTIF
+                                 </span>
+ 
+-                                <!-- Status SELESAI -->
++                                <!-- Status NONAKTIF -->
+                                 <span
+                                     v-else
+                                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold uppercase bg-slate-100 border border-slate-200 text-slate-600"
+@@ -214,7 +214,7 @@ onUnmounted(() => {
+                                     <svg class="w-3 h-3 text-slate-500 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                     </svg>
+-                                    SELESAI
++                                    NONAKTIF
+                                 </span>
+                             </td>
+ 
+@@ -268,8 +268,8 @@ onUnmounted(() => {
+                                             <path stroke-linecap="round" stroke-linejoin="round" d="M16 2v4M8 2v4M3 10h18"/>
+                                         </svg>
+                                     </div>
+-                                    <p class="font-semibold text-slate-600 text-sm">Belum ada periode penugasan</p>
+-                                    <p class="text-xs text-slate-400 mt-0.5">Anda belum ditugaskan pada periode pengecekan manapun oleh Admin.</p>
++                                    <p class="font-semibold text-slate-600 text-sm">Belum ada periode penugasan aktif</p>
++                                    <p class="text-xs text-slate-400 mt-0.5">Tidak ada periode aktif yang ditugaskan kepada Anda saat ini.</p>
+                                 </div>
+                             </td>
+                         </tr>
+
+commit 8d6026f0b877e6aa9604db6d56e85b82f50da7a6
+Author: tian <listiaseptian11@gmail.com>
+Date:   Wed Sep 23 08:30:41 2026 +0700
+
+    fix(periods): improve period status toggling, tester availability, and view history
+
+diff --git a/app/Http/Controllers/Admin/PeriodController.php b/app/Http/Controllers/Admin/PeriodController.php
+index 4722f86..384f58a 100644
+--- a/app/Http/Controllers/Admin/PeriodController.php
++++ b/app/Http/Controllers/Admin/PeriodController.php
+@@ -106,18 +106,29 @@ public function index()
+     /**
+      * Helper untuk mengambil data tester dan layanan
+      */
+-    private function getFormData()
++    private function getFormData($excludePeriodId = null)
+     {
+         $testers = User::where('role', 'tester')
+             ->where('status', 'aktif')
+             ->orderBy('name')
+             ->get(['id', 'name', 'email', 'nip', 'bidang'])
+-            ->map(function ($tester) {
++            ->map(function ($tester) use ($excludePeriodId) {
+                 $parts = explode(' ', trim($tester->name));
+                 $initials = count($parts) >= 2
+                     ? strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1))
+                     : strtoupper(substr($parts[0] ?? 'T', 0, 2));
+ 
++                // Hitung sisa tugas pending pada periode yang sedang berstatus 'proses'
++                $pendingTasksCount = PeriodService::where('tester_id', $tester->id)
++                    ->where('status', 'pending')
++                    ->whereHas('period', function ($q) use ($excludePeriodId) {
++                        $q->where('status', 'proses');
++                        if ($excludePeriodId) {
++                            $q->where('checking_periods.id', '!=', $excludePeriodId);
++                        }
++                    })
++                    ->count();
++
+                 return [
+                     'id' => $tester->id,
+                     'name' => $tester->name,
+@@ -125,6 +136,8 @@ private function getFormData()
+                     'nip' => $tester->nip,
+                     'bidang' => $tester->bidang ?? 'Layanan Publik',
+                     'initials' => $initials,
++                    'is_available' => $pendingTasksCount === 0,
++                    'pending_tasks_count' => $pendingTasksCount,
+                 ];
+             });
+ 
+@@ -157,7 +170,7 @@ public function create()
+      */
+     public function edit(CheckingPeriod $period)
+     {
+-        [$testers, $services] = $this->getFormData();
++        [$testers, $services] = $this->getFormData($period->id);
+ 
+         $carbonDate = Carbon::parse($period->date);
+         $formattedDate = $carbonDate->format('Y-m-d');
+@@ -215,8 +228,11 @@ public function store(Request $request)
+         $testerIds = array_values(array_unique($request->tester_ids));
+         
+         $busyTesters = \App\Models\User::whereIn('id', $testerIds)
+-            ->whereHas('periodTesters.period', function ($q) {
+-                $q->where('status', 'proses');
++            ->whereHas('periodServices', function ($q) {
++                $q->where('status', 'pending')
++                  ->whereHas('period', function ($pq) {
++                      $pq->where('status', 'proses');
++                  });
+             })
+             ->get();
+             
+@@ -228,7 +244,7 @@ public function store(Request $request)
+         if ($busyTesters->isNotEmpty()) {
+             $names = $busyTesters->pluck('name')->implode(', ');
+             return back()->withErrors([
+-                'tester_ids' => "Pembuatan dibatalkan! Tester berikut masih memiliki tugas di periode aktif yang belum selesai: {$names}. Silakan tutup periode lama terlebih dahulu."
++                'tester_ids' => "Pembuatan dibatalkan! Tester berikut masih memiliki tugas pengecekan yang belum selesai (pending) di periode aktif: {$names}."
+             ]);
+         }
+ 
+@@ -360,21 +376,6 @@ public function update(Request $request, CheckingPeriod $period)
+                 'nonaktif' => 'selesai',
+                 default => $request->status,
+             };
+-            
+-            if ($statusVal === 'proses') {
+-                $testerIds = $period->periodTesters()->pluck('tester_id')->toArray();
+-                
+-                $busyTesters = \App\Models\User::whereIn('id', $testerIds)
+-                    ->whereHas('periodTesters.period', function ($q) use ($period) {
+-                        $q->where('status', 'proses')->where('checking_periods.id', '!=', $period->id);
+-                    })
+-                    ->get();
+-                    
+-                if ($busyTesters->isNotEmpty()) {
+-                    $names = $busyTesters->pluck('name')->implode(', ');
+-                    return back()->with('error', "Gagal mengaktifkan periode! Tester berikut masih memiliki penugasan di periode aktif lain: {$names}.");
+-                }
+-            }
+ 
+             $period->update([
+                 'status' => $statusVal,
+@@ -415,8 +416,11 @@ public function update(Request $request, CheckingPeriod $period)
+         $testerIds = array_values(array_unique($request->tester_ids));
+         
+         $busyTesters = \App\Models\User::whereIn('id', $testerIds)
+-            ->whereHas('periodTesters.period', function ($q) use ($period) {
+-                $q->where('status', 'proses')->where('checking_periods.id', '!=', $period->id);
++            ->whereHas('periodServices', function ($q) use ($period) {
++                $q->where('status', 'pending')
++                  ->whereHas('period', function ($pq) use ($period) {
++                      $pq->where('status', 'proses')->where('checking_periods.id', '!=', $period->id);
++                  });
+             })
+             ->get();
+             
+@@ -429,7 +433,7 @@ public function update(Request $request, CheckingPeriod $period)
+         if ($busyTesters->isNotEmpty()) {
+             $names = $busyTesters->pluck('name')->implode(', ');
+             return back()->withErrors([
+-                'tester_ids' => "Pembaruan dibatalkan! Tester berikut masih memiliki tugas di periode aktif yang belum selesai: {$names}. Silakan tutup periode lama terlebih dahulu."
++                'tester_ids' => "Pembaruan dibatalkan! Tester berikut masih memiliki tugas pengecekan yang belum selesai (pending) di periode aktif lain: {$names}."
+             ]);
+         }
+ 
+diff --git a/app/Http/Controllers/Tester/AssignedServiceController.php b/app/Http/Controllers/Tester/AssignedServiceController.php
+index 90407f4..8931894 100644
+--- a/app/Http/Controllers/Tester/AssignedServiceController.php
++++ b/app/Http/Controllers/Tester/AssignedServiceController.php
+@@ -44,9 +44,6 @@ public function index(Request $request)
+         // Jika ada parameter period_id, langsung alihkan atau tampilkan periode terkait
+         if ($request->filled('period_id')) {
+             $period = CheckingPeriod::findOrFail($request->input('period_id'));
+-            if ($user->role !== 'admin' && $period->status !== 'proses') {
+-                return redirect()->route('tester.services.index')->with('error', 'Periode pengecekan ini sedang dinonaktifkan.');
+-            }
+             return $this->showPeriod($request, $period);
+         }
+ 
+@@ -68,9 +65,6 @@ public function index(Request $request)
+                 $sq->where('tester_id', $user->id);
+             });
+         })
+-        ->when($user->role !== 'admin', function ($q) {
+-            $q->where('status', 'proses');
+-        })
+         ->orderBy('date', 'desc')
+         ->get()
+         ->map(function ($period) use ($user) {
+@@ -145,10 +139,6 @@ public function showPeriod(Request $request, CheckingPeriod $period)
+ 
+         // Validasi hak akses penugasan periode jika tester
+         if ($user->role !== 'admin') {
+-            if ($period->status !== 'proses') {
+-                return redirect()->route('tester.services.index')->with('error', 'Periode pengecekan ini sedang dinonaktifkan.');
+-            }
+-
+             $isAssigned = $period->periodTesters()->where('tester_id', $user->id)->exists()
+                 || $period->periodServices()->where('tester_id', $user->id)->exists();
+ 
+@@ -378,6 +368,17 @@ public function submitCheck(
+             'description' => $request->description,
+         ]);
+ 
++        // Auto-complete: jika seluruh layanan pada periode ini sudah selesai diperiksa (0 pending), ubah status periode menjadi 'selesai'
++        $hasPending = PeriodService::where('period_id', $periodService->period_id)
++            ->where('status', 'pending')
++            ->exists();
++
++        if (!$hasPending) {
++            $periodService->period()->update([
++                'status' => 'selesai',
++            ]);
++        }
++
+         return back()->with(
+             'success',
+             'Hasil pengecekan berhasil disimpan.'
+diff --git a/resources/js/Pages/Admin/Periods/Form.vue b/resources/js/Pages/Admin/Periods/Form.vue
+index fc5e901..1387c5c 100644
+--- a/resources/js/Pages/Admin/Periods/Form.vue
++++ b/resources/js/Pages/Admin/Periods/Form.vue
+@@ -20,12 +20,28 @@ const form = useForm({
+ });
+ 
+ // ΓöÇΓöÇΓöÇ Toggle Tester Selection ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+-function toggleTester(testerId) {
+-    const idx = form.tester_ids.indexOf(testerId);
++const availableTesters = computed(() => props.testers.filter(t => t.is_available !== false));
++const allAvailableSelected = computed(() => {
++    return availableTesters.value.length > 0 && availableTesters.value.every(t => form.tester_ids.includes(t.id));
++});
++
++function toggleSelectAllAvailable() {
++    if (allAvailableSelected.value) {
++        form.tester_ids = [];
++    } else {
++        form.tester_ids = availableTesters.value.map(t => t.id);
++    }
++}
++
++function toggleTester(tester) {
++    if (tester.is_available === false && !isTesterSelected(tester.id)) {
++        return;
++    }
++    const idx = form.tester_ids.indexOf(tester.id);
+     if (idx > -1) {
+         form.tester_ids.splice(idx, 1);
+     } else {
+-        form.tester_ids.push(testerId);
++        form.tester_ids.push(tester.id);
+     }
+ }
+ 
+@@ -210,9 +226,19 @@ function submitForm() {
+                     <!-- Section: PILIH TESTER -->
+                     <div>
+                         <div class="flex items-center justify-between mb-3">
+-                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">
+-                                PILIH TESTER <span class="text-rose-500">*</span>
+-                            </h3>
++                            <div class="flex items-center gap-2.5">
++                                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">
++                                    PILIH TESTER <span class="text-rose-500">*</span>
++                                </h3>
++                                <button
++                                    v-if="availableTesters.length > 0"
++                                    type="button"
++                                    @click="toggleSelectAllAvailable"
++                                    class="text-[11px] font-bold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer underline underline-offset-2"
++                                >
++                                    {{ allAvailableSelected ? 'Batal Pilih Semua' : 'Pilih Semua Tersedia' }}
++                                </button>
++                            </div>
+                             <span v-if="selectedTestersCount > 0" class="text-xs font-semibold text-blue-600">
+                                 {{ selectedTestersCount }} dipilih
+                             </span>
+@@ -223,22 +249,24 @@ function submitForm() {
+                             <div
+                                 v-for="tester in testers"
+                                 :key="tester.id"
+-                                @click="toggleTester(tester.id)"
++                                @click="toggleTester(tester)"
+                                 :class="[
+-                                    'cursor-pointer select-none rounded-2xl p-4 border transition-all duration-150 flex items-center justify-between',
+-                                    isTesterSelected(tester.id)
+-                                        ? 'bg-blue-50/30 border-blue-500 ring-1 ring-blue-500/20 shadow-xs'
+-                                        : 'bg-white border-slate-200/80 hover:border-slate-300 hover:bg-slate-50/50'
++                                    'select-none rounded-2xl p-4 border transition-all duration-150 flex items-center justify-between',
++                                    tester.is_available === false && !isTesterSelected(tester.id)
++                                        ? 'bg-slate-50/70 border-slate-200/70 opacity-60 cursor-not-allowed'
++                                        : (isTesterSelected(tester.id)
++                                            ? 'cursor-pointer bg-blue-50/30 border-blue-500 ring-1 ring-blue-500/20 shadow-xs'
++                                            : 'cursor-pointer bg-white border-slate-200/80 hover:border-slate-300 hover:bg-slate-50/50')
+                                 ]"
+                             >
+                                 <div class="flex items-center gap-3.5">
+-                                    <!-- Checkbox circle -->
++                                    <!-- Checkbox circle / Lock icon -->
+                                     <div
+                                         :class="[
+                                             'w-5 h-5 rounded-full flex items-center justify-center transition-colors',
+                                             isTesterSelected(tester.id)
+                                                 ? 'bg-[#1e3a8a] text-white'
+-                                                : 'border-2 border-slate-300 bg-white'
++                                                : (tester.is_available === false ? 'border-2 border-slate-200 bg-slate-100 text-slate-400' : 'border-2 border-slate-300 bg-white')
+                                         ]"
+                                     >
+                                         <svg
+@@ -250,6 +278,15 @@ function submitForm() {
+                                         >
+                                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                         </svg>
++                                        <svg
++                                            v-else-if="tester.is_available === false"
++                                            class="w-3 h-3 text-slate-400 stroke-2"
++                                            fill="none"
++                                            stroke="currentColor"
++                                            viewBox="0 0 24 24"
++                                        >
++                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
++                                        </svg>
+                                     </div>
+ 
+                                     <!-- Initials Avatar -->
+@@ -273,12 +310,18 @@ function submitForm() {
+                                     </div>
+                                 </div>
+ 
+-                                <!-- Estimated services badge (when selected) -->
++                                <!-- Right side badge -->
+                                 <div v-if="isTesterSelected(tester.id)">
+                                     <span class="inline-flex items-center px-2.5 py-1 rounded-lg border border-slate-200/90 bg-white text-[11px] font-semibold text-slate-600 shadow-2xs">
+                                         ~{{ perTesterEstimate }} layanan
+                                     </span>
+                                 </div>
++                                <div v-else-if="tester.is_available === false">
++                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-200/80 bg-amber-50 text-[11px] font-semibold text-amber-700 shadow-2xs">
++                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
++                                        {{ tester.pending_tasks_count }} pending
++                                    </span>
++                                </div>
+                             </div>
+                         </div>
+ 
+diff --git a/resources/js/Pages/Admin/Periods/Show.vue b/resources/js/Pages/Admin/Periods/Show.vue
+index ef21580..6d73249 100644
+--- a/resources/js/Pages/Admin/Periods/Show.vue
++++ b/resources/js/Pages/Admin/Periods/Show.vue
+@@ -1,6 +1,6 @@
+ <script setup>
+-import { ref, computed } from 'vue';
+-import { Head, Link, router } from '@inertiajs/vue3';
++import { ref, computed, watch, onMounted } from 'vue';
++import { Head, Link, router, usePage } from '@inertiajs/vue3';
+ import AdminLayout from '@/Layouts/AdminLayout.vue';
+ 
+ const props = defineProps({
+@@ -8,6 +8,7 @@ const props = defineProps({
+     distribution: { type: Array,  default: () => [] },
+ });
+ 
++const page = usePage();
+ const statusFilter = ref('all');
+ const searchQuery = ref('');
+ 
+@@ -23,6 +24,43 @@ function showToast(msg, type = 'success') {
+     toastTimer = setTimeout(() => { toast.value = ''; }, 4000);
+ }
+ 
++// Watch flash from controller redirect
++watch(() => page.props.flash, (newFlash) => {
++    if (newFlash?.success) {
++        showToast(newFlash.success, 'success');
++    } else if (newFlash?.error) {
++        showToast(newFlash.error, 'error');
++    }
++}, { deep: true });
++
++onMounted(() => {
++    if (page.props.flash?.success) {
++        showToast(page.props.flash.success, 'success');
++    } else if (page.props.flash?.error) {
++        showToast(page.props.flash.error, 'error');
++    }
++});
++
++// ΓöÇΓöÇΓöÇ Status Toggle (Selesaikan / Buka Kembali) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++const isUpdatingStatus = ref(false);
++
++function togglePeriodStatus() {
++    const nextStatus = props.period.status === 'proses' ? 'selesai' : 'proses';
++    isUpdatingStatus.value = true;
++    router.put(route('admin.periods.update', props.period.id), {
++        status: nextStatus,
++    }, {
++        preserveScroll: true,
++        onError: (errors) => {
++            const err = errors.status || Object.values(errors)[0] || 'Gagal mengubah status periode.';
++            showToast(err, 'error');
++        },
++        onFinish: () => {
++            isUpdatingStatus.value = false;
++        }
++    });
++}
++
+ // ΓöÇΓöÇΓöÇ Filtered Services ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ const allServices = computed(() => {
+     const list = [];
+@@ -226,6 +264,27 @@ function getServiceIcon(iconKey) {
+                     <span>Export PDF</span>
+                 </a>
+ 
++                <!-- Toggle Status Action (Selesaikan / Buka Kembali Periode) -->
++                <button
++                    type="button"
++                    @click="togglePeriodStatus"
++                    :disabled="isUpdatingStatus"
++                    :class="[
++                        'inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer shadow-xs',
++                        period.status === 'proses'
++                            ? 'bg-amber-500 hover:bg-amber-600 text-white'
++                            : 'bg-[#1e3a8a] hover:bg-blue-900 text-white'
++                    ]"
++                >
++                    <svg v-if="period.status === 'proses'" class="w-4 h-4 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
++                    </svg>
++                    <svg v-else class="w-4 h-4 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
++                    </svg>
++                    <span>{{ isUpdatingStatus ? 'Memproses...' : (period.status === 'proses' ? 'Selesaikan Periode' : 'Buka Kembali Periode') }}</span>
++                </button>
++
+                 <!-- Edit Periode Button -->
+                 <Link
+                     :href="route('admin.periods.edit', period.id)"
+diff --git a/resources/js/Pages/Tester/Periods/Index.vue b/resources/js/Pages/Tester/Periods/Index.vue
+index 5d5272c..20b4013 100644
+--- a/resources/js/Pages/Tester/Periods/Index.vue
++++ b/resources/js/Pages/Tester/Periods/Index.vue
+@@ -169,7 +169,12 @@ onUnmounted(() => {
+                         <tr
+                             v-for="period in periods"
+                             :key="period.id"
+-                            class="hover:bg-slate-50/70 transition-colors group"
++                            :class="[
++                                'transition-colors group',
++                                period.status === 'proses'
++                                    ? 'hover:bg-slate-50/70 bg-white'
++                                    : 'hover:bg-slate-100/60 bg-slate-50/40 opacity-75'
++                            ]"
+                         >
+                             <!-- Periode -->
+                             <td class="px-5 py-3.5 text-left">
+@@ -211,9 +216,7 @@ onUnmounted(() => {
+                                     v-else
+                                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold uppercase bg-slate-100 border border-slate-200 text-slate-600"
+                                 >
+-                                    <svg class="w-3 h-3 text-slate-500 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+-                                    </svg>
++                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                     NONAKTIF
+                                 </span>
+                             </td>
+
+commit a5d55adfb5e09b749ea9b9564049b3ee85a5c5ba
+Author: tian <listiaseptian11@gmail.com>
+Date:   Tue Sep 22 21:52:38 2026 +0700
+
+    Menambahkan layout pada layanan yang sudah ditugaskan pada tester
+
+diff --git a/app/Http/Controllers/DashboardController.php b/app/Http/Controllers/DashboardController.php
+index 13f01e8..9b07836 100644
+--- a/app/Http/Controllers/DashboardController.php
++++ b/app/Http/Controllers/DashboardController.php
+@@ -299,7 +299,8 @@ public function index(Request $request)
+                     'title' => "{$pendingCount} layanan belum diuji",
+                     'description' => 'Layanan masih menunggu verifikasi dan pengecekan aksesibilitas.',
+                     'action_label' => 'Uji Sekarang',
+-                    'action_url' => route('tester.services.index', [
++                    'action_url' => route('tester.periods.services', [
++                        'period' => $activePeriod->id,
+                         'status' => 'pending',
+                     ]),
+                     'severity' => 'warning',
+@@ -314,7 +315,8 @@ public function index(Request $request)
+                     'title' => "{$issuesCount} pengujian memiliki kendala",
+                     'description' => 'Terdapat kendala/error yang telah dilaporkan dan memerlukan perhatian.',
+                     'action_label' => 'Lihat Kendala',
+-                    'action_url' => route('tester.services.index', [
++                    'action_url' => route('tester.periods.services', [
++                        'period' => $activePeriod->id,
+                         'status' => 'gangguan',
+                     ]),
+                     'severity' => 'danger',
+@@ -329,7 +331,8 @@ public function index(Request $request)
+                     'title' => "{$needConfirm} hasil membutuhkan konfirmasi",
+                     'description' => 'Pengujian menunggu konfirmasi lebih lanjut dari admin.',
+                     'action_label' => 'Lihat Hasil',
+-                    'action_url' => route('tester.services.index', [
++                    'action_url' => route('tester.periods.services', [
++                        'period' => $activePeriod->id,
+                         'status' => 'need_confirmation',
+                     ]),
+                     'severity' => 'info',
+@@ -350,7 +353,8 @@ public function index(Request $request)
+                         : "Tersisa {$daysRemaining} hari sebelum periode berakhir",
+                     'description' => "Segera tuntaskan {$pendingCount} penugasan yang belum selesai diuji.",
+                     'action_label' => 'Selesaikan Tugas',
+-                    'action_url' => route('tester.services.index', [
++                    'action_url' => route('tester.periods.services', [
++                        'period' => $activePeriod->id,
+                         'status' => 'pending',
+                     ]),
+                     'severity' => 'urgent',
+@@ -442,34 +446,39 @@ public function index(Request $request)
+                 'title' => 'Mulai Pengujian',
+                 'subtitle' => 'Kerjakan layanan belum dicek',
+                 'count' => $stats['pending'],
+-                'url' => route('tester.services.index', [
++                'url' => $activePeriod ? route('tester.periods.services', [
++                    'period' => $activePeriod->id,
+                     'status' => 'pending',
+-                ]),
++                ]) : route('tester.services.index'),
+                 'color' => 'blue',
+             ],
+             [
+                 'title' => 'Layanan Terkendala',
+                 'subtitle' => 'Daftar layanan ada error',
+                 'count' => $stats['issues'],
+-                'url' => route('tester.services.index', [
++                'url' => $activePeriod ? route('tester.periods.services', [
++                    'period' => $activePeriod->id,
+                     'status' => 'gangguan',
+-                ]),
++                ]) : route('tester.services.index'),
+                 'color' => 'rose',
+             ],
+             [
+                 'title' => 'Sudah Selesai',
+                 'subtitle' => 'Layanan berhasil diuji',
+                 'count' => $stats['checked'],
+-                'url' => route('tester.services.index', [
++                'url' => $activePeriod ? route('tester.periods.services', [
++                    'period' => $activePeriod->id,
+                     'status' => 'normal',
+-                ]),
++                ]) : route('tester.services.index'),
+                 'color' => 'emerald',
+             ],
+             [
+                 'title' => 'Semua Penugasan',
+                 'subtitle' => 'Workspace seluruh layanan',
+                 'count' => $stats['total_assigned'],
+-                'url' => route('tester.services.index'),
++                'url' => $activePeriod ? route('tester.periods.services', [
++                    'period' => $activePeriod->id,
++                ]) : route('tester.services.index'),
+                 'color' => 'indigo',
+             ],
+         ];
+diff --git a/app/Http/Controllers/Tester/AssignedServiceController.php b/app/Http/Controllers/Tester/AssignedServiceController.php
+index 24e2ff3..d86b244 100644
+--- a/app/Http/Controllers/Tester/AssignedServiceController.php
++++ b/app/Http/Controllers/Tester/AssignedServiceController.php
+@@ -39,233 +39,274 @@ private function formatIndonesianDate(Carbon $date): string
+ 
+     public function index(Request $request)
+     {
+-        $user = $request->user();
+-
+-        // ΓöÇΓöÇΓöÇ Active Checking Period ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+-        $activePeriod = CheckingPeriod::where('status', 'proses')
+-            ->whereHas('periodTesters', function ($q) use ($user) {
+-                $q->where('tester_id', $user->id);
+-            })
+-            ->orderBy('date', 'desc')
+-            ->first();
+-
+-        $periodInfo = null;
+-
+-        $stats = [
+-            'total_assigned' => 0,
+-            'checked' => 0,
+-            'pending' => 0,
+-            'issues' => 0,
+-            'normal' => 0,
+-            'progress_percent' => 0,
+-        ];
+-
+-        $categories = [];
+-        $levels = ['Level 1', 'Level 2', 'Level 3'];
+-
+-        $search = $request->input('search', '');
+-        $statusFilter = $request->input('status', '');
+-        $levelFilter = $request->input('level', '');
+-        $categoryFilter = $request->input('category', '');
++        // Jika ada parameter period_id, langsung alihkan atau tampilkan periode terkait
++        if ($request->filled('period_id')) {
++            $period = CheckingPeriod::findOrFail($request->input('period_id'));
++            return $this->showPeriod($request, $period);
++        }
+ 
+-        $paginatedServices = collect([]);
++        $user = $request->user();
+ 
+-        if ($activePeriod) {
+-            $periodCarbon = Carbon::parse($activePeriod->date);
+-            
++        $periods = CheckingPeriod::with([
++            'periodTesters.tester:id,name,bidang,email',
++            'periodServices' => function ($q) use ($user) {
++                if ($user->role !== 'admin') {
++                    $q->where('tester_id', $user->id);
++                }
++            }
++        ])
++        ->where(function ($q) use ($user) {
++            if ($user->role === 'admin') {
++                return;
++            }
++            $q->whereHas('periodTesters', function ($sq) use ($user) {
++                $sq->where('tester_id', $user->id);
++            })->orWhereHas('periodServices', function ($sq) use ($user) {
++                $sq->where('tester_id', $user->id);
++            });
++        })
++        ->orderBy('date', 'desc')
++        ->get()
++        ->map(function ($period) use ($user) {
++            $carbonDate = Carbon::parse($period->date);
++            $periodTitle = $this->formatIndonesianDate($carbonDate);
++
++            // Layanan tester pada periode ini
++            $myServices = $period->periodServices;
++            $myTotal = $myServices->count();
++            $myChecked = $myServices->filter(function ($ps) {
++                return $ps->status !== 'pending' && !empty($ps->checked_at);
++            })->count();
++            $myProgress = $myTotal > 0 ? round(($myChecked / $myTotal) * 100) : 0;
++
++            // Deadline info
+             $daysRemaining = null;
+             $isOverdue = false;
+             $deadlineDate = null;
+-            
+-            if ($activePeriod->deadline_date) {
+-                $deadlineCarbon = Carbon::parse($activePeriod->deadline_date)->endOfDay();
++            if ($period->deadline_date) {
++                $deadlineCarbon = Carbon::parse($period->deadline_date)->endOfDay();
+                 $now = Carbon::now();
+                 $deadlineDate = $deadlineCarbon->format('Y-m-d');
+-                
+-                // Jika deadline besok malam, dan sekarang hari ini, maka sisa 1 hari
+-                // Jika sudah lewat, akan negatif
+                 $daysRemaining = (int) $now->startOfDay()->diffInDays($deadlineCarbon->startOfDay(), false);
+-                $isOverdue = $now->isAfter($deadlineCarbon) && $activePeriod->status === 'proses';
++                $isOverdue = $now->isAfter($deadlineCarbon) && $period->status === 'proses';
+             }
+ 
+-            $periodInfo = [
+-                'id' => $activePeriod->id,
+-                'period_title' => $this->formatIndonesianDate($periodCarbon),
+-                'month_year' => (
+-                    $this->indonesianMonths[
+-                        (int) $periodCarbon->format('n')
+-                    ] ?? $periodCarbon->format('F')
+-                ) . ' ' . $periodCarbon->format('Y'),
+-                'date' => $periodCarbon->format('Y-m-d'),
+-                'status' => $activePeriod->status,
++            // Tester avatars
++            $testers = $period->periodTesters->map(function ($pt) {
++                $tester = $pt->tester;
++                if (!$tester) return null;
++                $parts = explode(' ', trim($tester->name));
++                $initials = count($parts) >= 2
++                    ? strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1))
++                    : strtoupper(substr($parts[0] ?? 'T', 0, 2));
++
++                return [
++                    'id' => $tester->id,
++                    'name' => $tester->name,
++                    'bidang' => $tester->bidang,
++                    'initials' => $initials,
++                ];
++            })->filter()->values();
++
++            return [
++                'id' => $period->id,
++                'date' => $carbonDate->format('Y-m-d'),
++                'period_title' => $periodTitle,
++                'created_at_label' => "Dibuat " . Carbon::parse($period->created_at)->format('Y-m-d'),
++                'status' => $period->status,
+                 'deadline_date' => $deadlineDate,
+                 'days_remaining' => $daysRemaining,
+                 'is_overdue' => $isOverdue,
++                'testers' => $testers,
++                'my_total_services' => $myTotal,
++                'my_checked_services' => $myChecked,
++                'my_progress_percent' => $myProgress,
+             ];
++        });
+ 
+-            // Base query for tester assignments in active period
+-            $baseTesterQuery = PeriodService::where(
+-                'period_id',
+-                $activePeriod->id
+-            )->where(
+-                'tester_id',
+-                $user->id
+-            );
++        return Inertia::render('Tester/Periods/Index', [
++            'periods' => $periods,
++            'flash' => [
++                'success' => session('success'),
++                'error' => session('error'),
++            ],
++        ]);
++    }
+ 
+-            $totalAssigned = (clone $baseTesterQuery)->count();
++    public function showPeriod(Request $request, CheckingPeriod $period)
++    {
++        $user = $request->user();
+ 
+-            $normalCount = (clone $baseTesterQuery)
+-                ->where('status', 'normal')
+-                ->count();
++        // Validasi hak akses penugasan periode jika tester
++        if ($user->role !== 'admin') {
++            $isAssigned = $period->periodTesters()->where('tester_id', $user->id)->exists()
++                || $period->periodServices()->where('tester_id', $user->id)->exists();
+ 
+-            $issuesCount = (clone $baseTesterQuery)
+-                ->where('status', 'gangguan')
+-                ->count();
++            if (!$isAssigned) {
++                abort(403, 'Anda tidak ditugaskan pada periode pengecekan ini.');
++            }
++        }
+ 
+-            $pendingCount = (clone $baseTesterQuery)
+-                ->where('status', 'pending')
+-                ->count();
++        $periodCarbon = Carbon::parse($period->date);
++        
++        $daysRemaining = null;
++        $isOverdue = false;
++        $deadlineDate = null;
++        
++        if ($period->deadline_date) {
++            $deadlineCarbon = Carbon::parse($period->deadline_date)->endOfDay();
++            $now = Carbon::now();
++            $deadlineDate = $deadlineCarbon->format('Y-m-d');
++            $daysRemaining = (int) $now->startOfDay()->diffInDays($deadlineCarbon->startOfDay(), false);
++            $isOverdue = $now->isAfter($deadlineCarbon) && $period->status === 'proses';
++        }
+ 
+-            $checkedCount = $normalCount + $issuesCount;
++        $periodInfo = [
++            'id' => $period->id,
++            'period_title' => $this->formatIndonesianDate($periodCarbon),
++            'month_year' => (
++                $this->indonesianMonths[
++                    (int) $periodCarbon->format('n')
++                ] ?? $periodCarbon->format('F')
++            ) . ' ' . $periodCarbon->format('Y'),
++            'date' => $periodCarbon->format('Y-m-d'),
++            'status' => $period->status,
++            'deadline_date' => $deadlineDate,
++            'days_remaining' => $daysRemaining,
++            'is_overdue' => $isOverdue,
++        ];
+ 
+-            $progressPct = $totalAssigned > 0
+-                ? (int) round(
+-                    ($checkedCount / $totalAssigned) * 100
+-                )
+-                : 0;
++        // Base query for tester assignments in this period
++        $baseTesterQuery = PeriodService::where('period_id', $period->id);
++        if ($user->role !== 'admin') {
++            $baseTesterQuery->where('tester_id', $user->id);
++        }
+ 
+-            $stats = [
+-                'total_assigned' => $totalAssigned,
+-                'checked' => $checkedCount,
+-                'pending' => $pendingCount,
+-                'issues' => $issuesCount,
+-                'normal' => $normalCount,
+-                'progress_percent' => $progressPct,
+-            ];
++        $totalAssigned = (clone $baseTesterQuery)->count();
+ 
+-            // Categories available in tester's assigned services
+-            $categories = PeriodService::where(
+-                'period_id',
+-                $activePeriod->id
+-            )
+-                ->where('tester_id', $user->id)
+-                ->join(
+-                    'services',
+-                    'period_services.service_id',
+-                    '=',
+-                    'services.id'
+-                )
+-                ->whereNotNull('services.category')
+-                ->where('services.category', '!=', '')
+-                ->distinct()
+-                ->orderBy('services.category')
+-                ->pluck('services.category')
+-                ->values()
+-                ->all();
+-
+-            // Filtered and paginated assigned services
+-            $servicesQuery = PeriodService::with([
+-                'service' => function ($q) {
+-                    $q->select(
+-                        'id',
+-                        'service_name',
+-                        'category',
+-                        'level',
+-                        'icon',
+-                        'service_url',
+-                        'deskripsi_layanan',
+-                        'tester_instruction',
+-                        'is_active'
+-                    );
+-                },
+-            ])
+-                ->where('period_id', $activePeriod->id)
+-                ->where('tester_id', $user->id);
+-
+-            if (!empty($search)) {
+-                $servicesQuery->whereHas(
+-                    'service',
+-                    function ($q) use ($search) {
+-                        $q->where(
+-                            'service_name',
+-                            'like',
+-                            "%{$search}%"
+-                        )
+-                            ->orWhere(
+-                                'category',
+-                                'like',
+-                                "%{$search}%"
+-                            )
+-                            ->orWhere(
+-                                'service_url',
+-                                'like',
+-                                "%{$search}%"
+-                            );
+-                    }
+-                );
+-            }
++        $normalCount = (clone $baseTesterQuery)
++            ->where('status', 'normal')
++            ->count();
+ 
+-            if (!empty($statusFilter)) {
+-                $servicesQuery->where(
+-                    'status',
+-                    $statusFilter
+-                );
+-            }
++        $issuesCount = (clone $baseTesterQuery)
++            ->where('status', 'gangguan')
++            ->count();
+ 
+-            if (!empty($levelFilter)) {
+-                $servicesQuery->whereHas(
+-                    'service',
+-                    function ($q) use ($levelFilter) {
+-                        $q->where('level', $levelFilter);
+-                    }
+-                );
+-            }
++        $pendingCount = (clone $baseTesterQuery)
++            ->where('status', 'pending')
++            ->count();
++
++        $checkedCount = $normalCount + $issuesCount;
++
++        $progressPct = $totalAssigned > 0
++            ? (int) round(($checkedCount / $totalAssigned) * 100)
++            : 0;
+ 
+-            if (!empty($categoryFilter)) {
+-                $servicesQuery->whereHas(
+-                    'service',
+-                    function ($q) use ($categoryFilter) {
+-                        $q->where(
+-                            'category',
+-                            $categoryFilter
+-                        );
+-                    }
++        $stats = [
++            'total_assigned' => $totalAssigned,
++            'checked' => $checkedCount,
++            'pending' => $pendingCount,
++            'issues' => $issuesCount,
++            'normal' => $normalCount,
++            'progress_percent' => $progressPct,
++        ];
++
++        $levels = ['Level 1', 'Level 2', 'Level 3'];
++
++        $search = $request->input('search', '');
++        $statusFilter = $request->input('status', '');
++        $levelFilter = $request->input('level', '');
++        $categoryFilter = $request->input('category', '');
++
++        // Categories available in tester's assigned services in this period
++        $categoriesQuery = PeriodService::where('period_id', $period->id)
++            ->join('services', 'period_services.service_id', '=', 'services.id')
++            ->whereNotNull('services.category')
++            ->where('services.category', '!=', '');
++
++        if ($user->role !== 'admin') {
++            $categoriesQuery->where('period_services.tester_id', $user->id);
++        }
++
++        $categories = $categoriesQuery
++            ->distinct()
++            ->orderBy('services.category')
++            ->pluck('services.category')
++            ->values()
++            ->all();
++
++        // Filtered and paginated assigned services
++        $servicesQuery = PeriodService::with([
++            'service' => function ($q) {
++                $q->select(
++                    'id',
++                    'service_name',
++                    'category',
++                    'level',
++                    'icon',
++                    'service_url',
++                    'deskripsi_layanan',
++                    'tester_instruction',
++                    'is_active'
+                 );
+-            }
++            },
++        ])
++            ->where('period_id', $period->id);
++
++        if ($user->role !== 'admin') {
++            $servicesQuery->where('tester_id', $user->id);
++        }
+ 
+-            $paginatedServices = $servicesQuery
+-                ->orderBy('id', 'asc')
+-                ->paginate(10)
+-                ->withQueryString()
+-                ->through(function ($ps) {
+-                    return [
+-                        'id' => $ps->id,
+-                        'service_id' => $ps->service?->id,
+-                        'name' => $ps->service?->service_name ?? '-',
+-                        'category' => $ps->service?->category ?? 'Umum',
+-                        'level' => $ps->service?->level ?? '-',
+-                        'icon' => $ps->service?->icon,
+-                        'url' => $ps->service?->service_url,
+-                        'status' => $ps->status,
+-                        'deskripsi_layanan' =>
+-                            $ps->service?->deskripsi_layanan,
+-                        'tester_instruction' =>
+-                            $ps->service?->tester_instruction,
+-                        'last_description' => $ps->description,
+-                        'checked_at' => $ps->checked_at
+-                            ? Carbon::parse(
+-                                $ps->checked_at
+-                            )->format('d M Y, H:i')
+-                            : null,
+-                        'checked_at_human' => $ps->checked_at
+-                            ? Carbon::parse(
+-                                $ps->checked_at
+-                            )->diffForHumans()
+-                            : null,
+-                    ];
+-                });
++        if (!empty($search)) {
++            $servicesQuery->whereHas('service', function ($q) use ($search) {
++                $q->where('service_name', 'like', "%{$search}%")
++                    ->orWhere('category', 'like', "%{$search}%")
++                    ->orWhere('service_url', 'like', "%{$search}%");
++            });
+         }
+ 
++        if (!empty($statusFilter)) {
++            $servicesQuery->where('status', $statusFilter);
++        }
++
++        if (!empty($levelFilter)) {
++            $servicesQuery->whereHas('service', function ($q) use ($levelFilter) {
++                $q->where('level', $levelFilter);
++            });
++        }
++
++        if (!empty($categoryFilter)) {
++            $servicesQuery->whereHas('service', function ($q) use ($categoryFilter) {
++                $q->where('category', $categoryFilter);
++            });
++        }
++
++        $paginatedServices = $servicesQuery
++            ->orderBy('id', 'asc')
++            ->paginate(10)
++            ->withQueryString()
++            ->through(function ($ps) {
++                return [
++                    'id' => $ps->id,
++                    'service_id' => $ps->service?->id,
++                    'name' => $ps->service?->service_name ?? '-',
++                    'category' => $ps->service?->category ?? 'Umum',
++                    'level' => $ps->service?->level ?? '-',
++                    'icon' => $ps->service?->icon,
++                    'url' => $ps->service?->service_url,
++                    'status' => $ps->status,
++                    'deskripsi_layanan' => $ps->service?->deskripsi_layanan,
++                    'tester_instruction' => $ps->service?->tester_instruction,
++                    'last_description' => $ps->description,
++                    'checked_at' => $ps->checked_at
++                        ? Carbon::parse($ps->checked_at)->format('d M Y, H:i')
++                        : null,
++                    'checked_at_human' => $ps->checked_at
++                        ? Carbon::parse($ps->checked_at)->diffForHumans()
++                        : null,
++                ];
++            });
++
+         return Inertia::render('Tester/Services/Index', [
+             'periodInfo' => $periodInfo,
+             'services' => $paginatedServices,
+diff --git a/resources/js/Pages/Dashboard.vue b/resources/js/Pages/Dashboard.vue
+index 792c2db..e8dcc4e 100644
+--- a/resources/js/Pages/Dashboard.vue
++++ b/resources/js/Pages/Dashboard.vue
+@@ -1060,7 +1060,7 @@ function submitCheck() {
+ 
+                 <!-- 1. Total Ditugaskan -->
+                 <Link
+-                    :href="route('tester.services.index')"
++                    :href="route('tester.periods.services', { period: periodInfo.id })"
+                     class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-indigo-300 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                 >
+                     <div class="flex items-center justify-between">
+@@ -1079,7 +1079,7 @@ function submitCheck() {
+ 
+                 <!-- 2. Sudah Dicek -->
+                 <Link
+-                    :href="route('tester.services.index', { status: 'normal' })"
++                    :href="route('tester.periods.services', { period: periodInfo.id, status: 'normal' })"
+                     class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-emerald-300 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                 >
+                     <div class="flex items-center justify-between">
+@@ -1099,7 +1099,7 @@ function submitCheck() {
+ 
+                 <!-- 3. Belum Dicek -->
+                 <Link
+-                    :href="route('tester.services.index', { status: 'pending' })"
++                    :href="route('tester.periods.services', { period: periodInfo.id, status: 'pending' })"
+                     class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-blue-300 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                 >
+                     <div class="flex items-center justify-between">
+@@ -1119,7 +1119,7 @@ function submitCheck() {
+ 
+                 <!-- 4. Terkendala -->
+                 <Link
+-                    :href="route('tester.services.index', { status: 'gangguan' })"
++                    :href="route('tester.periods.services', { period: periodInfo.id, status: 'gangguan' })"
+                     class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-rose-300 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                 >
+                     <div class="flex items-center justify-between">
+@@ -1523,7 +1523,7 @@ function submitCheck() {
+ 
+                     <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                         <span>Pemeriksaan berkala</span>
+-                        <Link :href="route('tester.services.index', { status: 'normal' })" class="text-blue-600 hover:text-blue-800 font-bold inline-flex items-center gap-1">
++                        <Link :href="route('tester.periods.services', { period: periodInfo.id, status: 'normal' })" class="text-blue-600 hover:text-blue-800 font-bold inline-flex items-center gap-1">
+                             Lihat Semua Hasil
+                         </Link>
+                     </div>
+diff --git a/resources/js/Pages/Tester/Periods/Index.vue b/resources/js/Pages/Tester/Periods/Index.vue
+new file mode 100644
+index 0000000..0604369
+--- /dev/null
++++ b/resources/js/Pages/Tester/Periods/Index.vue
+@@ -0,0 +1,281 @@
++<script setup>
++import { ref, watch, onMounted, onUnmounted } from 'vue';
++import { Head, Link } from '@inertiajs/vue3';
++import AdminLayout from '@/Layouts/AdminLayout.vue';
++
++const props = defineProps({
++    periods: { type: Array, default: () => [] },
++    flash:   { type: Object, default: () => ({}) },
++});
++
++// ΓöÇΓöÇΓöÇ Flash Notification ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++const flashMsg = ref(props.flash?.success || props.flash?.error || '');
++const flashType = ref(props.flash?.error ? 'error' : 'success');
++let flashTimer = null;
++const progressWidth = ref(100);
++const flashDuration = ref(4000);
++
++function clearFlashTimer() {
++    if (flashTimer) {
++        clearTimeout(flashTimer);
++        flashTimer = null;
++    }
++}
++
++function closeFlash() {
++    clearFlashTimer();
++    flashMsg.value = '';
++}
++
++function showFlash(msg, type = 'success', duration = 4000) {
++    clearFlashTimer();
++    flashMsg.value = msg;
++    flashType.value = type;
++    flashDuration.value = duration;
++    
++    progressWidth.value = 100;
++    setTimeout(() => {
++        if (flashMsg.value === msg) {
++            progressWidth.value = 0;
++        }
++    }, 50);
++
++    flashTimer = setTimeout(() => {
++        flashMsg.value = '';
++        flashTimer = null;
++    }, duration);
++}
++
++// Watch props.flash if updated via Inertia visit / redirect
++watch(() => props.flash, (newFlash) => {
++    if (newFlash?.success) {
++        showFlash(newFlash.success, 'success', 4000);
++    } else if (newFlash?.error) {
++        showFlash(newFlash.error, 'error', 4000);
++    }
++}, { deep: true });
++
++onMounted(() => {
++    if (flashMsg.value) {
++        flashDuration.value = 4000;
++        progressWidth.value = 100;
++        setTimeout(() => {
++            progressWidth.value = 0;
++        }, 50);
++
++        flashTimer = setTimeout(() => {
++            flashMsg.value = '';
++            flashTimer = null;
++        }, 4000);
++    }
++});
++
++onUnmounted(() => {
++    clearFlashTimer();
++});
++
++</script>
++
++<template>
++    <Head title="Layanan Ditugaskan - MAJADIGI CHECKER" />
++
++    <AdminLayout
++        title="Layanan Ditugaskan"
++        subtitle="Daftar periode pengujian layanan yang ditugaskan kepada Anda"
++    >
++        <!-- ΓöÇΓöÇ Flash Notification ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ -->
++        <Transition
++            enter-active-class="transition-all duration-300 ease-out"
++            enter-from-class="opacity-0 translate-y-4"
++            enter-to-class="opacity-100 translate-y-0"
++            leave-active-class="transition-all duration-200 ease-in"
++            leave-from-class="opacity-100 translate-y-0"
++            leave-to-class="opacity-0 translate-y-4"
++        >
++            <div
++                v-if="flashMsg"
++                :class="[
++                    'fixed bottom-[24px] right-[24px] z-[100] flex items-center justify-between gap-3 px-4 py-3 rounded-2xl shadow-lg text-sm font-semibold border backdrop-blur-sm transition-all max-w-md overflow-hidden',
++                    flashType === 'success'
++                        ? 'bg-emerald-50/95 border-emerald-200 text-emerald-800 shadow-emerald-900/10'
++                        : 'bg-red-50/95 border-red-200 text-red-800 shadow-red-900/10'
++                ]"
++            >
++                <div class="flex items-center gap-2.5 relative z-10">
++                    <svg v-if="flashType === 'success'" class="w-4 h-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
++                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
++                    </svg>
++                    <svg v-else class="w-4 h-4 shrink-0 text-red-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
++                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
++                    </svg>
++                    <span>{{ flashMsg }}</span>
++                </div>
++
++                <!-- Close Button -->
++                <button
++                    type="button"
++                    @click="closeFlash"
++                    class="p-1 rounded-xl transition-colors focus:outline-none shrink-0 relative z-10"
++                    :class="flashType === 'success'
++                        ? 'text-emerald-500 hover:text-emerald-800 hover:bg-emerald-100/70'
++                        : 'text-red-500 hover:text-red-800 hover:bg-red-100/70'"
++                    aria-label="Tutup notifikasi"
++                    title="Tutup"
++                >
++                    <svg class="w-4 h-4 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
++                    </svg>
++                </button>
++
++                <!-- Progress Bar -->
++                <div
++                    class="absolute bottom-0 left-0 h-1 transition-all ease-linear"
++                    :class="flashType === 'success' ? 'bg-emerald-500/40' : 'bg-red-500/40'"
++                    :style="{
++                        width: progressWidth + '%',
++                        transitionDuration: progressWidth === 100 ? '0ms' : `${flashDuration}ms`
++                    }"
++                ></div>
++            </div>
++        </Transition>
++
++        <!-- ΓöÇΓöÇ Main Card Container ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ -->
++        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
++
++            <!-- Card Header / Toolbar (Tester View - No Create Button) -->
++            <div class="p-4 sm:px-8 sm:py-6 flex items-center justify-between gap-3 border-b border-slate-100">
++                <div>
++                    <h2 class="text-sm sm:text-base font-bold text-slate-800 truncate">
++                        {{ periods.length }} Periode terdaftar
++                    </h2>
++                </div>
++                <div class="text-xs text-slate-400 font-medium hidden sm:block">
++                    Pilih periode untuk melihat atau melakukan pengecekan layanan
++                </div>
++            </div>
++
++            <!-- Table -->
++            <div class="overflow-x-auto">
++                <table class="w-full text-sm min-w-[620px]">
++                    <thead>
++                        <tr class="border-b border-slate-100 bg-slate-50/50">
++                            <th class="text-center px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Periode</th>
++                            <th class="text-center px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
++                            <th class="text-center px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Progress</th>
++                            <th class="text-center px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Aksi</th>
++                        </tr>
++                    </thead>
++                    <tbody class="divide-y divide-slate-100">
++                        <tr
++                            v-for="period in periods"
++                            :key="period.id"
++                            class="hover:bg-slate-50/70 transition-colors group"
++                        >
++                            <!-- Periode -->
++                            <td class="px-5 py-3.5 text-left">
++                                <Link
++                                    :href="route('tester.periods.services', period.id)"
++                                    class="inline-block text-left group-hover:text-blue-600 transition-colors"
++                                >
++                                    <p class="font-semibold text-slate-800 leading-tight group-hover:text-blue-700">
++                                        {{ period.period_title }}
++                                    </p>
++                                    <div class="flex items-center gap-2 mt-0.5">
++                                        <p class="text-xs text-slate-400 font-normal">
++                                            {{ period.created_at_label }}
++                                        </p>
++                                        <span
++                                            v-if="period.deadline_date"
++                                            class="text-[10.5px] px-1.5 py-0.5 rounded font-medium"
++                                            :class="period.is_overdue ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-slate-100 text-slate-500'"
++                                        >
++                                            Deadline: {{ period.deadline_date }}
++                                        </span>
++                                    </div>
++                                </Link>
++                            </td>
++
++                            <!-- Status -->
++                            <td class="px-5 py-3.5 text-center">
++                                <!-- Status PROSES -->
++                                <span
++                                    v-if="period.status === 'proses'"
++                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold uppercase bg-[#1e3a8a] text-white shadow-xs"
++                                >
++                                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse"></span>
++                                    PROSES
++                                </span>
++
++                                <!-- Status SELESAI -->
++                                <span
++                                    v-else
++                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold uppercase bg-slate-100 border border-slate-200 text-slate-600"
++                                >
++                                    <svg class="w-3 h-3 text-slate-500 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
++                                    </svg>
++                                    SELESAI
++                                </span>
++                            </td>
++
++                            <!-- Progress -->
++                            <td class="px-5 py-3.5 text-center">
++                                <div class="w-44 mx-auto text-center">
++                                    <p class="text-xs font-medium text-slate-400 mb-1">
++                                        <span class="text-slate-700 font-semibold">{{ period.my_checked_services }}/{{ period.my_total_services }}</span> layanan
++                                    </p>
++                                    <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
++                                        <div
++                                            class="h-full rounded-full transition-all duration-500"
++                                            :class="period.my_progress_percent === 100 ? 'bg-emerald-500' : 'bg-cyan-500'"
++                                            :style="{ width: `${period.my_progress_percent}%` }"
++                                        ></div>
++                                    </div>
++                                </div>
++                            </td>
++
++                            <!-- Aksi (Cek Layanan / Lihat Layanan) -->
++                            <td class="px-5 py-3.5 text-center">
++                                <div class="flex items-center justify-center">
++                                    <Link
++                                        :href="route('tester.periods.services', period.id)"
++                                        :title="period.status === 'proses' ? 'Lakukan pengecekan layanan' : 'Lihat hasil pengecekan'"
++                                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-xs"
++                                        :class="period.status === 'proses'
++                                            ? 'bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white shadow-blue-900/10'
++                                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80'"
++                                    >
++                                        <svg v-if="period.status === 'proses'" class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
++                                        </svg>
++                                        <svg v-else class="w-3.5 h-3.5 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
++                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
++                                        </svg>
++                                        <span>{{ period.status === 'proses' ? 'Cek Layanan' : 'Lihat Layanan' }}</span>
++                                    </Link>
++                                </div>
++                            </td>
++                        </tr>
++
++                        <!-- Empty State -->
++                        <tr v-if="periods.length === 0">
++                            <td colspan="4" class="py-12 text-center text-slate-400">
++                                <div class="flex flex-col items-center justify-center">
++                                    <div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mb-3 text-slate-400">
++                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                            <rect x="3" y="4" width="18" height="18" rx="2" stroke-linecap="round"/>
++                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 2v4M8 2v4M3 10h18"/>
++                                        </svg>
++                                    </div>
++                                    <p class="font-semibold text-slate-600 text-sm">Belum ada periode penugasan</p>
++                                    <p class="text-xs text-slate-400 mt-0.5">Anda belum ditugaskan pada periode pengecekan manapun oleh Admin.</p>
++                                </div>
++                            </td>
++                        </tr>
++                    </tbody>
++                </table>
++            </div>
++        </div>
++    </AdminLayout>
++</template>
+diff --git a/resources/js/Pages/Tester/Services/Index.vue b/resources/js/Pages/Tester/Services/Index.vue
+index 8919ff1..c590fcb 100644
+--- a/resources/js/Pages/Tester/Services/Index.vue
++++ b/resources/js/Pages/Tester/Services/Index.vue
+@@ -26,7 +26,10 @@ let filterTimer = null;
+ watch([searchQuery, filterStatus, filterLevel, filterCategory], ([newSearch, newStatus, newLevel, newCat]) => {
+     clearTimeout(filterTimer);
+     filterTimer = setTimeout(() => {
+-        router.get(route('tester.services.index'), {
++        const routeName = props.periodInfo ? 'tester.periods.services' : 'tester.services.index';
++        const routeParam = props.periodInfo ? props.periodInfo.id : undefined;
++
++        router.get(route(routeName, routeParam), {
+             search: newSearch,
+             status: newStatus,
+             level: newLevel,
+@@ -149,6 +152,38 @@ function submitCheck() {
+         </Transition>
+ 
+         <div class="space-y-6 max-w-7xl mx-auto">
++
++            <!-- ΓöÇΓöÇ Top Action Bar (Back to Periods List) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ -->
++            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs">
++                <Link
++                    :href="route('tester.services.index')"
++                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-[#1e3a8a] text-xs sm:text-sm font-bold transition-all active:scale-95 group w-fit"
++                >
++                    <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5 text-slate-500 group-hover:text-[#1e3a8a]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
++                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
++                    </svg>
++                    <span>Kembali ke Daftar Periode</span>
++                </Link>
++
++                <div v-if="periodInfo" class="flex items-center gap-2">
++                    <span
++                        v-if="periodInfo.status === 'proses'"
++                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold uppercase bg-[#1e3a8a] text-white shadow-xs"
++                    >
++                        <span class="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
++                        Status: Proses
++                    </span>
++                    <span
++                        v-else
++                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold uppercase bg-slate-100 border border-slate-200 text-slate-600"
++                    >
++                        <svg class="w-3.5 h-3.5 text-slate-500 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
++                        </svg>
++                        Status: Selesai (Terkunci)
++                    </span>
++                </div>
++            </div>
+             
+             <template v-if="periodInfo">
+                 <!-- ΓöÇΓöÇ Deadline Banner ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ -->
+diff --git a/routes/web.php b/routes/web.php
+index 7e08731..722a3b2 100644
+--- a/routes/web.php
++++ b/routes/web.php
+@@ -12,6 +12,9 @@
+ Route::middleware('auth')->group(function () {
+     // ΓöÇΓöÇΓöÇ Tester Routes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+     Route::get('/tester/services', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'index'])->name('tester.services.index');
++    Route::get('/tester/periods', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'index'])->name('tester.periods.index');
++    Route::get('/tester/periods/{period}', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'showPeriod'])->name('tester.periods.show');
++    Route::get('/tester/periods/{period}/services', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'showPeriod'])->name('tester.periods.services');
+     Route::get('/tester/assigned-services', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'index'])->name('tester.assigned-services.index');
+     Route::post('/tester/check/{periodService}', [\App\Http\Controllers\Tester\AssignedServiceController::class, 'submitCheck'])->name('tester.submit_check');
+     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

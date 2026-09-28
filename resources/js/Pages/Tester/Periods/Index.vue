@@ -216,7 +216,7 @@ onUnmounted(() => {
  <td class="px-5 py-3.5 text-center">
  <!-- Status AKTIF -->
  <span
- v-if="period.status === 'proses'"
+ v-if="period.status === 'proses' && !period.is_overdue"
  class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold uppercase bg-[#1e3a8a] text-white shadow-xs"
  >
  <span class="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse"></span>
@@ -254,20 +254,20 @@ onUnmounted(() => {
  <div class="flex items-center justify-center">
  <Link
  :href="route('tester.periods.services', period.id)"
- :title="period.status === 'proses' ? 'Lakukan pengecekan layanan' : 'Lihat hasil pengecekan'"
+ :title="period.status === 'proses' && !period.is_overdue ? 'Lakukan pengecekan layanan' : 'Lihat hasil pengecekan'"
  class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-xs"
- :class="period.status === 'proses'
+ :class="period.status === 'proses' && !period.is_overdue
  ? 'bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white shadow-primary/10'
  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80'"
  >
- <svg v-if="period.status === 'proses'" class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <svg v-if="period.status === 'proses' && !period.is_overdue" class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
  <svg v-else class="w-3.5 h-3.5 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
  <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
  </svg>
- <span>{{ period.status === 'proses' ? 'Cek Layanan' : 'Lihat Layanan' }}</span>
+ <span>{{ period.status === 'proses' && !period.is_overdue ? 'Cek Layanan' : 'Lihat Layanan' }}</span>
  </Link>
  </div>
  </td>

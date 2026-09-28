@@ -174,12 +174,26 @@ class DashboardController extends Controller
         }
 
         // ─── TESTER DASHBOARD (MONITORING CENTER) ──────────────────────────
-        $activePeriod = CheckingPeriod::where('status', 'proses')
+        $activePeriods = CheckingPeriod::where('status', 'proses')
             ->whereHas('periodTesters', function ($q) use ($user) {
                 $q->where('tester_id', $user->id);
             })
             ->orderBy('date', 'desc')
-            ->first();
+            ->get();
+
+        $activePeriod = null;
+        foreach ($activePeriods as $period) {
+            if ($period->deadline_date) {
+                $deadlineCarbon = Carbon::parse($period->deadline_date)->endOfDay();
+                if (!Carbon::now()->isAfter($deadlineCarbon)) {
+                    $activePeriod = $period;
+                    break;
+                }
+            } else {
+                $activePeriod = $period;
+                break;
+            }
+        }
 
         $periodInfo = null;
 
@@ -215,8 +229,7 @@ class DashboardController extends Controller
                 'date' => $periodCarbon->format('Y-m-d'),
                 'status' => $activePeriod->status,
                 'days_remaining' => $daysRemaining,
-                'is_overdue' => $daysRemaining < 0
-                    && $activePeriod->status === 'proses',
+                'is_overdue' => false, // We filtered out overdue periods, so it is never overdue on the dashboard
             ];
 
             // Base query for tester assignments in active period
