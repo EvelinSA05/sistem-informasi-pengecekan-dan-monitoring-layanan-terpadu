@@ -91,9 +91,13 @@ function openCheckModal(service) {
 function submitCheck() {
  checkForm.post(route('tester.submit_check', selectedService.value.id), {
  preserveScroll: true,
- onSuccess: () => {
+ onSuccess: (pageObj) => {
+ if (pageObj.props.flash && pageObj.props.flash.error) {
+ showToast(pageObj.props.flash.error, 'error');
+ } else {
  showCheckModal.value = false;
  showToast(isEditMode.value ? 'Hasil pengujian berhasil diperbarui.' : 'Hasil pengecekan berhasil disimpan.');
+ }
  },
  });
 }
