@@ -348,6 +348,14 @@ class AssignedServiceController extends Controller
             abort(403, 'Periode pengecekan sedang dinonaktifkan.');
         }
 
+        // Jangan izinkan jika periode sudah melewati deadline
+        if ($user->role !== 'admin' && $periodService->period->deadline_date) {
+            $deadlineCarbon = Carbon::parse($periodService->period->deadline_date)->endOfDay();
+            if (Carbon::now()->isAfter($deadlineCarbon)) {
+                abort(403, 'Periode pengecekan sudah melewati batas waktu (deadline).');
+            }
+        }
+
         $validated = $request->validate([
             'status' => 'required|in:normal,gangguan',
             'description' => 'required_if:status,gangguan|nullable|string|max:5000',

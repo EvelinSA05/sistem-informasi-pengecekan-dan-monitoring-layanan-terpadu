@@ -168,11 +168,20 @@ function submitCheck() {
 
  <div v-if="periodInfo" class="flex items-center gap-2">
  <span
- v-if="periodInfo.status === 'proses'"
+ v-if="periodInfo.status === 'proses' && !periodInfo.is_overdue"
  class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold uppercase bg-[#1e3a8a] text-white shadow-xs"
  >
  <span class="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
  Status: Proses
+ </span>
+ <span
+ v-else-if="periodInfo.status === 'proses' && periodInfo.is_overdue"
+ class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold uppercase bg-rose-100 border border-rose-200 text-rose-600 shadow-xs"
+ >
+ <svg class="w-3.5 h-3.5 text-rose-500 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+ </svg>
+ Status: Terkunci (Overdue)
  </span>
  <span
  v-else
@@ -568,7 +577,7 @@ function submitCheck() {
 
  <!-- Action Button (Cek vs Ubah) -->
  <td class="py-4 px-5 text-center align-top pt-4">
- <template v-if="periodInfo.status === 'proses'">
+ <template v-if="periodInfo.status === 'proses' && !periodInfo.is_overdue">
  <!-- Primary Cek Button for Pending -->
  <button
  v-if="service.status === 'pending'"
@@ -598,7 +607,7 @@ function submitCheck() {
  </button>
  </template>
  <template v-else>
- <span class="inline-flex items-center justify-center px-3 py-1.5 rounded-xl font-semibold text-xs bg-slate-100 text-slate-400 border border-slate-200" title="Periode sudah ditutup">
+ <span class="inline-flex items-center justify-center px-3 py-1.5 rounded-xl font-semibold text-xs bg-slate-100 text-slate-400 border border-slate-200" title="Periode sudah ditutup atau melewati batas waktu">
  Terkunci
  </span>
  </template>
