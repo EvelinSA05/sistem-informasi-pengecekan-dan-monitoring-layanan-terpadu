@@ -352,7 +352,7 @@ class AssignedServiceController extends Controller
         if ($user->role !== 'admin' && $periodService->period->deadline_date) {
             $deadlineCarbon = Carbon::parse($periodService->period->deadline_date)->endOfDay();
             if (Carbon::now()->isAfter($deadlineCarbon)) {
-                abort(403, 'Periode pengecekan sudah melewati batas waktu (deadline).');
+                return back()->with('error', 'Periode pengecekan sudah melewati batas waktu (deadline).');
             }
         }
 

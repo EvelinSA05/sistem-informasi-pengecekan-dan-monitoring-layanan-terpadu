@@ -577,18 +577,18 @@ function submitCheck() {
 
  <!-- Action Button (Cek vs Ubah) -->
  <td class="py-4 px-5 text-center align-top pt-4">
- <template v-if="periodInfo.status === 'proses' && !periodInfo.is_overdue">
  <!-- Primary Cek Button for Pending -->
  <button
  v-if="service.status === 'pending'"
  type="button"
- @click="openCheckModal(service)"
- class="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-xl font-bold text-xs bg-primary text-white shadow-xs hover:shadow transition-all active:scale-95 cursor-pointer border border-primary"
- title="Lakukan Pengecekan Layanan"
+ @click="!(periodInfo.status !== 'proses' || periodInfo.is_overdue) && openCheckModal(service)"
+ :disabled="periodInfo.status !== 'proses' || periodInfo.is_overdue"
+ class="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-xl font-bold text-xs shadow-xs transition-all border"
+ :class="(periodInfo.status !== 'proses' || periodInfo.is_overdue) ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-primary text-white hover:shadow active:scale-95 cursor-pointer border-primary'"
+ :title="(periodInfo.status !== 'proses' || periodInfo.is_overdue) ? 'Periode sudah ditutup atau melewati batas waktu' : 'Lakukan Pengecekan Layanan'"
  >
- <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
- <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
- </svg>
+ <svg v-if="periodInfo.status !== 'proses' || periodInfo.is_overdue" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+ <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
  Cek
  </button>
 
@@ -596,21 +596,16 @@ function submitCheck() {
  <button
  v-else
  type="button"
- @click="openCheckModal(service)"
- class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 shadow-2xs transition-all active:scale-95 cursor-pointer"
- title="Ubah Hasil Pengecekan"
+ @click="!(periodInfo.status !== 'proses' || periodInfo.is_overdue) && openCheckModal(service)"
+ :disabled="periodInfo.status !== 'proses' || periodInfo.is_overdue"
+ class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold text-xs shadow-2xs transition-all border"
+ :class="(periodInfo.status !== 'proses' || periodInfo.is_overdue) ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300 active:scale-95 cursor-pointer'"
+ :title="(periodInfo.status !== 'proses' || periodInfo.is_overdue) ? 'Periode sudah ditutup atau melewati batas waktu' : 'Ubah Hasil Pengecekan'"
  >
- <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
- <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
- </svg>
+ <svg v-if="periodInfo.status !== 'proses' || periodInfo.is_overdue" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+ <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
  Ubah
  </button>
- </template>
- <template v-else>
- <span class="inline-flex items-center justify-center px-3 py-1.5 rounded-xl font-semibold text-xs bg-slate-100 text-slate-400 border border-slate-200" title="Periode sudah ditutup atau melewati batas waktu">
- Terkunci
- </span>
- </template>
  </td>
  </tr>
  </tbody>
