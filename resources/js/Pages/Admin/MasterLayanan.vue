@@ -565,7 +565,7 @@ function confirmDelete() {
  </div>
  <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
  <button type="button" @click="closeAddModal" class="px-5 py-2.5 rounded-xl font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors">Batal</button>
- <button type="button" @click="submitAdd" :disabled="addForm.processing" class="px-5 py-2.5 rounded-xl font-semibold text-white bg-primary hover:bg-slate-100 shadow-md shadow-primary/20 transition-all disabled:opacity-70 flex items-center gap-2">
+ <button type="button" @click="submitAdd" :disabled="addForm.processing" class="px-5 py-2.5 rounded-xl font-semibold text-white bg-primary hover:bg-[#1d4ed8] shadow-md shadow-primary/20 transition-all disabled:opacity-70 flex items-center gap-2">
  <svg v-if="addForm.processing" class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
  Simpan
  </button>
@@ -642,7 +642,7 @@ function confirmDelete() {
  </div>
  <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
  <button type="button" @click="showEditModal = false" class="px-5 py-2.5 rounded-xl font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors">Batal</button>
- <button type="button" @click="submitEdit" :disabled="editForm.processing" class="px-5 py-2.5 rounded-xl font-semibold text-white bg-primary hover:bg-slate-100 shadow-md shadow-primary/20 transition-all disabled:opacity-70 flex items-center gap-2">
+ <button type="button" @click="submitEdit" :disabled="editForm.processing" class="px-5 py-2.5 rounded-xl font-semibold text-white bg-primary hover:bg-[#1d4ed8] shadow-md shadow-primary/20 transition-all disabled:opacity-70 flex items-center gap-2">
  <svg v-if="editForm.processing" class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
  Simpan Perubahan
  </button>
