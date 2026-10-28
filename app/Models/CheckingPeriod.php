@@ -23,6 +23,29 @@ class CheckingPeriod extends Model
     ];
 
     /**
+     * Otomatis sinkronisasi periode yang berstatus 'proses' namun sudah melewati deadline
+     * menjadi 'selesai' (nonaktif).
+     */
+    public static function syncOverdueStatuses(): void
+    {
+        static::where('status', 'proses')
+            ->whereNotNull('deadline_date')
+            ->where('deadline_date', '<', \Carbon\Carbon::today()->toDateString())
+            ->update(['status' => 'selesai']);
+    }
+
+    /**
+     * Cek apakah periode telah melewati batas deadline.
+     */
+    public function getIsOverdueAttribute(): bool
+    {
+        if (!$this->deadline_date) {
+            return false;
+        }
+        return \Carbon\Carbon::now()->isAfter(\Carbon\Carbon::parse($this->deadline_date)->endOfDay());
+    }
+
+    /**
      * Alias accessor untuk tanggal_periode
      */
     public function getTanggalPeriodeAttribute()

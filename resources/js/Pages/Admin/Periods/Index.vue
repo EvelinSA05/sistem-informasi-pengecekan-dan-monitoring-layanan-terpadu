@@ -110,23 +110,44 @@ function confirmDelete() {
  });
 }
 
+// ─── Overdue Warning Modal State ─────────────────────────────────
+const showOverdueModal = ref(false);
+const overduePeriod = ref(null);
+
+function openOverdueModal(period) {
+ overduePeriod.value = period;
+ showOverdueModal.value = true;
+}
+
+function closeOverdueModal() {
+ showOverdueModal.value = false;
+ overduePeriod.value = null;
+}
+
 // ─── Status Toggle (Aktif / Nonaktif) ─────────────────────────────
 const updatingPeriodId = ref(null);
 
 function togglePeriodStatus(period) {
  const nextStatus = period.status === 'proses' ? 'selesai' : 'proses';
+
+ // Cegah pengaktifan periode jika deadline sudah lewat batas
+ if (nextStatus === 'proses' && period.is_overdue) {
+  openOverdueModal(period);
+  return;
+ }
+
  updatingPeriodId.value = period.id;
  router.put(route('admin.periods.update', period.id), {
- status: nextStatus,
+  status: nextStatus,
  }, {
- preserveScroll: true,
- onError: (errors) => {
- const err = errors.status || Object.values(errors)[0] || 'Gagal mengubah status periode.';
- showFlash(err, 'error');
- },
- onFinish: () => {
- updatingPeriodId.value = null;
- }
+  preserveScroll: true,
+  onError: (errors) => {
+   const err = errors.status || Object.values(errors)[0] || 'Gagal mengubah status periode.';
+   showFlash(err, 'error');
+  },
+  onFinish: () => {
+   updatingPeriodId.value = null;
+  }
  });
 }
 </script>
@@ -257,8 +278,17 @@ function togglePeriodStatus(period) {
  {{ period.created_at_label }}
   </p>
   <div v-if="period.deadline_date_formatted || period.deadline_date" class="flex items-center gap-1.5 mt-1">
-  <span class="px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-600 font-semibold text-[10px] border border-rose-100 uppercase tracking-wide">Deadline</span>
-  <span class="text-[11px] text-slate-500 font-medium">{{ period.deadline_date_formatted || period.deadline_date }}</span>
+  <span
+   class="px-1.5 py-0.5 rounded-md font-semibold text-[10px] border uppercase tracking-wide"
+   :class="period.is_overdue ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-slate-100 text-slate-600 border-slate-200'"
+  >Deadline</span>
+  <span
+   class="text-[11px] font-medium"
+   :class="period.is_overdue ? 'text-rose-600 font-semibold' : 'text-slate-500'"
+  >
+   {{ period.deadline_date_formatted || period.deadline_date }}
+   <span v-if="period.is_overdue" class="text-[10px] font-semibold text-rose-500">(Lewat)</span>
+  </span>
   </div>
  </Link>
  </td>
@@ -323,7 +353,7 @@ function togglePeriodStatus(period) {
  :aria-checked="period.status === 'proses'"
  @click="togglePeriodStatus(period)"
  :disabled="updatingPeriodId === period.id"
- :title="period.status === 'proses' ? 'Klik untuk menonaktifkan periode' : 'Klik untuk mengaktifkan periode'"
+ :title="period.status === 'proses' ? 'Klik untuk menonaktifkan periode' : (period.is_overdue ? 'Deadline sudah melewati batas (Klik untuk informasi)' : 'Klik untuk mengaktifkan periode')"
  class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:ring-offset-1 disabled:opacity-50"
  :class="period.status === 'proses' ? 'bg-[#1e3a8a]' : 'bg-slate-300'"
  >
@@ -507,6 +537,61 @@ function togglePeriodStatus(period) {
  </div>
  </div>
  </Transition>
+ </Teleport>
+
+ <!-- ════════════════════════════════════════════════════ -->
+ <!-- Modal: Peringatan Deadline Melewati Batas            -->
+ <!-- ════════════════════════════════════════════════════ -->
+ <Teleport to="body">
+  <Transition
+   enter-active-class="transition-all duration-200 ease-out"
+   enter-from-class="opacity-0"
+   enter-to-class="opacity-100"
+   leave-active-class="transition-all duration-150 ease-in"
+   leave-from-class="opacity-100"
+   leave-to-class="opacity-0"
+  >
+   <div v-if="showOverdueModal && overduePeriod" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="closeOverdueModal"></div>
+    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm sm:max-w-md p-6 sm:p-7 z-10 text-center">
+     
+     <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-200 shadow-xs">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+     </div>
+
+     <h3 class="text-lg font-bold text-slate-800">Tidak Dapat Mengaktifkan Periode</h3>
+     <p class="text-sm text-slate-500 mt-2.5 leading-relaxed mb-6">
+      Tenggat waktu (deadline) untuk periode 
+      <span class="font-semibold text-slate-800">"{{ overduePeriod.period_title }}"</span> 
+      telah melewati batas (<span class="font-bold text-rose-600">{{ overduePeriod.deadline_formatted || overduePeriod.deadline_date }}</span>).
+      <br><br>
+      Periode tidak dapat diaktifkan kembali saat tenggat waktu telah terlewat. Jika ingin mengaktifkan periode ini, silakan 
+      <span class="font-semibold text-slate-700">perbarui/edit tenggat waktu</span> terlebih dahulu.
+     </p>
+
+     <div class="flex gap-3">
+      <button
+       type="button"
+       @click="closeOverdueModal"
+       class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
+      >
+       Batal
+      </button>
+      <Link
+       :href="route('admin.periods.edit', overduePeriod.id)"
+       class="flex-1 py-2.5 rounded-xl bg-primary hover:bg-[#1d4ed8] text-white text-sm font-bold shadow-md shadow-primary/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+      >
+       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+       </svg>
+       Edit Deadline
+      </Link>
+     </div>
+    </div>
+   </div>
+  </Transition>
  </Teleport>
  </AdminLayout>
 </template>

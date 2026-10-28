@@ -43,6 +43,8 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
+        CheckingPeriod::syncOverdueStatuses();
+
         $user = $request->user();
 
         // ─── ADMIN DASHBOARD ──────────────────────────────────────────────

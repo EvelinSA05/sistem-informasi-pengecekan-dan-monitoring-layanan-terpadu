@@ -37,8 +37,16 @@ onMounted(() => {
 
 // Status Toggle
 const isUpdatingStatus = ref(false);
+const showOverdueModal = ref(false);
+
 function togglePeriodStatus() {
  const nextStatus = props.period.status === 'proses' ? 'selesai' : 'proses';
+
+ if (nextStatus === 'proses' && props.period.is_overdue) {
+  showOverdueModal.value = true;
+  return;
+ }
+
  isUpdatingStatus.value = true;
  router.put(route('admin.periods.update', props.period.id), { status: nextStatus }, {
  preserveScroll: true,
@@ -407,5 +415,60 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  </div>
 
  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- Modal: Peringatan Deadline Melewati Batas            -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <Teleport to="body">
+  <Transition
+   enter-active-class="transition-all duration-200 ease-out"
+   enter-from-class="opacity-0"
+   enter-to-class="opacity-100"
+   leave-active-class="transition-all duration-150 ease-in"
+   leave-from-class="opacity-100"
+   leave-to-class="opacity-0"
+  >
+   <div v-if="showOverdueModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showOverdueModal = false"></div>
+    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm sm:max-w-md p-6 sm:p-7 z-10 text-center">
+     
+     <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-200 shadow-xs">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+     </div>
+
+     <h3 class="text-lg font-bold text-slate-800">Tidak Dapat Mengaktifkan Periode</h3>
+     <p class="text-sm text-slate-500 mt-2.5 leading-relaxed mb-6">
+      Tenggat waktu (deadline) untuk periode 
+      <span class="font-semibold text-slate-800">"{{ period.title }}"</span> 
+      telah melewati batas (<span class="font-bold text-rose-600">{{ period.deadline_formatted || period.deadline_date }}</span>).
+      <br><br>
+      Periode tidak dapat diaktifkan kembali saat tenggat waktu telah terlewat. Silakan 
+      <span class="font-semibold text-slate-700">perbarui/edit tenggat waktu</span> terlebih dahulu.
+     </p>
+
+     <div class="flex gap-3">
+      <button
+       type="button"
+       @click="showOverdueModal = false"
+       class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
+      >
+       Batal
+      </button>
+      <Link
+       :href="route('admin.periods.edit', period.id)"
+       class="flex-1 py-2.5 rounded-xl bg-primary hover:bg-[#1d4ed8] text-white text-sm font-bold shadow-md shadow-primary/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+      >
+       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+       </svg>
+       Edit Deadline
+      </Link>
+     </div>
+    </div>
+   </div>
+  </Transition>
+ </Teleport>
  </AdminLayout>
 </template>

@@ -40,6 +40,8 @@ class AssignedServiceController extends Controller
 
     public function index(Request $request)
     {
+        CheckingPeriod::syncOverdueStatuses();
+
         $user = $request->user();
 
         // Jika ada parameter period_id, langsung alihkan atau tampilkan periode terkait

@@ -43,6 +43,8 @@ class PeriodController extends Controller
      */
     public function index()
     {
+        CheckingPeriod::syncOverdueStatuses();
+
         $periods = CheckingPeriod::with([
             'creator:id,name',
             'periodTesters.tester:id,name,bidang,email',
@@ -94,6 +96,7 @@ class PeriodController extends Controller
                 'deadline' => $period->deadline_date ? Carbon::parse($period->deadline_date)->format('Y-m-d') : null,
                 'deadline_formatted' => $deadlineDateFormatted,
                 'status' => $period->status,
+                'is_overdue' => $period->is_overdue,
                 'testers' => $testers,
                 'checked_services' => $checkedServices,
                 'total_services' => $totalServices,
@@ -184,6 +187,9 @@ class PeriodController extends Controller
      */
     public function edit(CheckingPeriod $period)
     {
+        CheckingPeriod::syncOverdueStatuses();
+        $period->refresh();
+
         [$testers, $services] = $this->getFormData($period->id);
 
         $carbonDate = Carbon::parse($period->date);
@@ -200,6 +206,7 @@ class PeriodController extends Controller
                 'date' => $formattedDate,
                 'deadline_date' => $period->deadline_date ? Carbon::parse($period->deadline_date)->format('Y-m-d') : null,
                 'status' => $period->status,
+                'is_overdue' => $period->is_overdue,
             ],
             'testers' => $testers,
             'services' => $services,
@@ -311,6 +318,9 @@ class PeriodController extends Controller
      */
     public function show(CheckingPeriod $period)
     {
+        CheckingPeriod::syncOverdueStatuses();
+        $period->refresh();
+
         $period->load([
             'creator:id,name,email',
             'periodTesters.tester:id,name,email,bidang,nip',
@@ -369,7 +379,9 @@ class PeriodController extends Controller
                 'title' => $periodTitle,
                 'date' => $carbonDate->format('Y-m-d'),
                 'deadline_date' => $period->deadline_date ? Carbon::parse($period->deadline_date)->format('d F Y') : null,
+                'deadline_formatted' => $period->deadline_date ? $this->formatIndonesianDate(Carbon::parse($period->deadline_date)) : null,
                 'status' => $period->status,
+                'is_overdue' => $period->is_overdue,
                 'created_at_label' => Carbon::parse($period->created_at)->format('d F Y H:i'),
                 'creator_name' => $period->creator?->name ?? 'Admin',
                 'total_services' => $totalServices,
@@ -399,6 +411,13 @@ class PeriodController extends Controller
                 'nonaktif' => 'selesai',
                 default => $request->status,
             };
+
+            // Validasi: Cegah aktivasi jika deadline periode sudah melewati batas
+            if ($statusVal === 'proses' && $period->is_overdue) {
+                $formattedDeadline = $period->deadline_date ? $this->formatIndonesianDate(Carbon::parse($period->deadline_date)) : '-';
+                return back()->with('error', "Deadline periode ini telah melewati batas ({$formattedDeadline}) dan tidak dapat diaktifkan. Silakan perbarui/edit deadline terlebih dahulu jika ingin mengaktifkan kembali.");
+            }
+
             $period->update([
                 'status' => $statusVal,
             ]);
