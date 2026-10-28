@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage, usePoll } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
 
@@ -56,6 +56,24 @@ function resetFilters() {
 
 const hasActiveFilters = computed(() => {
  return !!(searchQuery.value || filterStatus.value || filterLevel.value || filterCategory.value);
+});
+
+// ─── Realtime Polling (Status Periode) ───────────────────────────
+usePoll(2500, {
+ only: ['periodInfo', 'stats'],
+});
+
+watch(() => props.periodInfo?.status, (newStatus, oldStatus) => {
+ if (oldStatus && oldStatus !== newStatus) {
+  if (newStatus === 'proses') {
+   showToast('Periode pengecekan telah diaktifkan kembali oleh Administrator.', 'success');
+  } else {
+   if (showCheckModal.value) {
+    showCheckModal.value = false;
+   }
+   showToast('Periode pengecekan telah dinonaktifkan oleh Administrator.', 'error');
+  }
+ }
 });
 
 // ─── Toast Notification ─────────────────────────────────────────

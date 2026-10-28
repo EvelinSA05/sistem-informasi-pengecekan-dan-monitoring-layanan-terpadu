@@ -1,11 +1,17 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePoll } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
  periods: { type: Array, default: () => [] },
  flash: { type: Object, default: () => ({}) },
+});
+
+// ─── Realtime Polling (Sinkronisasi Status Periode Otomatis) ──────
+// Memperbarui daftar periode secara otomatis setiap 2 detik tanpa reload halaman
+usePoll(2000, {
+ only: ['periods'],
 });
 
 // ─── Flash Notification ──────────────────────────────────────────
