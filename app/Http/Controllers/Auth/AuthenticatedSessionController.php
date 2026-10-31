@@ -41,7 +41,7 @@ class AuthenticatedSessionController extends Controller
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request): mixed
     {
         Auth::guard('web')->logout();
 
@@ -51,7 +51,14 @@ class AuthenticatedSessionController extends Controller
 
         if ($request->has('timeout') || $request->input('timeout')) {
             $request->session()->flash('session_expired', 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit. Silakan login kembali.');
+            if ($request->header('X-Inertia')) {
+                return Inertia::location('/?timeout=1');
+            }
             return redirect('/?timeout=1');
+        }
+
+        if ($request->header('X-Inertia')) {
+            return Inertia::location('/');
         }
 
         return redirect('/');
