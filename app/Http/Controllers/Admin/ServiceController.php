@@ -278,7 +278,10 @@ class ServiceController extends Controller
                         5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
                         9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
                     ];
-                    $formattedDate = $cDate->format('d') . ' ' . ($months[(int) $cDate->format('n')] ?? $cDate->format('F')) . ' ' . $cDate->format('Y');
+                    $formattedDate = $cDate->format('d') . ' ' . ($months[(int) $cDate->format('n')] ?? $cDate->format('F'));
+                    if ($cDate->format('Y') !== \Carbon\Carbon::now()->format('Y')) {
+                        $formattedDate .= ' ' . $cDate->format('Y');
+                    }
                 }
 
                 $statusLabel = 'tidak aktif';
@@ -293,7 +296,7 @@ class ServiceController extends Controller
                     'period_date'           => $formattedDate,
                     'status'                => $statusLabel,
                     'period_service_status' => $issue->periodService?->status ?? 'gangguan',
-                    'catatan'               => $issue->periodService?->description ?: 'Kendala layanan dilaporkan oleh tester',
+                    'catatan'               => $issue->periodService?->description ?: 'attachment',
                     'attachment'            => null,
                     'has_notif'             => (bool) $issue->has_notif,
                     'has_solved'            => (bool) $issue->has_solved,
