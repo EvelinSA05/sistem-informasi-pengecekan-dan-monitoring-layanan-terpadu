@@ -42,8 +42,8 @@ return [
 
     'majadigi' => [
         'base_url' => env('MAJADIGI_API_BASE_URL', 'https://api.majadigidev.jatimprov.go.id'),
-        'username' => env('MAJADIGI_API_USERNAME'),
-        'password' => env('MAJADIGI_API_PASSWORD'),
+        'username' => env('MAJADIGI_API_USERNAME', 'majadigicheck@mail.com'),
+        'password' => env('MAJADIGI_API_PASSWORD', 'Majadigicheck123#'),
     ],
 
 ];
