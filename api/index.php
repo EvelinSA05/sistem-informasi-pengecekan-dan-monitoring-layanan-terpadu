@@ -20,9 +20,9 @@ putenv('APP_NAME=majadigi');
 $_ENV['APP_NAME'] = 'majadigi';
 $_SERVER['APP_NAME'] = 'majadigi';
 
-putenv('SESSION_LIFETIME=5');
-$_ENV['SESSION_LIFETIME'] = '5';
-$_SERVER['SESSION_LIFETIME'] = '5';
+putenv('SESSION_LIFETIME=120');
+$_ENV['SESSION_LIFETIME'] = '120';
+$_SERVER['SESSION_LIFETIME'] = '120';
 
 putenv('CACHE_STORE=array');
 $_ENV['CACHE_STORE'] = 'array';
