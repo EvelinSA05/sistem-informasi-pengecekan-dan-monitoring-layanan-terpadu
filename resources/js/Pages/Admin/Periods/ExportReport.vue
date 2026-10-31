@@ -162,10 +162,7 @@ onMounted(() => {
  <th class="py-2.5 px-3 w-10 text-center">No</th>
  <th class="py-2.5 px-3">Nama Layanan</th>
  <th class="py-2.5 px-3">Kategori</th>
- <th class="py-2.5 px-3">Tester</th>
  <th class="py-2.5 px-3">Status</th>
- <th class="py-2.5 px-3">Waktu Cek</th>
- <th class="py-2.5 px-3">Keterangan</th>
  </tr>
  </thead>
  <tbody class="divide-y divide-slate-200 text-[11px]">
@@ -173,7 +170,6 @@ onMounted(() => {
  <td class="py-2 px-3 text-center text-slate-400 font-semibold">{{ srv.no }}</td>
  <td class="py-2 px-3 font-bold text-slate-800">{{ srv.service_name }}</td>
  <td class="py-2 px-3 text-slate-500">{{ srv.category }}</td>
- <td class="py-2 px-3 font-semibold text-slate-700">{{ srv.tester_name }}</td>
  <td class="py-2 px-3">
  <span
  v-if="srv.status === 'normal'"
@@ -194,8 +190,6 @@ onMounted(() => {
  BELUM DICEK
  </span>
  </td>
- <td class="py-2 px-3 text-slate-500 font-mono text-[10px]">{{ srv.checked_at }}</td>
- <td class="py-2 px-3 text-slate-600 max-w-xs truncate">{{ srv.description }}</td>
  </tr>
  </tbody>
  </table>
