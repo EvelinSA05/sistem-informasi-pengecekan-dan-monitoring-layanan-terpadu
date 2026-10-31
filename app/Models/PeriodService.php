@@ -31,4 +31,9 @@ class PeriodService extends Model
     {
         return $this->belongsTo(User::class, 'tester_id');
     }
+
+    public function serviceIssue()
+    {
+        return $this->hasOne(ServiceIssue::class, 'period_service_id');
+    }
 }

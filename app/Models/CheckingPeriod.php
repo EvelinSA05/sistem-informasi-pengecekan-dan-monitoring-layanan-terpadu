@@ -111,4 +111,12 @@ class CheckingPeriod extends Model
     {
         return $this->belongsToMany(User::class, 'period_testers', 'period_id', 'tester_id');
     }
+
+    /**
+     * Relasi ke ServiceIssue (layanan yang terkendala pada periode ini)
+     */
+    public function serviceIssues()
+    {
+        return $this->hasMany(ServiceIssue::class, 'periode_id');
+    }
 }
