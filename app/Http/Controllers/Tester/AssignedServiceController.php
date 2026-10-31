@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CheckingPeriod;
 use App\Models\PeriodService;
 use App\Models\ServiceCheckLog;
+use App\Models\ServiceIssue;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -379,6 +380,24 @@ class AssignedServiceController extends Controller
                 'status' => $validated['status'],
                 'description' => $validated['description'] ?? null,
             ]);
+
+            // Catat atau perbarui di tabel service_issues (layanan_terkendala)
+            if ($validated['status'] === 'gangguan') {
+                ServiceIssue::updateOrCreate(
+                    ['period_service_id' => $periodService->id],
+                    [
+                        'layanan_id'  => $periodService->service_id,
+                        'periode_id'  => $periodService->period_id,
+                        'has_notif'   => false,
+                        'has_solved'  => false,
+                    ]
+                );
+            } else if ($validated['status'] === 'normal') {
+                // Jika sebelumnya ada catatan kendala pada penugasan ini, tandai sudah selesai/teratasi
+                ServiceIssue::where('period_service_id', $periodService->id)->update([
+                    'has_solved' => true,
+                ]);
+            }
 
             // Auto-complete: jika seluruh layanan pada periode ini sudah selesai diperiksa (0 pending), ubah status periode menjadi 'selesai'
             $hasPending = PeriodService::where('period_id', $periodService->period_id)
