@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
+import axios from 'axios';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ClientPagination from '@/Components/ClientPagination.vue';
@@ -7,7 +8,32 @@ import ClientPagination from '@/Components/ClientPagination.vue';
 const props = defineProps({
  period: { type: Object, required: true },
  distribution: { type: Array, default: () => [] },
+ troubled_services: { type: Array, default: () => [] },
 });
+
+// Layanan Terkendala state & actions
+const troubledList = ref([...props.troubled_services]);
+watch(() => props.troubled_services, (val) => {
+ troubledList.value = [...(val || [])];
+}, { deep: true });
+
+const isUpdatingSolved = ref({});
+async function toggleTroubledSolved(item) {
+ if (!item.issue_id) return;
+ isUpdatingSolved.value[item.id] = true;
+ try {
+  const response = await axios.post(route('admin.services.issues.toggle_solved', item.issue_id));
+  if (response.data?.success) {
+   item.has_solved = response.data.has_solved;
+   item.has_solved_label = item.has_solved ? 'sudah tindak lanjuti' : 'belum tindak lanjuti';
+   showToast(response.data.message, 'success');
+  }
+ } catch (e) {
+  showToast('Gagal mengubah status tindak lanjut kendala.', 'error');
+ } finally {
+  isUpdatingSolved.value[item.id] = false;
+ }
+}
 
 const page = usePage();
 const statusFilter = ref('all');
@@ -248,15 +274,19 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  </div>
 
  <!-- Terkendala -->
- <div class="bg-white rounded-2xl border border-slate-200 p-5">
+ <div
+  @click="statusFilter = 'gangguan'; isTableVisible = true"
+  class="bg-white rounded-2xl border border-slate-200 p-5 cursor-pointer hover:border-rose-300 hover:bg-rose-50/20 transition-all group"
+  title="Klik untuk melihat layanan terkendala"
+ >
  <div class="flex items-center justify-between mb-3">
- <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">TERKENDALA</span>
- <div class="w-8 h-8 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center">
+ <span class="text-[11px] font-semibold text-slate-400 group-hover:text-rose-500 uppercase tracking-wider transition-colors">TERKENDALA</span>
+ <div class="w-8 h-8 rounded-xl bg-slate-50 group-hover:bg-rose-50 text-slate-400 group-hover:text-rose-500 flex items-center justify-center transition-colors">
  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
  </div>
  </div>
- <p class="text-3xl font-bold text-slate-900">{{ period.issues_services }}</p>
- <p class="text-xs text-slate-400 mt-1">Perlu Penanganan</p>
+ <p class="text-3xl font-bold text-slate-900 group-hover:text-rose-600 transition-colors">{{ period.issues_services }}</p>
+ <p class="text-xs text-slate-400 group-hover:text-rose-500 mt-1 transition-colors">Perlu Penanganan</p>
  </div>
 
  <!-- Progress Cek -->
@@ -273,6 +303,116 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  <div class="h-full bg-primary rounded-full transition-all duration-500" :style="{ width: `${period.progress_percent}%` }"></div>
  </div>
  </div>
+ </div>
+
+ <!-- ═══════════════════════════════════════════════════ -->
+ <!-- 2.5 SECTION: LAYANAN TERKENDALA (Tugas 13)          -->
+ <!-- ═══════════════════════════════════════════════════ -->
+ <div class="bg-white rounded-2xl border border-slate-200 p-6 overflow-hidden shadow-xs">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-100">
+   <div class="flex items-center gap-3">
+    <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-200/60 shadow-xs">
+     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+     </svg>
+    </div>
+    <div>
+     <div class="flex items-center gap-2">
+      <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Layanan Terkendala</h3>
+      <span
+       class="px-2.5 py-0.5 rounded-full text-[11px] font-bold"
+       :class="troubledList.length > 0 ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'"
+      >
+       {{ troubledList.length }} Layanan
+      </span>
+     </div>
+     <p class="text-xs text-slate-400 mt-0.5">Daftar layanan yang dilaporkan mengalami kendala/gangguan pada periode ini</p>
+    </div>
+   </div>
+
+   <div v-if="troubledList.length > 0" class="flex items-center gap-2 text-xs text-slate-500 font-medium">
+    Ditindaklanjuti: 
+    <strong class="text-emerald-600 font-bold">{{ troubledList.filter(t => t.has_solved).length }}</strong> / {{ troubledList.length }}
+   </div>
+  </div>
+
+  <!-- Empty State jika tidak ada kendala -->
+  <div v-if="troubledList.length === 0" class="p-8 rounded-xl bg-slate-50 border border-slate-200/80 text-center">
+   <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2 border border-emerald-100">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+   </div>
+   <p class="text-sm font-bold text-slate-700">Tidak Ada Layanan Terkendala</p>
+   <p class="text-xs text-slate-400 mt-1">Seluruh layanan yang diperiksa pada periode ini berfungsi normal atau belum ditemukan kendala.</p>
+  </div>
+
+  <!-- List Layanan Terkendala -->
+  <div v-else class="space-y-3">
+   <div
+    v-for="(item, idx) in troubledList"
+    :key="item.id"
+    class="rounded-xl border transition-all p-4"
+    :class="item.has_solved ? 'bg-slate-50/70 border-slate-200' : 'bg-rose-50/40 border-rose-200 shadow-2xs'"
+   >
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+     <div class="flex items-start gap-3 min-w-0">
+      <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 mt-0.5"
+       :class="item.has_solved ? 'bg-slate-200 text-slate-700' : 'bg-rose-100 text-rose-800'">
+       {{ idx + 1 }}
+      </span>
+      <div class="min-w-0">
+       <div class="flex items-center gap-2 flex-wrap">
+        <h4 class="text-sm font-bold text-slate-800">{{ item.service_name }}</h4>
+        <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">{{ item.category }}</span>
+        <span v-if="item.level && item.level !== '-'" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">Level {{ item.level }}</span>
+        <span
+         class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+         :class="item.has_solved ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'"
+        >
+         <span class="w-1.5 h-1.5 rounded-full" :class="item.has_solved ? 'bg-emerald-500' : 'bg-amber-500'"></span>
+         {{ item.has_solved_label }}
+        </span>
+       </div>
+       <a v-if="item.service_url" :href="item.service_url" target="_blank" class="inline-flex items-center gap-1 text-[11px] text-primary hover:underline mt-1 truncate max-w-md">
+        {{ item.service_url }}
+        <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+       </a>
+
+       <!-- Catatan Kendala dari Tester -->
+       <div class="mt-2.5 p-2.5 rounded-lg text-xs" :class="item.has_solved ? 'bg-white border border-slate-200 text-slate-600' : 'bg-white/80 border border-rose-200 text-slate-700'">
+        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+         <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+         Catatan Kendala Tester ({{ item.tester_name }}):
+        </div>
+        <p class="font-medium whitespace-pre-wrap leading-relaxed">{{ item.description }}</p>
+       </div>
+      </div>
+     </div>
+
+     <!-- Info Tester & Tombol Tindak Lanjut -->
+     <div class="flex lg:flex-col items-center lg:items-end justify-between gap-2.5 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+      <div class="text-left lg:text-right text-[11px] text-slate-400">
+       <p>Diperiksa: <span class="font-semibold text-slate-700">{{ item.checked_at }}</span></p>
+       <p>Oleh: <span class="font-semibold text-slate-700">{{ item.tester_name }}</span> ({{ item.tester_bidang }})</p>
+      </div>
+
+      <button
+       type="button"
+       @click="toggleTroubledSolved(item)"
+       :disabled="isUpdatingSolved[item.id]"
+       class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border cursor-pointer active:scale-95 flex items-center gap-1.5 disabled:opacity-50"
+       :class="item.has_solved
+        ? 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
+        : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-xs'"
+       :title="item.has_solved ? 'Ubah menjadi belum ditindaklanjuti' : 'Tandai kendala ini sudah ditindaklanjuti'"
+      >
+       <svg v-if="item.has_solved" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+       <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+       {{ isUpdatingSolved[item.id] ? 'Menyimpan...' : (item.has_solved ? 'Ubah Status' : 'Tandai Selesai') }}
+      </button>
+     </div>
+    </div>
+   </div>
+  </div>
  </div>
 
  <!-- ═══════════════════════════════════════════════════ -->
