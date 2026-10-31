@@ -218,10 +218,37 @@ function submitEdit() {
  });
 }
 
-// ─── Detail Modal ─────────────────────────────────────────────
-function openDetailModal(service) {
+// ─── Detail Modal & History Kendala ───────────────────────────
+const serviceIssues = ref([]);
+const isLoadingIssues = ref(false);
+
+async function openDetailModal(service) {
  selectedService.value = service;
  showDetailModal.value = true;
+ isLoadingIssues.value = true;
+ serviceIssues.value = [];
+
+ try {
+  const response = await axios.get(route('admin.services.issues', service.id));
+  serviceIssues.value = response.data;
+ } catch (error) {
+  console.error('Gagal memuat history kendala:', error);
+ } finally {
+  isLoadingIssues.value = false;
+ }
+}
+
+async function toggleIssueFollowUp(issue) {
+ try {
+  const response = await axios.post(route('admin.services.issues.toggle_solved', issue.id));
+  if (response.data?.success) {
+   issue.has_solved = response.data.has_solved;
+   issue.has_solved_label = issue.has_solved ? 'sudah tindak lanjuti' : 'belum tindak lanjuti';
+   showFlash(response.data.message, 'success', 3000);
+  }
+ } catch (error) {
+  showFlash('Gagal mengubah status tindak lanjut kendala.', 'error');
+ }
 }
 
 // ─── History Modal ────────────────────────────────────
@@ -797,6 +824,106 @@ function confirmDelete() {
  <div class="p-3.5 bg-amber-50/40 rounded-xl border border-amber-100/60">
  <p class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{{ selectedService.notes }}</p>
  </div>
+ </div>
+
+ <!-- ── Section: History Kendala ────────────────────────── -->
+ <div class="pt-3 border-t border-slate-200">
+  <div class="flex items-center justify-between mb-2.5">
+   <div class="flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">History Kendala</h4>
+   </div>
+   <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+    {{ serviceIssues.length }} Riwayat
+   </span>
+  </div>
+
+  <!-- Loading State -->
+  <div v-if="isLoadingIssues" class="py-6 flex items-center justify-center text-slate-400 text-xs">
+   <svg class="animate-spin w-4 h-4 text-primary mr-2" fill="none" viewBox="0 0 24 24">
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+   </svg>
+   Memuat riwayat kendala...
+  </div>
+
+  <!-- Empty State -->
+  <div v-else-if="serviceIssues.length === 0" class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center">
+   <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-1.5">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+   </div>
+   <p class="text-xs font-semibold text-slate-700">Tidak Ada Riwayat Kendala</p>
+   <p class="text-[11px] text-slate-400 mt-0.5">Layanan ini belum pernah dilaporkan mengalami kendala saat periode pengecekan.</p>
+  </div>
+
+  <!-- List History Kendala (Format: 1. periode check tgl 30 Oktober | status : tidak aktif | catatan : attachment | sudah tindak lanjuti) -->
+  <div v-else class="space-y-2.5">
+   <div
+    v-for="(issue, idx) in serviceIssues"
+    :key="issue.id"
+    class="p-3.5 rounded-xl border transition-all text-xs"
+    :class="issue.has_solved ? 'bg-slate-50/70 border-slate-200 text-slate-700' : 'bg-rose-50/40 border-rose-200 text-slate-800 shadow-2xs'"
+   >
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+     <div class="flex items-start sm:items-center gap-2 flex-wrap">
+      <span class="font-bold text-slate-800">{{ idx + 1 }}.</span>
+      
+      <!-- Periode Check -->
+      <div class="inline-flex items-center gap-1 font-semibold text-slate-700">
+       <span class="text-slate-400 font-normal">periode check</span>
+       <span class="text-slate-800 font-bold">tgl {{ issue.period_date }}</span>
+      </div>
+
+      <span class="text-slate-300 hidden sm:inline">|</span>
+
+      <!-- Status -->
+      <div class="inline-flex items-center gap-1">
+       <span class="text-slate-400">status :</span>
+       <span class="px-2 py-0.5 rounded-full font-bold uppercase text-[10px] bg-rose-100 text-rose-700 border border-rose-200/60">
+        {{ issue.status }}
+       </span>
+      </div>
+
+      <span class="text-slate-300 hidden sm:inline">|</span>
+
+      <!-- Catatan -->
+      <div class="inline-flex items-center gap-1 max-w-xs truncate" :title="issue.catatan">
+       <span class="text-slate-400">catatan :</span>
+       <span class="text-slate-700 font-medium truncate">{{ issue.catatan }}</span>
+      </div>
+
+      <span class="text-slate-300 hidden sm:inline">|</span>
+
+      <!-- Status Tindak Lanjut -->
+      <span
+       class="px-2 py-0.5 rounded-full font-bold text-[10px] uppercase inline-flex items-center gap-1"
+       :class="issue.has_solved ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'"
+      >
+       <span class="w-1.5 h-1.5 rounded-full" :class="issue.has_solved ? 'bg-emerald-500' : 'bg-amber-500'"></span>
+       {{ issue.has_solved_label }}
+      </span>
+     </div>
+
+     <!-- Tombol Tindak Lanjuti -->
+     <button
+      type="button"
+      @click="toggleIssueFollowUp(issue)"
+      class="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border cursor-pointer active:scale-95"
+      :class="issue.has_solved
+       ? 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
+       : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-xs'"
+      :title="issue.has_solved ? 'Klik untuk ubah status' : 'Klik untuk tandai sudah tindak lanjuti'"
+     >
+      {{ issue.has_solved ? 'Ubah Status' : 'Tandai Selesai' }}
+     </button>
+    </div>
+
+    <!-- Detail Keterangan jika panjang -->
+    <div v-if="issue.catatan && issue.catatan.length > 50" class="mt-2 pt-2 border-t border-slate-200/60 text-slate-600 text-[11px]">
+     <span class="text-slate-400">Detail Catatan:</span> {{ issue.catatan }}
+    </div>
+   </div>
+  </div>
  </div>
  </div>
  </div>
