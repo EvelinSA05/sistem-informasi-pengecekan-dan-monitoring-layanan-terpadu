@@ -40,4 +40,9 @@ class Service extends Model
     {
         return $this->hasMany(PeriodService::class, 'service_id');
     }
+
+    public function issues()
+    {
+        return $this->hasMany(ServiceIssue::class, 'layanan_id');
+    }
 }
