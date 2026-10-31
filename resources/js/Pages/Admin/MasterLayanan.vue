@@ -738,7 +738,7 @@ function confirmDelete() {
  leave-to-class="opacity-0 scale-95 translate-y-4"
  >
  <div v-if="showDetailModal && selectedService" class="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
- <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+ <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
  <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
  <h3 class="text-lg font-bold text-slate-800">Detail Layanan</h3>
  <button @click="showDetailModal = false" class="text-slate-400 hover:text-slate-600 transition-colors p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
@@ -827,15 +827,17 @@ function confirmDelete() {
  </div>
 
  <!-- ── Section: History Kendala ────────────────────────── -->
- <div class="pt-3 border-t border-slate-200">
-  <div class="flex items-center justify-between mb-2.5">
-   <div class="flex items-center gap-2">
-    <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">History Kendala</h4>
-   </div>
-   <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
-    {{ serviceIssues.length }} Riwayat
-   </span>
+ <div class="pt-4 border-t border-slate-200">
+  <div class="flex items-center gap-1.5 text-xs font-bold text-slate-800 mb-1 px-1">
+   <span class="text-slate-900">{{ selectedService.service_name }}</span>
+   <span class="text-slate-400 font-normal">&rarr;</span>
+  </div>
+
+  <!-- Divider: ______ history _______ -->
+  <div class="relative flex py-2 items-center mb-1">
+   <div class="flex-grow border-t border-slate-300"></div>
+   <span class="flex-shrink mx-3 text-xs font-bold text-slate-500 uppercase tracking-widest">history</span>
+   <div class="flex-grow border-t border-slate-300"></div>
   </div>
 
   <!-- Loading State -->
@@ -857,7 +859,7 @@ function confirmDelete() {
   </div>
 
   <!-- List History Kendala (Format: 1. periode check tgl 30 Oktober | status : tidak aktif | catatan : attachment | sudah tindak lanjuti) -->
-  <div v-else class="space-y-2.5">
+  <div v-else class="space-y-2 mt-2">
    <div
     v-for="(issue, idx) in serviceIssues"
     :key="issue.id"
@@ -865,32 +867,21 @@ function confirmDelete() {
     :class="issue.has_solved ? 'bg-slate-50/70 border-slate-200 text-slate-700' : 'bg-rose-50/40 border-rose-200 text-slate-800 shadow-2xs'"
    >
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-     <div class="flex items-start sm:items-center gap-2 flex-wrap">
-      <span class="font-bold text-slate-800">{{ idx + 1 }}.</span>
+     <div class="flex items-center gap-2 flex-wrap font-medium">
+      <span class="font-bold text-slate-900">{{ idx + 1 }}.</span>
       
       <!-- Periode Check -->
-      <div class="inline-flex items-center gap-1 font-semibold text-slate-700">
-       <span class="text-slate-400 font-normal">periode check</span>
-       <span class="text-slate-800 font-bold">tgl {{ issue.period_date }}</span>
-      </div>
+      <span class="text-slate-700">periode check <span class="font-bold text-slate-900">tgl {{ issue.period_date }}</span></span>
 
       <span class="text-slate-300 hidden sm:inline">|</span>
 
       <!-- Status -->
-      <div class="inline-flex items-center gap-1">
-       <span class="text-slate-400">status :</span>
-       <span class="px-2 py-0.5 rounded-full font-bold uppercase text-[10px] bg-rose-100 text-rose-700 border border-rose-200/60">
-        {{ issue.status }}
-       </span>
-      </div>
+      <span class="text-slate-700">status : <span class="px-2 py-0.5 rounded font-bold uppercase text-[10px] bg-rose-100 text-rose-700 border border-rose-200/60">{{ issue.status }}</span></span>
 
       <span class="text-slate-300 hidden sm:inline">|</span>
 
       <!-- Catatan -->
-      <div class="inline-flex items-center gap-1 max-w-xs truncate" :title="issue.catatan">
-       <span class="text-slate-400">catatan :</span>
-       <span class="text-slate-700 font-medium truncate">{{ issue.catatan }}</span>
-      </div>
+      <span class="text-slate-700">catatan : <span class="font-semibold text-slate-800">{{ issue.catatan || 'attachment' }}</span></span>
 
       <span class="text-slate-300 hidden sm:inline">|</span>
 
@@ -919,7 +910,7 @@ function confirmDelete() {
     </div>
 
     <!-- Detail Keterangan jika panjang -->
-    <div v-if="issue.catatan && issue.catatan.length > 50" class="mt-2 pt-2 border-t border-slate-200/60 text-slate-600 text-[11px]">
+    <div v-if="issue.catatan && issue.catatan.length > 50 && issue.catatan !== 'attachment'" class="mt-2 pt-2 border-t border-slate-200/60 text-slate-600 text-[11px]">
      <span class="text-slate-400">Detail Catatan:</span> {{ issue.catatan }}
     </div>
    </div>
