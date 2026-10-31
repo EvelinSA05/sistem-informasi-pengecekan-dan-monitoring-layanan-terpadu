@@ -373,49 +373,97 @@ class PeriodController extends Controller
             ];
         }
 
-        // Ambil daftar layanan yang terkendala pada periode ini
-        $troubledServices = PeriodService::with([
-            'service',
-            'tester',
-            'serviceIssue'
-        ])
-        ->where('period_id', $period->id)
-        ->where('status', 'gangguan')
-        ->orderByDesc('checked_at')
-        ->get()
-        ->map(function ($ps) use ($period) {
-            $issue = $ps->serviceIssue;
-            if (!$issue) {
-                $issue = \App\Models\ServiceIssue::firstOrCreate(
-                    ['period_service_id' => $ps->id],
-                    [
-                        'layanan_id' => $ps->service_id,
-                        'periode_id' => $period->id,
-                        'has_notif'  => false,
-                        'has_solved' => false,
-                    ]
-                );
+        // Ambil daftar layanan yang terkendala pada periode ini dengan fallback aman
+        $troubledServices = [];
+        try {
+            // Jalankan migrasi otomatis jika tabel service_issues belum ada di database (khususnya environment serverless/Vercel)
+            if (!\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
+                try {
+                    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Auto-migration attempt on period show: ' . $e->getMessage());
+                }
             }
 
-            return [
-                'id'               => $ps->id,
-                'issue_id'         => $issue->id,
-                'service_id'       => $ps->service_id,
-                'service_name'     => $ps->service?->service_name ?? 'Layanan',
-                'service_url'      => $ps->service?->service_url,
-                'category'         => $ps->service?->category ?? 'Umum',
-                'level'            => $ps->service?->level ?? '-',
-                'icon'             => $ps->service?->icon ?? 'globe',
-                'tester_name'      => $ps->tester?->name ?? 'Tester',
-                'tester_bidang'    => $ps->tester?->bidang ?? '-',
-                'description'      => $ps->description ?: 'Kendala dilaporkan oleh tester',
-                'checked_at'       => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : '-',
-                'has_solved'       => (bool) $issue->has_solved,
-                'has_solved_label' => $issue->has_solved ? 'sudah tindak lanjuti' : 'belum tindak lanjuti',
-                'has_notif'        => (bool) $issue->has_notif,
-            ];
-        })
-        ->values();
+            if (\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
+                $troubledServices = PeriodService::with([
+                    'service',
+                    'tester',
+                    'serviceIssue'
+                ])
+                ->where('period_id', $period->id)
+                ->where('status', 'gangguan')
+                ->orderByDesc('checked_at')
+                ->get()
+                ->map(function ($ps) use ($period) {
+                    $issue = $ps->serviceIssue;
+                    if (!$issue) {
+                        try {
+                            $issue = \App\Models\ServiceIssue::firstOrCreate(
+                                ['period_service_id' => $ps->id],
+                                [
+                                    'layanan_id' => $ps->service_id,
+                                    'periode_id' => $period->id,
+                                    'has_notif'  => false,
+                                    'has_solved' => false,
+                                ]
+                            );
+                        } catch (\Throwable $e) {
+                            $issue = null;
+                        }
+                    }
+
+                    return [
+                        'id'               => $ps->id,
+                        'issue_id'         => $issue?->id,
+                        'service_id'       => $ps->service_id,
+                        'service_name'     => $ps->service?->service_name ?? 'Layanan',
+                        'service_url'      => $ps->service?->service_url,
+                        'category'         => $ps->service?->category ?? 'Umum',
+                        'level'            => $ps->service?->level ?? '-',
+                        'icon'             => $ps->service?->icon ?? 'globe',
+                        'tester_name'      => $ps->tester?->name ?? 'Tester',
+                        'tester_bidang'    => $ps->tester?->bidang ?? '-',
+                        'description'      => $ps->description ?: 'Kendala dilaporkan oleh tester',
+                        'checked_at'       => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : '-',
+                        'has_solved'       => (bool) ($issue?->has_solved ?? false),
+                        'has_solved_label' => ($issue && $issue->has_solved) ? 'sudah tindak lanjuti' : 'belum tindak lanjuti',
+                        'has_notif'        => (bool) ($issue?->has_notif ?? false),
+                    ];
+                })
+                ->values();
+            } else {
+                // Fallback jika migrasi belum berjalan: tetap tampilkan layanan gangguan dari period_services
+                $troubledServices = PeriodService::with(['service', 'tester'])
+                    ->where('period_id', $period->id)
+                    ->where('status', 'gangguan')
+                    ->orderByDesc('checked_at')
+                    ->get()
+                    ->map(function ($ps) {
+                        return [
+                            'id'               => $ps->id,
+                            'issue_id'         => null,
+                            'service_id'       => $ps->service_id,
+                            'service_name'     => $ps->service?->service_name ?? 'Layanan',
+                            'service_url'      => $ps->service?->service_url,
+                            'category'         => $ps->service?->category ?? 'Umum',
+                            'level'            => $ps->service?->level ?? '-',
+                            'icon'             => $ps->service?->icon ?? 'globe',
+                            'tester_name'      => $ps->tester?->name ?? 'Tester',
+                            'tester_bidang'    => $ps->tester?->bidang ?? '-',
+                            'description'      => $ps->description ?: 'Kendala dilaporkan oleh tester',
+                            'checked_at'       => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : '-',
+                            'has_solved'       => false,
+                            'has_solved_label' => 'belum tindak lanjuti',
+                            'has_notif'        => false,
+                        ];
+                    })
+                    ->values();
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Gagal memuat troubled services di period show: ' . $e->getMessage());
+            $troubledServices = [];
+        }
 
         return Inertia::render('Admin/Periods/Show', [
             'period' => [
