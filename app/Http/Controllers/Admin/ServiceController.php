@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\PeriodService;
+use App\Models\ServiceIssue;
 use App\Services\MajadigiApiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -252,5 +253,87 @@ class ServiceController extends Controller
 
             return response()->json([], 500);
         }
+    }
+
+    /**
+     * Dapatkan daftar riwayat kendala khusus untuk layanan ini.
+     */
+    public function issues(Service $service)
+    {
+        try {
+            $issues = ServiceIssue::with([
+                'period',
+                'periodService.tester'
+            ])
+            ->where('layanan_id', $service->id)
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($issue) {
+                $periodDate = $issue->period?->date;
+                $formattedDate = '-';
+                if ($periodDate) {
+                    $cDate = \Carbon\Carbon::parse($periodDate);
+                    $months = [
+                        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                    ];
+                    $formattedDate = $cDate->format('d') . ' ' . ($months[(int) $cDate->format('n')] ?? $cDate->format('F')) . ' ' . $cDate->format('Y');
+                }
+
+                $statusLabel = 'tidak aktif';
+                if ($issue->periodService?->status === 'gangguan') {
+                    $statusLabel = 'tidak aktif';
+                }
+
+                return [
+                    'id'                    => $issue->id,
+                    'periode_id'            => $issue->periode_id,
+                    'period_service_id'     => $issue->period_service_id,
+                    'period_date'           => $formattedDate,
+                    'status'                => $statusLabel,
+                    'period_service_status' => $issue->periodService?->status ?? 'gangguan',
+                    'catatan'               => $issue->periodService?->description ?: 'Kendala layanan dilaporkan oleh tester',
+                    'attachment'            => null,
+                    'has_notif'             => (bool) $issue->has_notif,
+                    'has_solved'            => (bool) $issue->has_solved,
+                    'has_solved_label'      => $issue->has_solved ? 'sudah tindak lanjuti' : 'belum tindak lanjuti',
+                    'tester_name'           => $issue->periodService?->tester?->name ?? 'Tester',
+                    'checked_at'            => $issue->periodService?->checked_at ? \Carbon\Carbon::parse($issue->periodService->checked_at)->format('d M Y, H:i') : null,
+                ];
+            });
+
+            return response()->json($issues);
+        } catch (\Throwable $e) {
+            Log::error('Gagal memuat history kendala layanan: ' . $e->getMessage(), [
+                'service_id' => $service->id,
+            ]);
+
+            return response()->json([], 500);
+        }
+    }
+
+    /**
+     * Toggle status tindak lanjut kendala (has_solved).
+     */
+    public function toggleIssueSolved(ServiceIssue $issue)
+    {
+        try {
+            $issue->update([
+                'has_solved' => !$issue->has_solved,
+            ]);
+
+            return response()->json([
+                'success'    => true,
+                'has_solved' => (bool) $issue->has_solved,
+                'message'    => $issue->has_solved 
+                    ? 'Kendala telah ditandai sudah ditindaklanjuti.' 
+                    : 'Status kendala diubah menjadi belum ditindaklanjuti.',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Gagal mengubah status tindak lanjut: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan sistem.'], 500);
+        }
+    }
     }
 }
