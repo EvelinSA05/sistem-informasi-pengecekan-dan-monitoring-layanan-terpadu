@@ -338,5 +338,4 @@ class ServiceController extends Controller
             return response()->json(['success' => false, 'message' => 'Terjadi kesalahan sistem.'], 500);
         }
     }
-    }
 }
