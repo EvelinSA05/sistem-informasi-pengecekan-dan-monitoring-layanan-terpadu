@@ -373,6 +373,50 @@ class PeriodController extends Controller
             ];
         }
 
+        // Ambil daftar layanan yang terkendala pada periode ini
+        $troubledServices = PeriodService::with([
+            'service',
+            'tester',
+            'serviceIssue'
+        ])
+        ->where('period_id', $period->id)
+        ->where('status', 'gangguan')
+        ->orderByDesc('checked_at')
+        ->get()
+        ->map(function ($ps) use ($period) {
+            $issue = $ps->serviceIssue;
+            if (!$issue) {
+                $issue = \App\Models\ServiceIssue::firstOrCreate(
+                    ['period_service_id' => $ps->id],
+                    [
+                        'layanan_id' => $ps->service_id,
+                        'periode_id' => $period->id,
+                        'has_notif'  => false,
+                        'has_solved' => false,
+                    ]
+                );
+            }
+
+            return [
+                'id'               => $ps->id,
+                'issue_id'         => $issue->id,
+                'service_id'       => $ps->service_id,
+                'service_name'     => $ps->service?->service_name ?? 'Layanan',
+                'service_url'      => $ps->service?->service_url,
+                'category'         => $ps->service?->category ?? 'Umum',
+                'level'            => $ps->service?->level ?? '-',
+                'icon'             => $ps->service?->icon ?? 'globe',
+                'tester_name'      => $ps->tester?->name ?? 'Tester',
+                'tester_bidang'    => $ps->tester?->bidang ?? '-',
+                'description'      => $ps->description ?: 'Kendala dilaporkan oleh tester',
+                'checked_at'       => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : '-',
+                'has_solved'       => (bool) $issue->has_solved,
+                'has_solved_label' => $issue->has_solved ? 'sudah tindak lanjuti' : 'belum tindak lanjuti',
+                'has_notif'        => (bool) $issue->has_notif,
+            ];
+        })
+        ->values();
+
         return Inertia::render('Admin/Periods/Show', [
             'period' => [
                 'id' => $period->id,
@@ -392,6 +436,7 @@ class PeriodController extends Controller
                 'progress_percent' => $totalServices > 0 ? round(($checkedServices / $totalServices) * 100) : 0,
             ],
             'distribution' => $distribution,
+            'troubled_services' => $troubledServices,
         ]);
     }
 
@@ -733,11 +778,7 @@ class PeriodController extends Controller
                 'Nama Layanan',
                 'Kategori',
                 'Level',
-                'Tester',
-                'Email Tester',
                 'Status Pengecekan',
-                'Waktu Pengecekan',
-                'Keterangan / Catatan',
             ]);
 
             $no = 1;
@@ -749,8 +790,6 @@ class PeriodController extends Controller
                 };
 
                 $levelDisplay = !empty($ps->service?->level) ? $ps->service->level : '-';
-                $checkedAtDisplay = $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d/m/Y H:i') : '-';
-                $descDisplay = !empty($ps->description) ? $ps->description : '-';
 
                 fputcsv($file, [
                     $no++,
@@ -758,11 +797,7 @@ class PeriodController extends Controller
                     $ps->service?->service_name ?? '-',
                     $ps->service?->category ?: 'Umum',
                     $levelDisplay,
-                    $ps->tester?->name ?? 'Belum Ditugaskan',
-                    $ps->tester?->email ?? '-',
                     $statusLabel,
-                    $checkedAtDisplay,
-                    $descDisplay,
                 ]);
             }
 
@@ -817,10 +852,7 @@ class PeriodController extends Controller
                 'no' => $idx + 1,
                 'service_name' => $ps->service?->service_name ?? 'Layanan',
                 'category' => $ps->service?->category ?? 'Umum',
-                'tester_name' => $ps->tester?->name ?? 'Tester',
                 'status' => $ps->status,
-                'checked_at' => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y H:i') : '-',
-                'description' => $ps->description ?? '-',
             ];
         });
 
