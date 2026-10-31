@@ -40,4 +40,10 @@ return [
         'secret' => env('RECAPTCHA_SECRET_KEY'),
     ],
 
+    'majadigi' => [
+        'base_url' => env('MAJADIGI_API_BASE_URL', 'https://api.majadigidev.jatimprov.go.id'),
+        'username' => env('MAJADIGI_API_USERNAME'),
+        'password' => env('MAJADIGI_API_PASSWORD'),
+    ],
+
 ];

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\PeriodService;
+use App\Services\MajadigiApiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -58,18 +59,41 @@ class ServiceController extends Controller
 
         $levels = collect(['Level 1', 'Level 2', 'Level 3']);
 
+        $lastSyncedAt = Service::whereNotNull('synced_at')->max('synced_at');
+        $lastSyncedFormatted = $lastSyncedAt ? \Carbon\Carbon::parse($lastSyncedAt)->diffForHumans() : null;
+
         return Inertia::render('Admin/MasterLayanan', [
-            'services' => $services,
-            'stats'    => $stats,
-            'search'   => $search,
-            'status'   => $status,
-            'level'    => $level,
-            'levels'   => $levels,
-            'flash'    => [
+            'services'          => $services,
+            'stats'             => $stats,
+            'search'            => $search,
+            'status'            => $status,
+            'level'             => $level,
+            'levels'            => $levels,
+            'last_synced_at'    => $lastSyncedFormatted,
+            'flash'             => [
                 'success' => session('success'),
                 'error'   => session('error'),
             ],
         ]);
+    }
+
+    /**
+     * Sinkronisasi data layanan dari API Majadigi.
+     */
+    public function syncMajadigi(MajadigiApiService $apiService): RedirectResponse
+    {
+        try {
+            $result = $apiService->syncServices();
+
+            $message = "Sinkronisasi berhasil! Total {$result['total']} layanan dari Majadigi diproses ({$result['created']} data baru ditambahkan, {$result['updated']} data diperbarui).";
+            return back()->with('success', $message);
+        } catch (\Throwable $e) {
+            Log::error('Majadigi sync error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->with('error', 'Gagal melakukan sinkronisasi layanan: ' . $e->getMessage());
+        }
     }
 
     /**

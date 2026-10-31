@@ -32,6 +32,7 @@ Route::middleware('auth')->group(function () {
         // Master Layanan
         Route::get('/services', [\App\Http\Controllers\Admin\ServiceController::class, 'index'])->name('services.index');
         Route::post('/services', [\App\Http\Controllers\Admin\ServiceController::class, 'store'])->name('services.store');
+        Route::post('/services/sync-majadigi', [\App\Http\Controllers\Admin\ServiceController::class, 'syncMajadigi'])->name('services.sync_majadigi');
         Route::get('/services/{service}/history', [\App\Http\Controllers\Admin\ServiceController::class, 'history'])->name('services.history');
         Route::put('/services/{service}', [\App\Http\Controllers\Admin\ServiceController::class, 'update'])->name('services.update');
         Route::delete('/services/{service}', [\App\Http\Controllers\Admin\ServiceController::class, 'destroy'])->name('services.destroy');

@@ -13,8 +13,38 @@ const props = defineProps({
  status: { type: String, default: '' },
  level: { type: String, default: '' },
  levels: { type: Array, default: () => [] },
+ last_synced_at: { type: String, default: null },
  flash: { type: Object, default: () => ({}) },
 });
+
+// ─── Sinkronisasi Majadigi ─────────────────────────────────────
+const showSyncModal = ref(false);
+const isSyncing = ref(false);
+
+function triggerSyncMajadigi() {
+ showSyncModal.value = true;
+}
+
+function confirmSyncMajadigi() {
+ isSyncing.value = true;
+ router.post(route('admin.services.sync_majadigi'), {}, {
+  preserveScroll: true,
+  onSuccess: (pageObj) => {
+   showSyncModal.value = false;
+   if (pageObj?.props?.flash?.success) {
+    showFlash(pageObj.props.flash.success, 'success', 5000);
+   }
+  },
+  onError: (errors) => {
+   showSyncModal.value = false;
+   const err = Object.values(errors)[0] || 'Gagal melakukan sinkronisasi layanan.';
+   showFlash(err, 'error', 5000);
+  },
+  onFinish: () => {
+   isSyncing.value = false;
+  }
+ });
+}
 
 // ─── State modal ─────────────────────────────────────────────
 const showAddModal = ref(false);
@@ -309,6 +339,10 @@ function confirmDelete() {
         </div>
         <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Kelola Master Layanan Digital</h2>
         <p class="text-white/80 text-xs sm:text-sm mt-1 max-w-xl">Tambah, perbarui, dan atur status ketersediaan seluruh aplikasi & layanan digital Majalengka.</p>
+        <p v-if="last_synced_at" class="text-xs text-white/85 mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/20 backdrop-blur-sm">
+          <svg class="w-3.5 h-3.5 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Terakhir sinkronisasi Majadigi: <span class="font-bold text-white">{{ last_synced_at }}</span>
+        </p>
       </div>
     </div>
 
@@ -370,16 +404,32 @@ function confirmDelete() {
  <option v-for="lvl in levels" :key="lvl" :value="lvl">{{ lvl }}</option>
  </select>
  </div>
- <!-- Add Button -->
- <button
- @click="openAddModal"
- class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold shadow-md shadow-primary/20 transition-all active:scale-95"
- >
- <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
- <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
- </svg>
- Tambah Layanan
- </button>
+ <!-- Action Buttons: Sync & Add -->
+ <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+  <button
+   type="button"
+   @click="triggerSyncMajadigi"
+   :disabled="isSyncing"
+   id="btn-sync-majadigi"
+   class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-md shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+   title="Tarik data layanan terbaru dari server Majadigi"
+  >
+   <svg class="w-4 h-4" :class="isSyncing ? 'animate-spin' : ''" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+   </svg>
+   <span>{{ isSyncing ? 'Menyinkronkan...' : 'Sinkronisasi dari Majadigi' }}</span>
+  </button>
+
+  <button
+   @click="openAddModal"
+   class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:bg-[#1d4ed8] text-white text-sm font-semibold shadow-md shadow-primary/20 transition-all active:scale-95 cursor-pointer shrink-0"
+  >
+   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+   </svg>
+   Tambah Layanan
+  </button>
+ </div>
  </div>
 
  <!-- ── Main Table ────────────────────────────────────── -->
@@ -866,5 +916,58 @@ function confirmDelete() {
  </div>
  </div>
  </Transition>
+
+ <!-- ── Modal: Konfirmasi Sinkronisasi Majadigi ─────────── -->
+ <Teleport to="body">
+  <Transition
+   enter-active-class="transition-all duration-200 ease-out"
+   enter-from-class="opacity-0"
+   enter-to-class="opacity-100"
+   leave-active-class="transition-all duration-150 ease-in"
+   leave-from-class="opacity-100"
+   leave-to-class="opacity-0"
+  >
+   <div v-if="showSyncModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="!isSyncing && (showSyncModal = false)"></div>
+    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm sm:max-w-md p-6 sm:p-7 z-10 text-center">
+     <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4 border border-emerald-200 shadow-xs">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+     </div>
+
+     <h3 class="text-lg font-bold text-slate-800">Sinkronisasi dari Majadigi</h3>
+     <p class="text-sm text-slate-500 mt-2.5 leading-relaxed mb-6">
+      Sistem akan menghubungi server API Majadigi untuk menarik dan memperbarui daftar layanan terbaru.
+      <br><br>
+      Data yang sudah ada akan disesuaikan, dan layanan baru akan otomatis ditambahkan ke sistem.
+     </p>
+
+     <div class="flex gap-3">
+      <button
+       type="button"
+       @click="showSyncModal = false"
+       :disabled="isSyncing"
+       class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all cursor-pointer disabled:opacity-50"
+      >
+       Batal
+      </button>
+      <button
+       type="button"
+       @click="confirmSyncMajadigi"
+       :disabled="isSyncing"
+       class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+      >
+       <svg v-if="isSyncing" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+       </svg>
+       <span>{{ isSyncing ? 'Menyinkronkan...' : 'Mulai Sinkronisasi' }}</span>
+      </button>
+     </div>
+    </div>
+   </div>
+  </Transition>
+ </Teleport>
  </AdminLayout>
 </template>
