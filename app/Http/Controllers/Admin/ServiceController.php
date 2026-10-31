@@ -261,6 +261,18 @@ class ServiceController extends Controller
     public function issues(Service $service)
     {
         try {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
+                try {
+                    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Auto-migration attempt on service issues: ' . $e->getMessage());
+                }
+            }
+
+            if (!\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
+                return response()->json([]);
+            }
+
             $issues = ServiceIssue::with([
                 'period',
                 'periodService.tester'
