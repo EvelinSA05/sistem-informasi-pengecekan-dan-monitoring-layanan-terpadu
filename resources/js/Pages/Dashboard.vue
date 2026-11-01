@@ -538,7 +538,7 @@ function submitCheck() {
  <!-- Quick Action Buttons -->
  <div class="mt-5 flex flex-row flex-wrap gap-2">
  <Link :href="route('admin.users.index')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 border border-white/20 hover:bg-white/25 text-white text-xs font-semibold transition-colors backdrop-blur-sm">
- <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 100-8 4 4 0 000 8z"/></svg>
+ <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
  Manajemen User
  </Link>
  <Link :href="route('admin.periods.index')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 border border-white/20 hover:bg-white/25 text-white text-xs font-semibold transition-colors backdrop-blur-sm">
