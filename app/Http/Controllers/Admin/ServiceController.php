@@ -284,21 +284,40 @@ class ServiceController extends Controller
                 }
             }
 
-            // 2. Cari seluruh riwayat penugasan berstatus kendala/gangguan untuk layanan ini
-            $troubledPeriodServices = PeriodService::with(['period', 'tester'])
-                ->where('service_id', $service->id)
+            // 2. Kumpulkan semua ID yang merujuk ke layanan ini (mengatasi variasi ID akibat duplikasi seeder / sinkronisasi Majadigi)
+            $serviceName = trim($service->service_name);
+            $serviceIds = Service::where(function($q) use ($service, $serviceName) {
+                $q->where('id', $service->id)
+                  ->orWhereRaw('LOWER(TRIM(service_name)) = ?', [strtolower($serviceName)]);
+                if (!empty($service->source_service_id)) {
+                    $q->orWhere('source_service_id', $service->source_service_id);
+                }
+            })->pluck('id')->toArray();
+
+            if (empty($serviceIds)) {
+                $serviceIds = [$service->id];
+            }
+
+            // 3. Cari seluruh riwayat penugasan berstatus kendala/gangguan untuk seluruh ID layanan yang cocok
+            $troubledPeriodServices = PeriodService::with(['period', 'tester', 'service'])
+                ->where(function($q) use ($serviceIds, $serviceName) {
+                    $q->whereIn('service_id', $serviceIds)
+                      ->orWhereHas('service', function($sq) use ($serviceName) {
+                          $sq->whereRaw('LOWER(TRIM(service_name)) = ?', [strtolower($serviceName)]);
+                      });
+                })
                 ->where('status', 'gangguan')
                 ->orderByDesc('checked_at')
                 ->get();
 
-            // 3. Sinkronkan secara otomatis ke tabel service_issues jika belum tercatat
+            // 4. Sinkronkan secara otomatis ke tabel service_issues jika belum tercatat
             if (\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
                 foreach ($troubledPeriodServices as $ps) {
                     try {
                         ServiceIssue::firstOrCreate(
                             ['period_service_id' => $ps->id],
                             [
-                                'layanan_id'  => $service->id,
+                                'layanan_id'  => $ps->service_id,
                                 'periode_id'  => $ps->period_id,
                                 'has_notif'   => false,
                                 'has_solved'  => false,
@@ -313,21 +332,27 @@ class ServiceController extends Controller
             }
 
             $issues = [];
-            // 4. Ambil dari tabel service_issues yang berelasi
+            // 5. Ambil dari tabel service_issues yang berelasi
             if (\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
                 $rawIssues = ServiceIssue::with([
                     'period',
-                    'periodService.tester'
+                    'periodService.tester',
+                    'service'
                 ])
-                ->where('layanan_id', $service->id)
+                ->where(function($q) use ($serviceIds, $serviceName) {
+                    $q->whereIn('layanan_id', $serviceIds)
+                      ->orWhereHas('service', function($sq) use ($serviceName) {
+                          $sq->whereRaw('LOWER(TRIM(service_name)) = ?', [strtolower($serviceName)]);
+                      });
+                })
                 ->orderByDesc('created_at')
                 ->get();
 
                 foreach ($rawIssues as $issue) {
-                    $periodDate = $issue->period?->date;
+                    $rawDate = $issue->period?->date ?: ($issue->periodService?->checked_at ?: $issue->created_at);
                     $formattedDate = '-';
-                    if ($periodDate) {
-                        $cDate = \Carbon\Carbon::parse($periodDate);
+                    if ($rawDate) {
+                        $cDate = \Carbon\Carbon::parse($rawDate);
                         $months = [
                             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
                             5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
@@ -357,13 +382,13 @@ class ServiceController extends Controller
                 }
             }
 
-            // 5. Fallback jika tabel service_issues masih kosong tapi period_services mencatat kendala
+            // 6. Fallback jika tabel service_issues masih kosong tapi period_services mencatat kendala
             if (empty($issues) && $troubledPeriodServices->isNotEmpty()) {
                 foreach ($troubledPeriodServices as $ps) {
-                    $periodDate = $ps->period?->date;
+                    $rawDate = $ps->period?->date ?: ($ps->checked_at ?: $ps->created_at);
                     $formattedDate = '-';
-                    if ($periodDate) {
-                        $cDate = \Carbon\Carbon::parse($periodDate);
+                    if ($rawDate) {
+                        $cDate = \Carbon\Carbon::parse($rawDate);
                         $months = [
                             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
                             5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
@@ -393,7 +418,9 @@ class ServiceController extends Controller
                 }
             }
 
-            return response()->json($issues);
+            return response()->json($issues)
+                ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+                ->header('Pragma', 'no-cache');
         } catch (\Throwable $e) {
             Log::error('Gagal memuat history kendala layanan: ' . $e->getMessage(), [
                 'service_id' => $service->id,
