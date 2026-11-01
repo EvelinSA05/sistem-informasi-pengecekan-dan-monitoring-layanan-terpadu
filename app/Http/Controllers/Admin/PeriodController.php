@@ -721,7 +721,6 @@ class PeriodController extends Controller
             fputcsv($file, ['Belum Diperiksa', $pendingCount]);
             fputcsv($file, ['Tingkat Kesiapan', "{$readinessPct}%"]);
             fputcsv($file, ['Jumlah Kategori Layanan', $categoriesCount]);
-            fputcsv($file, ['Jumlah Tester Terlibat', $testersCount]);
             fputcsv($file, []);
 
             // ==========================================
@@ -750,74 +749,7 @@ class PeriodController extends Controller
             fputcsv($file, []);
 
             // ==========================================
-            // SECTION 5 — REKAP TESTER
-            // ==========================================
-            $testerSummary = [];
-
-            // Inisialisasi dari tester yang ditugaskan pada periode
-            foreach ($period->periodTesters as $pt) {
-                $tName = $pt->tester?->name ?? ('Tester #' . $pt->tester_id);
-                $testerSummary[$pt->tester_id] = [
-                    'name'       => $tName,
-                    'total'      => 0,
-                    'normal'     => 0,
-                    'terkendala' => 0,
-                    'pending'    => 0,
-                ];
-            }
-
-            // Akumulasi layanan per tester
-            foreach ($period->periodServices as $ps) {
-                $tId = $ps->tester_id;
-                if (!$tId) {
-                    $tKey = 'unassigned';
-                    if (!isset($testerSummary[$tKey])) {
-                        $testerSummary[$tKey] = [
-                            'name'       => 'Belum Ditugaskan',
-                            'total'      => 0,
-                            'normal'     => 0,
-                            'terkendala' => 0,
-                            'pending'    => 0,
-                        ];
-                    }
-                } else {
-                    $tKey = $tId;
-                    if (!isset($testerSummary[$tKey])) {
-                        $testerSummary[$tKey] = [
-                            'name'       => $ps->tester?->name ?? ('Tester #' . $tId),
-                            'total'      => 0,
-                            'normal'     => 0,
-                            'terkendala' => 0,
-                            'pending'    => 0,
-                        ];
-                    }
-                }
-
-                $testerSummary[$tKey]['total']++;
-                if ($ps->status === 'normal') {
-                    $testerSummary[$tKey]['normal']++;
-                } elseif ($ps->status === 'gangguan') {
-                    $testerSummary[$tKey]['terkendala']++;
-                } else {
-                    $testerSummary[$tKey]['pending']++;
-                }
-            }
-
-            fputcsv($file, ['REKAP TESTER']);
-            fputcsv($file, ['Tester', 'Jumlah Layanan', 'Normal', 'Terkendala', 'Belum Diperiksa']);
-            foreach ($testerSummary as $tStat) {
-                fputcsv($file, [
-                    $tStat['name'],
-                    $tStat['total'],
-                    $tStat['normal'],
-                    $tStat['terkendala'],
-                    $tStat['pending'],
-                ]);
-            }
-            fputcsv($file, []);
-
-            // ==========================================
-            // SECTION 6 — DETAIL HASIL PENGECEKAN
+            // SECTION 5 — DETAIL HASIL PENGECEKAN
             // ==========================================
             fputcsv($file, ['DETAIL HASIL PENGECEKAN']);
             fputcsv($file, [
