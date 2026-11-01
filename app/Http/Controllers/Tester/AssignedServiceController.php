@@ -382,21 +382,40 @@ class AssignedServiceController extends Controller
             ]);
 
             // Catat atau perbarui di tabel service_issues (layanan_terkendala)
-            if ($validated['status'] === 'gangguan') {
-                ServiceIssue::updateOrCreate(
-                    ['period_service_id' => $periodService->id],
-                    [
-                        'layanan_id'  => $periodService->service_id,
-                        'periode_id'  => $periodService->period_id,
-                        'has_notif'   => false,
-                        'has_solved'  => false,
-                    ]
-                );
-            } else if ($validated['status'] === 'normal') {
-                // Jika sebelumnya ada catatan kendala pada penugasan ini, tandai sudah selesai/teratasi
-                ServiceIssue::where('period_service_id', $periodService->id)->update([
-                    'has_solved' => true,
-                ]);
+            try {
+                if (!\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
+                    \Illuminate\Support\Facades\DB::statement("
+                        CREATE TABLE IF NOT EXISTS service_issues (
+                            id BIGSERIAL PRIMARY KEY,
+                            layanan_id BIGINT NOT NULL,
+                            periode_id BIGINT NOT NULL,
+                            period_service_id BIGINT NOT NULL,
+                            has_notif BOOLEAN DEFAULT FALSE,
+                            has_solved BOOLEAN DEFAULT FALSE,
+                            created_at TIMESTAMP NULL,
+                            updated_at TIMESTAMP NULL
+                        )
+                    ");
+                }
+
+                if ($validated['status'] === 'gangguan') {
+                    ServiceIssue::updateOrCreate(
+                        ['period_service_id' => $periodService->id],
+                        [
+                            'layanan_id'  => $periodService->service_id,
+                            'periode_id'  => $periodService->period_id,
+                            'has_notif'   => false,
+                            'has_solved'  => false,
+                        ]
+                    );
+                } else if ($validated['status'] === 'normal') {
+                    // Jika sebelumnya ada catatan kendala pada penugasan ini, tandai sudah selesai/teratasi
+                    ServiceIssue::where('period_service_id', $periodService->id)->update([
+                        'has_solved' => true,
+                    ]);
+                }
+            } catch (\Throwable $issueErr) {
+                \Illuminate\Support\Facades\Log::warning('Failed updating service_issues in tester submit: ' . $issueErr->getMessage());
             }
 
             // Auto-complete: jika seluruh layanan pada periode ini sudah selesai diperiksa (0 pending), ubah status periode menjadi 'selesai'
