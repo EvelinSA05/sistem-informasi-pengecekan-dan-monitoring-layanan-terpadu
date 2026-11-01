@@ -117,33 +117,60 @@ function confirmLogout() {
  router.post(route('logout'));
 }
 
-// ─── Real-Time Inactivity Timeout ────────────────────────────────
-let inactivityTimeout;
+// ─── Real-Time Inactivity Timeout (Auto Logout 5 Menit) ─────────────────
+const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 Menit
+let lastActivityTime = Date.now();
+let inactivityInterval = null;
 
-const resetInactivityTimeout = () => {
- clearTimeout(inactivityTimeout);
- inactivityTimeout = setTimeout(() => {
- // Tandai di localStorage bahwa sesi berakhir karena timeout (garansi client-side untuk alert kuning)
- try { localStorage.setItem('session_timeout', '1'); } catch (e) {}
- // Trigger logout otomatis dengan indikator timeout
- router.post(route('logout'), { timeout: true });
- }, 5 * 60 * 1000); // 5 Menit
-};
+function performAutoLogout() {
+	if (inactivityInterval) {
+		clearInterval(inactivityInterval);
+		inactivityInterval = null;
+	}
+	try {
+		localStorage.setItem('session_timeout', '1');
+	} catch (e) {}
+	// Hard redirect langsung ke login dengan query timeout=1 tanpa refresh manual
+	window.location.href = '/?timeout=1';
+}
+
+function handleUserActivity() {
+	const elapsed = Date.now() - lastActivityTime;
+	// Jika waktu inaktivitas sudah melampaui 5 menit saat event baru masuk, langsung logout!
+	if (elapsed >= INACTIVITY_TIMEOUT_MS) {
+		performAutoLogout();
+		return;
+	}
+	lastActivityTime = Date.now();
+}
 
 onMounted(() => {
- window.addEventListener('mousemove', resetInactivityTimeout);
- window.addEventListener('keydown', resetInactivityTimeout);
- window.addEventListener('click', resetInactivityTimeout);
- window.addEventListener('scroll', resetInactivityTimeout);
- resetInactivityTimeout();
+	lastActivityTime = Date.now();
+
+	// Periksa selisih waktu setiap 1 detik secara real-time
+	inactivityInterval = setInterval(() => {
+		if (Date.now() - lastActivityTime >= INACTIVITY_TIMEOUT_MS) {
+			performAutoLogout();
+		}
+	}, 1000);
+
+	window.addEventListener('mousemove', handleUserActivity, { passive: true });
+	window.addEventListener('keydown', handleUserActivity, { passive: true });
+	window.addEventListener('click', handleUserActivity, { passive: true });
+	window.addEventListener('scroll', handleUserActivity, { passive: true });
+	window.addEventListener('touchstart', handleUserActivity, { passive: true });
 });
 
 onUnmounted(() => {
- window.removeEventListener('mousemove', resetInactivityTimeout);
- window.removeEventListener('keydown', resetInactivityTimeout);
- window.removeEventListener('click', resetInactivityTimeout);
- window.removeEventListener('scroll', resetInactivityTimeout);
- clearTimeout(inactivityTimeout);
+	if (inactivityInterval) {
+		clearInterval(inactivityInterval);
+		inactivityInterval = null;
+	}
+	window.removeEventListener('mousemove', handleUserActivity);
+	window.removeEventListener('keydown', handleUserActivity);
+	window.removeEventListener('click', handleUserActivity);
+	window.removeEventListener('scroll', handleUserActivity);
+	window.removeEventListener('touchstart', handleUserActivity);
 });
 </script>
 
