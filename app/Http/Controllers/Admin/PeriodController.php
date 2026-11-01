@@ -376,12 +376,22 @@ class PeriodController extends Controller
         // Ambil daftar layanan yang terkendala pada periode ini dengan fallback aman
         $troubledServices = [];
         try {
-            // Jalankan migrasi otomatis jika tabel service_issues belum ada di database (khususnya environment serverless/Vercel)
             if (!\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
                 try {
-                    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                    \Illuminate\Support\Facades\DB::statement("
+                        CREATE TABLE IF NOT EXISTS service_issues (
+                            id BIGSERIAL PRIMARY KEY,
+                            layanan_id BIGINT NOT NULL,
+                            periode_id BIGINT NOT NULL,
+                            period_service_id BIGINT NOT NULL,
+                            has_notif BOOLEAN DEFAULT FALSE,
+                            has_solved BOOLEAN DEFAULT FALSE,
+                            created_at TIMESTAMP NULL,
+                            updated_at TIMESTAMP NULL
+                        )
+                    ");
                 } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Auto-migration attempt on period show: ' . $e->getMessage());
+                    \Illuminate\Support\Facades\Log::warning('Direct table creation failed on period show: ' . $e->getMessage());
                 }
             }
 
