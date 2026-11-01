@@ -12,6 +12,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->redirectGuestsTo(function (Request $request) {
+            if ($request->hasCookie('majadigi_session')) {
+                return '/?timeout=1';
+            }
+            return '/';
+        });
+
         $middleware->web(append: [
             \App\Http\Middleware\CheckSessionTimeout::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
