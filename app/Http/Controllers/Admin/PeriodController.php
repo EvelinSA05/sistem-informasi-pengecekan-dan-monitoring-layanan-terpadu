@@ -324,7 +324,7 @@ class PeriodController extends Controller
         $period->load([
             'creator:id,name,email',
             'periodTesters.tester:id,name,email,bidang,nip',
-            'periodServices.service:id,source_service_id,service_name,category,icon,service_url',
+            'periodServices.service:id,source_service_id,service_name,category,level,icon,service_url,deskripsi_layanan,tester_instruction',
             'periodServices.tester:id,name,email,bidang',
         ]);
 
@@ -354,10 +354,16 @@ class PeriodController extends Controller
                     'service_id' => $ps->service_id,
                     'service_name' => $ps->service?->service_name ?? 'Layanan',
                     'category' => $ps->service?->category ?? 'Umum',
+                    'level' => $ps->service?->level ?? '-',
                     'icon' => $ps->service?->icon ?? 'globe',
                     'service_url' => $ps->service?->service_url,
+                    'deskripsi_layanan' => $ps->service?->deskripsi_layanan,
+                    'tester_instruction' => $ps->service?->tester_instruction,
                     'status' => $ps->status,
                     'description' => $ps->description,
+                    'last_description' => $ps->description,
+                    'attachment' => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                    'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
                     'checked_at' => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y H:i') : null,
                 ];
             })->values();
@@ -435,6 +441,8 @@ class PeriodController extends Controller
                         'tester_name'      => $ps->tester?->name ?? 'Tester',
                         'tester_bidang'    => $ps->tester?->bidang ?? '-',
                         'description'      => $ps->description ?: 'Kendala dilaporkan oleh tester',
+                        'attachment'       => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                        'attachment_name'  => $ps->attachment ? basename($ps->attachment) : null,
                         'checked_at'       => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : '-',
                         'has_solved'       => (bool) ($issue?->has_solved ?? false),
                         'has_solved_label' => ($issue && $issue->has_solved) ? 'sudah tindak lanjuti' : 'belum tindak lanjuti',
@@ -462,6 +470,8 @@ class PeriodController extends Controller
                             'tester_name'      => $ps->tester?->name ?? 'Tester',
                             'tester_bidang'    => $ps->tester?->bidang ?? '-',
                             'description'      => $ps->description ?: 'Kendala dilaporkan oleh tester',
+                            'attachment'       => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                            'attachment_name'  => $ps->attachment ? basename($ps->attachment) : null,
                             'checked_at'       => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : '-',
                             'has_solved'       => false,
                             'has_solved_label' => 'belum tindak lanjuti',

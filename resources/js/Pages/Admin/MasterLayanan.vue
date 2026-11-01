@@ -470,8 +470,7 @@ function confirmDelete() {
  <tr class="bg-slate-50/80 border-b border-slate-200">
  <th class="py-3 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-16">No</th>
  <th class="py-3 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Nama Layanan</th>
- <th class="py-3 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Kategori</th>
- <th class="py-3 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Level</th>
+ <th class="py-3 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap w-28">Level</th>
  <th class="py-3 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Keterangan</th>
  <th class="py-3 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
  <th class="py-3 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center w-24">Aksi</th>
@@ -479,7 +478,7 @@ function confirmDelete() {
  </thead>
  <tbody class="divide-y divide-slate-100 text-sm">
  <tr v-if="!services.data || services.data.length === 0">
- <td colspan="7" class="py-12 px-5 text-center">
+ <td colspan="6" class="py-12 px-5 text-center">
  <div class="flex flex-col items-center justify-center text-slate-400">
  <svg class="w-12 h-12 mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2a4 4 0 014-4h0a4 4 0 014 4v2m-6-10h6m-6 4h6"/>
@@ -500,45 +499,40 @@ function confirmDelete() {
  {{ (services.current_page - 1) * services.per_page + index + 1 }}
  </td>
  <td class="py-3.5 px-5 align-middle">
- <div class="font-bold text-slate-800">{{ svc.service_name }}</div>
- <a v-if="svc.service_url" :href="svc.service_url" target="_blank" class="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-0.5 truncate max-w-[200px]">
- {{ svc.service_url }}
- <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
- </a>
- </td>
- <td class="py-3.5 px-5 align-middle">
- <span class="text-sm font-medium text-slate-600">{{ svc.category || '-' }}</span>
- </td>
- <td class="py-3.5 px-5 align-middle">
- <span class="text-sm font-medium text-slate-600">{{ svc.level || '-' }}</span>
- </td>
+									<div class="font-bold text-slate-800 leading-snug">{{ svc.service_name }}</div>
+									<div v-if="svc.service_url" class="mt-0.5">
+										<a :href="svc.service_url" target="_blank" class="text-xs text-primary hover:underline inline-flex items-center gap-1 truncate max-w-[240px]">
+											<span class="truncate">{{ svc.service_url }}</span>
+											<svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+										</a>
+									</div>
+									<div v-if="svc.category" class="mt-1">
+										<span class="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[11px] font-medium">{{ svc.category }}</span>
+									</div>
+								</td>
+ <td class="py-3.5 px-5 align-middle whitespace-nowrap">
+									<span class="text-sm font-medium text-slate-600">{{ svc.level || '-' }}</span>
+								</td>
  <td class="py-3.5 px-5 align-middle hidden md:table-cell max-w-xs">
  <p class="text-xs text-slate-500 line-clamp-2" :title="svc.notes">{{ svc.notes || '-' }}</p>
  </td>
- <td class="py-3.5 px-5 align-middle">
- <span
- class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
- :class="{
- 'bg-emerald-50 text-emerald-700 border border-emerald-200': svc.status === 'aktif',
- 'bg-rose-50 text-rose-700 border border-rose-200': svc.status === 'tidak_aktif',
- 'bg-amber-50 text-amber-700 border border-amber-200': svc.status === 'butuh_konfirmasi',
- 'bg-slate-100 text-slate-600 border border-slate-200': !svc.status,
- }"
- >
- <span class="w-1.5 h-1.5 rounded-full flex-shrink-0"
- :class="{
- 'bg-emerald-500': svc.status === 'aktif',
- 'bg-rose-500': svc.status === 'tidak_aktif',
- 'bg-amber-500': svc.status === 'butuh_konfirmasi',
- 'bg-slate-400': !svc.status,
- }"
- ></span>
- <span v-if="svc.status === 'aktif'">Aktif</span>
+ <td class="py-3.5 px-5 align-middle whitespace-nowrap">
+									<span
+										class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap text-center"
+										:class="{
+											'bg-emerald-50 text-emerald-700 border border-emerald-200': svc.status === 'aktif',
+											'bg-rose-50 text-rose-700 border border-rose-200': svc.status === 'tidak_aktif',
+											'bg-amber-50 text-amber-700 border border-amber-200': svc.status === 'butuh_konfirmasi',
+											'bg-slate-100 text-slate-600 border border-slate-200': !svc.status,
+										}"
+									>
+										<span v-if="svc.status === 'aktif'">Aktif</span>
  <span v-else-if="svc.status === 'tidak_aktif'">Tidak Aktif</span>
  <span v-else-if="svc.status === 'butuh_konfirmasi'">Butuh Konfirmasi</span>
  <span v-else>-</span>
- </span>
- </td>
+ 
+									</span>
+								</td>
  <td class="py-3.5 px-5 text-center align-middle">
  <div class="flex items-center justify-center gap-1.5">
  <button @click="openHistoryModal(svc)" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Riwayat Pengecekan">
@@ -599,23 +593,24 @@ function confirmDelete() {
  <input v-model="addForm.service_name" type="text" class="w-full rounded-xl border-slate-200 text-sm focus:ring-primary focus:border-primary" placeholder="Contoh: Majadigi SSO" required />
  <p v-if="addForm.errors.service_name" class="mt-1 text-xs text-rose-500">{{ addForm.errors.service_name }}</p>
  </div>
+<div>
+ <label class="block text-sm font-semibold text-slate-700 mb-1.5">URL Layanan</label>
+ <input v-model="addForm.service_url" type="url" class="w-full rounded-xl border-slate-200 text-sm focus:ring-primary focus:border-primary" placeholder="https://..." />
+ <p v-if="addForm.errors.service_url" class="mt-1 text-xs text-rose-500">{{ addForm.errors.service_url }}</p>
+ </div>
+
  <div>
  <label class="block text-sm font-semibold text-slate-700 mb-1.5">Kategori</label>
  <input v-model="addForm.category" type="text" class="w-full rounded-xl border-slate-200 text-sm focus:ring-primary focus:border-primary" placeholder="Contoh: Aplikasi Web" />
  <p v-if="addForm.errors.category" class="mt-1 text-xs text-rose-500">{{ addForm.errors.category }}</p>
  </div>
- <div>
+<div>
  <label class="block text-sm font-semibold text-slate-700 mb-1.5">Level</label>
  <select v-model="addForm.level" class="w-full rounded-xl border-slate-200 text-sm focus:ring-primary focus:border-primary text-slate-700 bg-white">
  <option value="">Pilih Level</option>
  <option v-for="lvl in levels" :key="lvl" :value="lvl">{{ lvl }}</option>
  </select>
  <p v-if="addForm.errors.level" class="mt-1 text-xs text-rose-500">{{ addForm.errors.level }}</p>
- </div>
- <div>
- <label class="block text-sm font-semibold text-slate-700 mb-1.5">URL Layanan</label>
- <input v-model="addForm.service_url" type="url" class="w-full rounded-xl border-slate-200 text-sm focus:ring-primary focus:border-primary" placeholder="https://..." />
- <p v-if="addForm.errors.service_url" class="mt-1 text-xs text-rose-500">{{ addForm.errors.service_url }}</p>
  </div>
  <div>
  <label class="block text-sm font-semibold text-slate-700 mb-1.5">Deskripsi Layanan (Untuk Tester)</label>
@@ -676,23 +671,24 @@ function confirmDelete() {
  <input v-model="editForm.service_name" type="text" class="w-full rounded-xl border-slate-200 text-sm focus:ring-primary focus:border-primary" required />
  <p v-if="editForm.errors.service_name" class="mt-1 text-xs text-rose-500">{{ editForm.errors.service_name }}</p>
  </div>
+<div>
+ <label class="block text-sm font-semibold text-slate-700 mb-1.5">URL Layanan</label>
+ <input v-model="editForm.service_url" type="url" class="w-full rounded-xl border-slate-200 text-sm focus:ring-primary focus:border-primary" />
+ <p v-if="editForm.errors.service_url" class="mt-1 text-xs text-rose-500">{{ editForm.errors.service_url }}</p>
+ </div>
+
  <div>
  <label class="block text-sm font-semibold text-slate-700 mb-1.5">Kategori</label>
  <input v-model="editForm.category" type="text" class="w-full rounded-xl border-slate-200 text-sm focus:ring-primary focus:border-primary" />
  <p v-if="editForm.errors.category" class="mt-1 text-xs text-rose-500">{{ editForm.errors.category }}</p>
  </div>
- <div>
+<div>
  <label class="block text-sm font-semibold text-slate-700 mb-1.5">Level</label>
  <select v-model="editForm.level" class="w-full rounded-xl border-slate-200 text-sm focus:ring-primary focus:border-primary text-slate-700 bg-white">
  <option value="">Pilih Level</option>
  <option v-for="lvl in levels" :key="lvl" :value="lvl">{{ lvl }}</option>
  </select>
  <p v-if="editForm.errors.level" class="mt-1 text-xs text-rose-500">{{ editForm.errors.level }}</p>
- </div>
- <div>
- <label class="block text-sm font-semibold text-slate-700 mb-1.5">URL Layanan</label>
- <input v-model="editForm.service_url" type="url" class="w-full rounded-xl border-slate-200 text-sm focus:ring-primary focus:border-primary" />
- <p v-if="editForm.errors.service_url" class="mt-1 text-xs text-rose-500">{{ editForm.errors.service_url }}</p>
  </div>
  <div>
  <label class="block text-sm font-semibold text-slate-700 mb-1.5">Deskripsi Layanan (Untuk Tester)</label>
@@ -767,15 +763,6 @@ function confirmDelete() {
  'bg-slate-200 text-slate-600 border border-slate-300/50': !selectedService.status,
  }"
  >
- <span
- class="w-1.5 h-1.5 rounded-full"
- :class="{
- 'bg-emerald-500': selectedService.status === 'aktif',
- 'bg-rose-500': selectedService.status === 'tidak_aktif',
- 'bg-amber-500': selectedService.status === 'butuh_konfirmasi',
- 'bg-slate-400': !selectedService.status,
- }"
- ></span>
  <span v-if="selectedService.status === 'aktif'">Aktif</span>
  <span v-else-if="selectedService.status === 'tidak_aktif'">Tidak Aktif</span>
  <span v-else-if="selectedService.status === 'butuh_konfirmasi'">Butuh Konfirmasi</span>
@@ -884,7 +871,12 @@ function confirmDelete() {
       <span class="text-slate-300 hidden sm:inline">|</span>
 
       <!-- Catatan -->
-      <span class="text-slate-700">catatan : <span class="font-semibold text-slate-800">{{ issue.catatan || 'attachment' }}</span></span>
+      <span class="text-slate-700">catatan : <span class="font-semibold text-slate-800">{{ (issue.catatan && issue.catatan !== 'attachment') ? issue.catatan : (issue.attachment ? 'Lampiran Bukti' : '-') }}</span></span>
+      <a v-if="issue.attachment" :href="issue.attachment" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline ml-1">
+       <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+       <span>Lampiran</span>
+       <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      </a>
 
       <span class="text-slate-300 hidden sm:inline">|</span>
 
@@ -893,7 +885,6 @@ function confirmDelete() {
        class="px-2 py-0.5 rounded-full font-bold text-[10px] uppercase inline-flex items-center gap-1"
        :class="issue.has_solved ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'"
       >
-       <span class="w-1.5 h-1.5 rounded-full" :class="issue.has_solved ? 'bg-emerald-500' : 'bg-amber-500'"></span>
        {{ issue.has_solved_label }}
       </span>
      </div>
@@ -912,9 +903,18 @@ function confirmDelete() {
      </button>
     </div>
 
-    <!-- Detail Keterangan jika panjang -->
-    <div v-if="issue.catatan && issue.catatan.length > 50 && issue.catatan !== 'attachment'" class="mt-2 pt-2 border-t border-slate-200/60 text-slate-600 text-[11px]">
-     <span class="text-slate-400">Detail Catatan:</span> {{ issue.catatan }}
+    <!-- Detail Keterangan & Bukti Lampiran -->
+    <div v-if="(issue.catatan && issue.catatan.length > 50 && issue.catatan !== 'attachment') || issue.attachment" class="mt-2 pt-2 border-t border-slate-200/60 text-slate-600 text-[11px] flex items-center justify-between gap-2 flex-wrap">
+     <div v-if="issue.catatan && issue.catatan.length > 50 && issue.catatan !== 'attachment'">
+      <span class="text-slate-400">Detail Catatan:</span> {{ issue.catatan }}
+     </div>
+     <div v-if="issue.attachment">
+      <a :href="issue.attachment" target="_blank" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-primary hover:bg-slate-50 text-[11px] font-semibold transition-all shadow-2xs">
+       <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+       <span>Buka Bukti Lampiran Kendala</span>
+       <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      </a>
+     </div>
     </div>
    </div>
   </div>
@@ -1026,7 +1026,6 @@ function confirmDelete() {
  </div>
  <div class="shrink-0">
  <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm" :class="log.status === 'normal' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : (log.status === 'gangguan' ? 'bg-rose-50 text-rose-700 border border-rose-100' : 'bg-slate-100 text-slate-600 border border-slate-200')">
- <span class="w-1.5 h-1.5 rounded-full" :class="log.status === 'normal' ? 'bg-emerald-500' : (log.status === 'gangguan' ? 'bg-rose-500' : 'bg-slate-400')"></span>
  {{ log.status === 'normal' ? 'NORMAL' : (log.status === 'gangguan' ? 'KENDALA' : 'PENDING') }}
  </span>
  </div>

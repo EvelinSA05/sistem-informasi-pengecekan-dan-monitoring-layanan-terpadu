@@ -14,8 +14,16 @@ class PeriodService extends Model
         'tester_id',
         'status',
         'description',
+        'attachment',
         'checked_at',
     ];
+
+    protected $appends = ['attachment_url'];
+
+    public function getAttachmentUrlAttribute(): ?string
+    {
+        return $this->attachment ? asset('storage/' . $this->attachment) : null;
+    }
 
     public function period()
     {

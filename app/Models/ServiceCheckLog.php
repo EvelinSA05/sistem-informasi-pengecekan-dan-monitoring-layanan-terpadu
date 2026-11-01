@@ -15,7 +15,15 @@ class ServiceCheckLog extends Model
         'tester_id',
         'status',
         'description',
+        'attachment',
     ];
+
+    protected $appends = ['attachment_url'];
+
+    public function getAttachmentUrlAttribute(): ?string
+    {
+        return $this->attachment ? asset('storage/' . $this->attachment) : null;
+    }
 
     public function periodService(): BelongsTo
     {

@@ -12,19 +12,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('service_issues', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('layanan_id')->constrained('services')->cascadeOnDelete();
-            $table->foreignId('periode_id')->constrained('checking_periods')->cascadeOnDelete();
-            $table->foreignId('period_service_id')->constrained('period_services')->cascadeOnDelete();
-            $table->boolean('has_notif')->default(false);
-            $table->boolean('has_solved')->default(false);
-            $table->timestamps();
+        if (!Schema::hasTable('service_issues')) {
+            Schema::create('service_issues', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('layanan_id')->constrained('services')->cascadeOnDelete();
+                $table->foreignId('periode_id')->constrained('checking_periods')->cascadeOnDelete();
+                $table->foreignId('period_service_id')->constrained('period_services')->cascadeOnDelete();
+                $table->boolean('has_notif')->default(false);
+                $table->boolean('has_solved')->default(false);
+                $table->timestamps();
 
-            $table->index(['layanan_id', 'has_solved']);
-            $table->index('periode_id');
-            $table->index('period_service_id');
-        });
+                $table->index(['layanan_id', 'has_solved']);
+                $table->index('periode_id');
+                $table->index('period_service_id');
+            });
+        }
 
         // Buat view layanan_terkendala untuk kompatibilitas nama tabel Bahasa Indonesia & Inggris
         DB::statement('CREATE OR REPLACE VIEW layanan_terkendala AS SELECT * FROM service_issues');

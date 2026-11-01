@@ -11,22 +11,66 @@ const props = defineProps({
 const showCheckModal = ref(false);
 const selectedService = ref(null);
 
+const attachmentInput = ref(null);
+const attachmentPreview = ref(null);
+const attachmentFile = ref(null);
+const existingAttachment = ref(null);
+const existingAttachmentName = ref(null);
+
 const checkForm = useForm({
  status: '',
  description: '',
+ attachment: null,
+ remove_attachment: false,
 });
 
 const openCheckModal = (service) => {
  selectedService.value = service;
  checkForm.status = service.status === 'normal' || service.status === 'gangguan' ? service.status : '';
  checkForm.description = service.last_description || '';
+ checkForm.attachment = null;
+ checkForm.remove_attachment = false;
+ existingAttachment.value = service.attachment || null;
+ existingAttachmentName.value = service.attachment_name || null;
+ attachmentPreview.value = null;
+ attachmentFile.value = null;
+ if (attachmentInput.value) attachmentInput.value.value = '';
  checkForm.clearErrors();
  showCheckModal.value = true;
+};
+
+const handleFileChange = (e) => {
+ const file = e.target.files[0];
+ if (!file) return;
+ attachmentFile.value = file;
+ checkForm.attachment = file;
+ checkForm.remove_attachment = false;
+
+ if (file.type.startsWith('image/')) {
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+   attachmentPreview.value = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+ } else {
+  attachmentPreview.value = null;
+ }
+};
+
+const removeAttachment = () => {
+ checkForm.attachment = null;
+ attachmentFile.value = null;
+ attachmentPreview.value = null;
+ existingAttachment.value = null;
+ existingAttachmentName.value = null;
+ checkForm.remove_attachment = true;
+ if (attachmentInput.value) attachmentInput.value.value = '';
 };
 
 const submitCheck = () => {
  checkForm.post(route('tester.submit_check', selectedService.value.id), {
  preserveScroll: true,
+ forceFormData: true,
  onSuccess: () => {
  showCheckModal.value = false;
  },
