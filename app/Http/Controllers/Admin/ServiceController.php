@@ -306,7 +306,7 @@ class ServiceController extends Controller
                           $sq->whereRaw('LOWER(TRIM(service_name)) = ?', [strtolower($serviceName)]);
                       });
                 })
-                ->where('status', 'gangguan')
+                ->whereIn('status', ['gangguan', 'kendala', 'tidak_aktif', 'error'])
                 ->orderByDesc('checked_at')
                 ->get();
 
@@ -343,10 +343,17 @@ class ServiceController extends Controller
                     $q->whereIn('layanan_id', $serviceIds)
                       ->orWhereHas('service', function($sq) use ($serviceName) {
                           $sq->whereRaw('LOWER(TRIM(service_name)) = ?', [strtolower($serviceName)]);
+                      })
+                      ->orWhereHas('periodService', function($psq) use ($serviceIds, $serviceName) {
+                          $psq->whereIn('service_id', $serviceIds)
+                              ->orWhereHas('service', function($sq) use ($serviceName) {
+                                  $sq->whereRaw('LOWER(TRIM(service_name)) = ?', [strtolower($serviceName)]);
+                              });
                       });
                 })
                 ->orderByDesc('created_at')
-                ->get();
+                ->get()
+                ->unique('period_service_id');
 
                 foreach ($rawIssues as $issue) {
                     $rawDate = $issue->period?->date ?: ($issue->periodService?->checked_at ?: $issue->created_at);
