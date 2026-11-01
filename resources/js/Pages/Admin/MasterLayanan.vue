@@ -229,10 +229,13 @@ async function openDetailModal(service) {
  serviceIssues.value = [];
 
  try {
-  const response = await axios.get(route('admin.services.issues', service.id));
-  serviceIssues.value = response.data;
+  const response = await axios.get(route('admin.services.issues', service.id), {
+   params: { _t: Date.now() }
+  });
+  serviceIssues.value = Array.isArray(response.data) ? response.data : [];
  } catch (error) {
   console.error('Gagal memuat history kendala:', error);
+  serviceIssues.value = [];
  } finally {
   isLoadingIssues.value = false;
  }
