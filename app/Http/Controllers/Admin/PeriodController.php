@@ -402,7 +402,7 @@ class PeriodController extends Controller
                     'serviceIssue'
                 ])
                 ->where('period_id', $period->id)
-                ->where('status', 'gangguan')
+                ->whereIn('status', ['gangguan', 'kendala', 'tidak_aktif', 'error'])
                 ->orderByDesc('checked_at')
                 ->get()
                 ->map(function ($ps) use ($period) {
