@@ -19,7 +19,19 @@ const page = usePage();
 const siteKey = page.props.recaptcha_site_key;
 
 // Alert sesi berakhir (kuning)
-const sessionExpiredMessage = ref('');
+const initialTimeoutMessage = (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('timeout'))
+    || props.sessionExpired
+    || page.props.sessionExpired
+    || page.props.flash?.session_expired
+    || '';
+
+const sessionExpiredMessage = ref(
+    typeof initialTimeoutMessage === 'string' && initialTimeoutMessage.length > 0
+        ? initialTimeoutMessage
+        : (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('timeout')
+            ? 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit. Silakan login kembali.'
+            : '')
+);
 
 const showPassword = ref(false);
 
@@ -48,12 +60,7 @@ onMounted(() => {
     const propMessage = props.sessionExpired || page.props.sessionExpired || page.props.flash?.session_expired;
 
     if (hasTimeoutQuery || hasLocalTimeout || propMessage) {
-        sessionExpiredMessage.value = propMessage || 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit. Silakan login kembali.';
-
-        // Bersihkan parameter ?timeout dari URL di address bar agar rapi tanpa menghapus pesan di layar
-        if (hasTimeoutQuery && typeof window !== 'undefined') {
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
+        sessionExpiredMessage.value = propMessage || sessionExpiredMessage.value || 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit. Silakan login kembali.';
     }
 
     if (!siteKey) return;
