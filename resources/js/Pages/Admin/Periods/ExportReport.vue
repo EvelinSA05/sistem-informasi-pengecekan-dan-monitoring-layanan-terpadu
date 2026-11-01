@@ -69,7 +69,7 @@ onMounted(() => {
  </div>
 
  <div class="text-right">
- <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wide bg-primary text-primary border border-primary">
+ <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wide bg-blue-100 text-blue-800 border border-blue-300">
  {{ report.status }}
  </span>
  <p class="text-xs font-semibold text-slate-500 mt-2">
@@ -117,36 +117,12 @@ onMounted(() => {
  </div>
 
  <!-- Progress -->
- <div class="p-4 rounded-2xl bg-primary border border-primary text-primary">
- <p class="text-[10px] font-bold text-primary uppercase tracking-wider">Progress Selesai</p>
- <p class="text-2xl font-black text-primary mt-1">{{ report.progress_percent }}%</p>
- <p class="text-[10px] text-primary mt-0.5">
+				<div class="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900">
+					<p class="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Progress Selesai</p>
+					<p class="text-2xl font-black text-blue-800 mt-1">{{ report.progress_percent }}%</p>
+					<p class="text-[10px] text-blue-600 mt-0.5">
  {{ report.checked_services }}/{{ report.total_services }} terverifikasi
  </p>
- </div>
- </div>
-
- <!-- ── Tester Workload Section ───────────────────── -->
- <div class="mb-8">
- <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
- DISTRIBUSI TESTER & HASIL EVALUASI
- </h3>
- <div class="grid grid-cols-3 gap-3">
- <div
- v-for="tw in testers_workload"
- :key="tw.name"
- class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 flex items-center justify-between"
- >
- <div>
- <p class="text-xs font-bold text-slate-800 leading-tight">{{ tw.name }}</p>
- <p class="text-[10.5px] text-slate-400 mt-0.5 font-medium">{{ tw.email }}</p>
- </div>
- <div class="text-right">
- <span class="inline-flex px-2 py-0.5 rounded-lg text-[10.5px] font-extrabold bg-white border border-slate-200 text-slate-700">
- {{ tw.checked }}/{{ tw.total }} ({{ tw.percent }}%)
- </span>
- </div>
- </div>
  </div>
  </div>
 
