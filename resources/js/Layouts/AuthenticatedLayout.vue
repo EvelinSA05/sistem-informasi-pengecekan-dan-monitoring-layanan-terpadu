@@ -17,6 +17,8 @@ let inactivityTimeout;
 const resetInactivityTimeout = () => {
  clearTimeout(inactivityTimeout);
  inactivityTimeout = setTimeout(() => {
+ // Tandai di localStorage bahwa sesi berakhir karena timeout (garansi client-side untuk alert kuning)
+ try { localStorage.setItem('session_timeout', '1'); } catch (e) {}
  // Trigger logout otomatis dengan indikator timeout
  router.post(route('logout'), { timeout: true });
  }, 5 * 60 * 1000); // 5 Menit
