@@ -1,35 +1,25 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import InputError from '@/Components/InputError.vue';
 
-defineProps({
+const props = defineProps({
  canResetPassword: {
  type: Boolean,
  },
  status: {
  type: String,
  },
+ sessionExpired: {
+ type: String,
+ },
 });
-
-import { onMounted } from 'vue';
 
 const page = usePage();
 const siteKey = page.props.recaptcha_site_key;
 
-// Baca session_expired dari flash props yang dibagikan oleh HandleInertiaRequests,
-// ATAU dari query parameter URL jika platform hosting (seperti Vercel) tidak menyimpan session dengan baik.
-const sessionExpiredMessage = computed(() => {
- if (typeof window !== 'undefined') {
- const urlParams = new URLSearchParams(window.location.search);
- if (urlParams.has('timeout')) {
- // Hapus parameter ?timeout dari URL agar rapi dan tidak muncul terus jika direfresh
- window.history.replaceState({}, document.title, window.location.pathname);
- return 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit. Silakan login kembali.';
- }
- }
- return page.props.flash?.session_expired ?? null;
-});
+// Alert sesi berakhir (kuning)
+const sessionExpiredMessage = ref('');
 
 const showPassword = ref(false);
 
@@ -41,6 +31,31 @@ const form = useForm({
 });
 
 onMounted(() => {
+    // 1. Cek parameter URL (?timeout=1 atau ?timeout)
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const hasTimeoutQuery = urlParams ? urlParams.has('timeout') : false;
+
+    // 2. Cek localStorage (di-set oleh inactivity timer di Layout)
+    let hasLocalTimeout = false;
+    try {
+        if (typeof window !== 'undefined' && localStorage.getItem('session_timeout') === '1') {
+            hasLocalTimeout = true;
+            localStorage.removeItem('session_timeout');
+        }
+    } catch (e) {}
+
+    // 3. Cek dari props / flash session
+    const propMessage = props.sessionExpired || page.props.sessionExpired || page.props.flash?.session_expired;
+
+    if (hasTimeoutQuery || hasLocalTimeout || propMessage) {
+        sessionExpiredMessage.value = propMessage || 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit. Silakan login kembali.';
+
+        // Bersihkan parameter ?timeout dari URL di address bar agar rapi tanpa menghapus pesan di layar
+        if (hasTimeoutQuery && typeof window !== 'undefined') {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
+
     if (!siteKey) return;
 
     const renderRecaptcha = () => {
