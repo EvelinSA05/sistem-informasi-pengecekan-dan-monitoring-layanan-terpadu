@@ -258,65 +258,140 @@ class ServiceController extends Controller
     /**
      * Dapatkan daftar riwayat kendala khusus untuk layanan ini.
      */
+    /**
+     * Memuat history kendala untuk layanan tertentu (Tugas 12).
+     */
     public function issues(Service $service)
     {
         try {
+            // 1. Pastikan tabel service_issues ada di PostgreSQL
             if (!\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
                 try {
-                    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                    \Illuminate\Support\Facades\DB::statement("
+                        CREATE TABLE IF NOT EXISTS service_issues (
+                            id BIGSERIAL PRIMARY KEY,
+                            layanan_id BIGINT NOT NULL,
+                            periode_id BIGINT NOT NULL,
+                            period_service_id BIGINT NOT NULL,
+                            has_notif BOOLEAN DEFAULT FALSE,
+                            has_solved BOOLEAN DEFAULT FALSE,
+                            created_at TIMESTAMP NULL,
+                            updated_at TIMESTAMP NULL
+                        )
+                    ");
                 } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Auto-migration attempt on service issues: ' . $e->getMessage());
+                    \Illuminate\Support\Facades\Log::warning('Direct table creation failed: ' . $e->getMessage());
                 }
             }
 
-            if (!\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
-                return response()->json([]);
-            }
+            // 2. Cari seluruh riwayat penugasan berstatus kendala/gangguan untuk layanan ini
+            $troubledPeriodServices = PeriodService::with(['period', 'tester'])
+                ->where('service_id', $service->id)
+                ->where('status', 'gangguan')
+                ->orderByDesc('checked_at')
+                ->get();
 
-            $issues = ServiceIssue::with([
-                'period',
-                'periodService.tester'
-            ])
-            ->where('layanan_id', $service->id)
-            ->orderByDesc('created_at')
-            ->get()
-            ->map(function ($issue) {
-                $periodDate = $issue->period?->date;
-                $formattedDate = '-';
-                if ($periodDate) {
-                    $cDate = \Carbon\Carbon::parse($periodDate);
-                    $months = [
-                        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-                        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-                        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
-                    ];
-                    $formattedDate = $cDate->format('d') . ' ' . ($months[(int) $cDate->format('n')] ?? $cDate->format('F'));
-                    if ($cDate->format('Y') !== \Carbon\Carbon::now()->format('Y')) {
-                        $formattedDate .= ' ' . $cDate->format('Y');
+            // 3. Sinkronkan secara otomatis ke tabel service_issues jika belum tercatat
+            if (\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
+                foreach ($troubledPeriodServices as $ps) {
+                    try {
+                        ServiceIssue::firstOrCreate(
+                            ['period_service_id' => $ps->id],
+                            [
+                                'layanan_id'  => $service->id,
+                                'periode_id'  => $ps->period_id,
+                                'has_notif'   => false,
+                                'has_solved'  => false,
+                                'created_at'  => $ps->checked_at ?? now(),
+                                'updated_at'  => $ps->checked_at ?? now(),
+                            ]
+                        );
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Failed sync to service_issues: ' . $e->getMessage());
                     }
                 }
+            }
 
-                $statusLabel = 'tidak aktif';
-                if ($issue->periodService?->status === 'gangguan') {
-                    $statusLabel = 'tidak aktif';
+            $issues = [];
+            // 4. Ambil dari tabel service_issues yang berelasi
+            if (\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
+                $rawIssues = ServiceIssue::with([
+                    'period',
+                    'periodService.tester'
+                ])
+                ->where('layanan_id', $service->id)
+                ->orderByDesc('created_at')
+                ->get();
+
+                foreach ($rawIssues as $issue) {
+                    $periodDate = $issue->period?->date;
+                    $formattedDate = '-';
+                    if ($periodDate) {
+                        $cDate = \Carbon\Carbon::parse($periodDate);
+                        $months = [
+                            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                        ];
+                        $formattedDate = $cDate->format('d') . ' ' . ($months[(int) $cDate->format('n')] ?? $cDate->format('F'));
+                        if ($cDate->format('Y') !== \Carbon\Carbon::now()->format('Y')) {
+                            $formattedDate .= ' ' . $cDate->format('Y');
+                        }
+                    }
+
+                    $issues[] = [
+                        'id'                    => $issue->id,
+                        'periode_id'            => $issue->periode_id,
+                        'period_service_id'     => $issue->period_service_id,
+                        'period_date'           => $formattedDate,
+                        'status'                => 'tidak aktif',
+                        'period_service_status' => $issue->periodService?->status ?? 'gangguan',
+                        'catatan'               => $issue->periodService?->description ?: 'attachment',
+                        'attachment'            => null,
+                        'has_notif'             => (bool) $issue->has_notif,
+                        'has_solved'            => (bool) $issue->has_solved,
+                        'has_solved_label'      => $issue->has_solved ? 'sudah tindak lanjuti' : 'belum tindak lanjuti',
+                        'tester_name'           => $issue->periodService?->tester?->name ?? 'Tester',
+                        'checked_at'            => $issue->periodService?->checked_at ? \Carbon\Carbon::parse($issue->periodService->checked_at)->format('d M Y, H:i') : null,
+                    ];
                 }
+            }
 
-                return [
-                    'id'                    => $issue->id,
-                    'periode_id'            => $issue->periode_id,
-                    'period_service_id'     => $issue->period_service_id,
-                    'period_date'           => $formattedDate,
-                    'status'                => $statusLabel,
-                    'period_service_status' => $issue->periodService?->status ?? 'gangguan',
-                    'catatan'               => $issue->periodService?->description ?: 'attachment',
-                    'attachment'            => null,
-                    'has_notif'             => (bool) $issue->has_notif,
-                    'has_solved'            => (bool) $issue->has_solved,
-                    'has_solved_label'      => $issue->has_solved ? 'sudah tindak lanjuti' : 'belum tindak lanjuti',
-                    'tester_name'           => $issue->periodService?->tester?->name ?? 'Tester',
-                    'checked_at'            => $issue->periodService?->checked_at ? \Carbon\Carbon::parse($issue->periodService->checked_at)->format('d M Y, H:i') : null,
-                ];
-            });
+            // 5. Fallback jika tabel service_issues masih kosong tapi period_services mencatat kendala
+            if (empty($issues) && $troubledPeriodServices->isNotEmpty()) {
+                foreach ($troubledPeriodServices as $ps) {
+                    $periodDate = $ps->period?->date;
+                    $formattedDate = '-';
+                    if ($periodDate) {
+                        $cDate = \Carbon\Carbon::parse($periodDate);
+                        $months = [
+                            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                        ];
+                        $formattedDate = $cDate->format('d') . ' ' . ($months[(int) $cDate->format('n')] ?? $cDate->format('F'));
+                        if ($cDate->format('Y') !== \Carbon\Carbon::now()->format('Y')) {
+                            $formattedDate .= ' ' . $cDate->format('Y');
+                        }
+                    }
+
+                    $issues[] = [
+                        'id'                    => $ps->id,
+                        'periode_id'            => $ps->period_id,
+                        'period_service_id'     => $ps->id,
+                        'period_date'           => $formattedDate,
+                        'status'                => 'tidak aktif',
+                        'period_service_status' => $ps->status,
+                        'catatan'               => $ps->description ?: 'attachment',
+                        'attachment'            => null,
+                        'has_notif'             => false,
+                        'has_solved'            => false,
+                        'has_solved_label'      => 'belum tindak lanjuti',
+                        'tester_name'           => $ps->tester?->name ?? 'Tester',
+                        'checked_at'            => $ps->checked_at ? \Carbon\Carbon::parse($ps->checked_at)->format('d M Y, H:i') : null,
+                    ];
+                }
+            }
 
             return response()->json($issues);
         } catch (\Throwable $e) {
@@ -331,9 +406,23 @@ class ServiceController extends Controller
     /**
      * Toggle status tindak lanjut kendala (has_solved).
      */
-    public function toggleIssueSolved(ServiceIssue $issue)
+    public function toggleIssueSolved($issueId)
     {
         try {
+            $issue = ServiceIssue::find($issueId);
+            if (!$issue) {
+                // Jika dipanggil dengan period_service_id fallback
+                $issue = ServiceIssue::firstOrCreate(
+                    ['period_service_id' => $issueId],
+                    [
+                        'layanan_id' => PeriodService::find($issueId)?->service_id ?? 0,
+                        'periode_id' => PeriodService::find($issueId)?->period_id ?? 0,
+                        'has_notif'  => false,
+                        'has_solved' => false,
+                    ]
+                );
+            }
+
             $issue->update([
                 'has_solved' => !$issue->has_solved,
             ]);
