@@ -491,7 +491,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  <button type="button" @click="statusFilter = 'pending'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'pending' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Belum Dicek</button>
  </div>
  <div class="relative">
- <input v-model="searchQuery" type="text" placeholder="Cari layanan / tester..." class="pl-7 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 placeholder-slate-400 focus:outline-none focus:border-primary w-44 sm:w-52 transition-colors"/>
+ <input v-model="searchQuery" type="text" placeholder="Cari layanan..." class="pl-7 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 placeholder-slate-400 focus:outline-none focus:border-primary w-44 sm:w-52 transition-colors"/>
  <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
  </div>
  </div>
@@ -504,10 +504,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  <tr class="border-b border-slate-100 bg-slate-50/60 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
  <th class="py-3 px-6">Layanan</th>
  <th class="py-3 px-6">Kategori</th>
- <th class="py-3 px-6">Penanggung Jawab</th>
  <th class="py-3 px-6">Status</th>
- <th class="py-3 px-6">Waktu Cek</th>
- <th class="py-3 px-6">Keterangan</th>
  </tr>
  </thead>
  <tbody class="divide-y divide-slate-100 text-xs">
@@ -526,12 +523,6 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  </td>
  <td class="py-3 px-6"><span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[11px] font-medium">{{ srv.category }}</span></td>
  <td class="py-3 px-6">
- <div class="flex items-center gap-2">
- <div :class="['w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0', getAvatarColor(srv.tester_initials, srv.tester_name)]">{{ srv.tester_initials }}</div>
- <span class="text-slate-700 font-medium">{{ srv.tester_name }}</span>
- </div>
- </td>
- <td class="py-3 px-6">
  <span v-if="srv.status === 'normal'" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Normal
  </span>
@@ -542,11 +533,10 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Belum Dicek
  </span>
  </td>
- <td class="py-3 px-6 text-slate-400">{{ srv.checked_at || '-' }}</td>
- <td class="py-3 px-6 text-slate-500 max-w-[200px] truncate">{{ srv.description || '-' }}</td>
+ 
  </tr>
  <tr v-if="filteredServices.length === 0">
- <td colspan="6" class="py-8 text-center text-slate-400 text-xs">Tidak ada layanan yang sesuai dengan filter.</td>
+ <td colspan="3" class="py-8 text-center text-slate-400 text-xs">Tidak ada layanan yang sesuai dengan filter.</td>
  </tr>
  </tbody>
  </table>
