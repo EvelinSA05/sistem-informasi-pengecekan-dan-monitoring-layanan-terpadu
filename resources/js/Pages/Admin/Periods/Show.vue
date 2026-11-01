@@ -19,10 +19,11 @@ watch(() => props.troubled_services, (val) => {
 
 const isUpdatingSolved = ref({});
 async function toggleTroubledSolved(item) {
- if (!item.issue_id) return;
+ const targetId = item.issue_id || item.id;
+ if (!targetId) return;
  isUpdatingSolved.value[item.id] = true;
  try {
-  const response = await axios.post(route('admin.services.issues.toggle_solved', item.issue_id));
+  const response = await axios.post(route('admin.services.issues.toggle_solved', targetId));
   if (response.data?.success) {
    item.has_solved = response.data.has_solved;
    item.has_solved_label = item.has_solved ? 'sudah tindak lanjuti' : 'belum tindak lanjuti';
