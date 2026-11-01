@@ -16,12 +16,25 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        // Jika ada request timeout dan user masih terautentikasi, paksa logout
+        if ($request->has('timeout') && Auth::check()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
+        $sessionExpiredMsg = null;
+        if ($request->has('timeout') || $request->session()->get('session_expired')) {
+            $sessionExpiredMsg = $request->session()->get('session_expired')
+                ?? 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit. Silakan login kembali.';
+        }
+
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status'          => session('status'),
-            'sessionExpired'  => session('session_expired'),
+            'sessionExpired'  => $sessionExpiredMsg,
         ]);
     }
 
