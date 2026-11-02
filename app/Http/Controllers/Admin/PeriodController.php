@@ -324,7 +324,7 @@ class PeriodController extends Controller
         $period->load([
             'creator:id,name,email',
             'periodTesters.tester:id,name,email,bidang,nip',
-            'periodServices.service:id,source_service_id,service_name,category,icon,service_url',
+            'periodServices.service:id,source_service_id,service_name,category,level,icon,service_url,deskripsi_layanan,tester_instruction',
             'periodServices.tester:id,name,email,bidang',
         ]);
 
@@ -354,10 +354,16 @@ class PeriodController extends Controller
                     'service_id' => $ps->service_id,
                     'service_name' => $ps->service?->service_name ?? 'Layanan',
                     'category' => $ps->service?->category ?? 'Umum',
+                    'level' => $ps->service?->level ?? '-',
                     'icon' => $ps->service?->icon ?? 'globe',
                     'service_url' => $ps->service?->service_url,
+                    'deskripsi_layanan' => $ps->service?->deskripsi_layanan,
+                    'tester_instruction' => $ps->service?->tester_instruction,
                     'status' => $ps->status,
                     'description' => $ps->description,
+                    'last_description' => $ps->description,
+                    'attachment' => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                    'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
                     'checked_at' => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y H:i') : null,
                 ];
             })->values();
@@ -435,6 +441,8 @@ class PeriodController extends Controller
                         'tester_name'      => $ps->tester?->name ?? 'Tester',
                         'tester_bidang'    => $ps->tester?->bidang ?? '-',
                         'description'      => $ps->description ?: 'Kendala dilaporkan oleh tester',
+                        'attachment'       => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                        'attachment_name'  => $ps->attachment ? basename($ps->attachment) : null,
                         'checked_at'       => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : '-',
                         'has_solved'       => (bool) ($issue?->has_solved ?? false),
                         'has_solved_label' => ($issue && $issue->has_solved) ? 'sudah tindak lanjuti' : 'belum tindak lanjuti',
@@ -462,6 +470,8 @@ class PeriodController extends Controller
                             'tester_name'      => $ps->tester?->name ?? 'Tester',
                             'tester_bidang'    => $ps->tester?->bidang ?? '-',
                             'description'      => $ps->description ?: 'Kendala dilaporkan oleh tester',
+                            'attachment'       => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                            'attachment_name'  => $ps->attachment ? basename($ps->attachment) : null,
                             'checked_at'       => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : '-',
                             'has_solved'       => false,
                             'has_solved_label' => 'belum tindak lanjuti',
@@ -665,9 +675,7 @@ class PeriodController extends Controller
     {
         $period->load([
             'creator:id,name',
-            'periodTesters.tester:id,name,email,bidang',
             'periodServices.service',
-            'periodServices.tester:id,name,email',
         ]);
 
         $carbonDate = Carbon::parse($period->date);
@@ -712,14 +720,10 @@ class PeriodController extends Controller
             $checkedCount  = $totalServices - $pendingCount;
             $readinessPct  = $totalServices > 0 ? round(($checkedCount / $totalServices) * 100) : 0;
 
-            $categoriesCount = $period->periodServices
-                ->map(fn($ps) => $ps->service?->category ?: 'Umum')
+            $opdCount = $period->periodServices
+                ->map(fn($ps) => $ps->service?->category ?: '-')
                 ->unique()
                 ->count();
-
-            $testersCount = $period->periodTesters->count() > 0
-                ? $period->periodTesters->count()
-                : $period->periodServices->pluck('tester_id')->filter()->unique()->count();
 
             // ==========================================
             // SECTION 2 — RINGKASAN HASIL PENGECEKAN
@@ -730,7 +734,7 @@ class PeriodController extends Controller
             fputcsv($file, ['Layanan Terkendala', $issuesCount]);
             fputcsv($file, ['Belum Diperiksa', $pendingCount]);
             fputcsv($file, ['Tingkat Kesiapan', "{$readinessPct}%"]);
-            fputcsv($file, ['Jumlah Kategori Layanan', $categoriesCount]);
+            fputcsv($file, ['Jumlah OPD/Kab/Kota', $opdCount]);
             fputcsv($file, []);
 
             // ==========================================
@@ -744,51 +748,77 @@ class PeriodController extends Controller
             fputcsv($file, []);
 
             // ==========================================
-            // SECTION 4 — REKAP KATEGORI
+            // SECTION 4 — REKAP OPD/KAB/KOTA
             // ==========================================
-            $categorySummary = $period->periodServices
-                ->groupBy(fn($ps) => $ps->service?->category ?: 'Umum')
+            $opdSummary = $period->periodServices
+                ->groupBy(fn($ps) => $ps->service?->category ?: '-')
                 ->map(fn($group) => $group->count())
                 ->sortDesc();
 
-            fputcsv($file, ['REKAP KATEGORI']);
-            fputcsv($file, ['Kategori Layanan', 'Jumlah Layanan']);
-            foreach ($categorySummary as $catName => $catTotal) {
-                fputcsv($file, [$catName, $catTotal]);
+            fputcsv($file, ['REKAP OPD/KAB/KOTA']);
+            fputcsv($file, ['OPD/Kab/Kota', 'Jumlah Layanan']);
+            foreach ($opdSummary as $opdName => $opdTotal) {
+                fputcsv($file, [$opdName, $opdTotal]);
+            }
+            fputcsv($file, []);
+
+            // Pemisahan Layanan Berjalan & Terkendala (Konsisten dengan Report PDF)
+            $runningServices = $period->periodServices->filter(fn($ps) => $ps->status === 'normal')->values();
+            $issueServices = $period->periodServices->filter(fn($ps) => $ps->status !== 'normal')->values();
+
+            // ==========================================
+            // SECTION 5 — A. LAYANAN BERJALAN
+            // ==========================================
+            fputcsv($file, ['A. LAYANAN BERJALAN (' . $runningServices->count() . ' Layanan)']);
+            fputcsv($file, [
+                'No.',
+                'Nama Layanan',
+                'Link Layanan',
+                'OPD/Kab/Kota',
+                'Level Layanan',
+            ]);
+
+            $noRunning = 1;
+            foreach ($runningServices as $ps) {
+                $levelDisplay = !empty($ps->service?->level) ? $ps->service->level : '-';
+                fputcsv($file, [
+                    $noRunning++,
+                    $ps->service?->service_name ?? '-',
+                    $ps->service?->service_url ?: '-',
+                    $ps->service?->category ?: '-',
+                    $levelDisplay,
+                ]);
+            }
+            if ($runningServices->isEmpty()) {
+                fputcsv($file, ['-', 'Tidak ada data layanan berjalan pada periode ini', '-', '-', '-']);
             }
             fputcsv($file, []);
 
             // ==========================================
-            // SECTION 5 — DETAIL HASIL PENGECEKAN
+            // SECTION 6 — B. LAYANAN TERKENDALA
             // ==========================================
-            fputcsv($file, ['DETAIL HASIL PENGECEKAN']);
+            fputcsv($file, ['B. LAYANAN TERKENDALA (' . $issueServices->count() . ' Layanan)']);
             fputcsv($file, [
-                'No',
-                'ID Layanan',
+                'No.',
                 'Nama Layanan',
-                'Kategori',
-                'Level',
-                'Status Pengecekan',
+                'Link Layanan',
+                'OPD/Kab/Kota',
+                'Level Layanan',
             ]);
 
-            $no = 1;
-            foreach ($period->periodServices as $ps) {
-                $statusLabel = match($ps->status) {
-                    'normal'   => 'NORMAL',
-                    'gangguan' => 'TERKENDALA',
-                    default    => 'BELUM DIPERIKSA',
-                };
-
+            $noIssue = 1;
+            foreach ($issueServices as $ps) {
                 $levelDisplay = !empty($ps->service?->level) ? $ps->service->level : '-';
-
                 fputcsv($file, [
-                    $no++,
-                    $ps->service?->source_service_id ?? ('SRV-' . str_pad($ps->service_id, 3, '0', STR_PAD_LEFT)),
+                    $noIssue++,
                     $ps->service?->service_name ?? '-',
-                    $ps->service?->category ?: 'Umum',
+                    $ps->service?->service_url ?: '-',
+                    $ps->service?->category ?: '-',
                     $levelDisplay,
-                    $statusLabel,
                 ]);
+            }
+            if ($issueServices->isEmpty()) {
+                fputcsv($file, ['-', 'Tidak ada data layanan terkendala pada periode ini', '-', '-', '-']);
             }
 
             fclose($file);
@@ -804,9 +834,7 @@ class PeriodController extends Controller
     {
         $period->load([
             'creator:id,name,email',
-            'periodTesters.tester:id,name,email,bidang,nip',
-            'periodServices.service:id,source_service_id,service_name,category,icon,service_url',
-            'periodServices.tester:id,name,email,bidang',
+            'periodServices.service:id,source_service_id,service_name,category,level,icon,service_url',
         ]);
 
         $carbonDate = Carbon::parse($period->date);
@@ -821,30 +849,52 @@ class PeriodController extends Controller
         $pendingServices = $totalServices - $checkedServices;
         $progressPercent = $totalServices > 0 ? round(($checkedServices / $totalServices) * 100) : 0;
 
-        // Distribusi tester
-        $testersWorkload = [];
-        foreach ($period->periodTesters as $pt) {
-            $t = $pt->tester;
-            if (!$t) continue;
-            $tServices = $period->periodServices->where('tester_id', $t->id);
-            $tChecked = $tServices->filter(fn($ps) => $ps->status !== 'pending' && !empty($ps->checked_at))->count();
-            $testersWorkload[] = [
-                'name' => $t->name,
-                'email' => $t->email,
-                'total' => $tServices->count(),
-                'checked' => $tChecked,
-                'percent' => $tServices->count() > 0 ? round(($tChecked / $tServices->count()) * 100) : 0,
-            ];
-        }
+        $runningServices = $period->periodServices
+            ->filter(fn($ps) => $ps->status === 'normal')
+            ->values()
+            ->map(function ($ps, $idx) {
+                return [
+                    'no' => $idx + 1,
+                    'id' => $ps->id,
+                    'service_name' => $ps->service?->service_name ?? 'Layanan',
+                    'service_url' => $ps->service?->service_url,
+                    'category' => $ps->service?->category ?: '-',
+                    'opd' => $ps->service?->category ?: '-',
+                    'level' => $ps->service?->level ?: '-',
+                    'status' => $ps->status,
+                ];
+            })
+            ->all();
 
-        $servicesList = $period->periodServices->map(function ($ps, $idx) {
+        $issueServices = $period->periodServices
+            ->filter(fn($ps) => $ps->status !== 'normal')
+            ->values()
+            ->map(function ($ps, $idx) {
+                return [
+                    'no' => $idx + 1,
+                    'id' => $ps->id,
+                    'service_name' => $ps->service?->service_name ?? 'Layanan',
+                    'service_url' => $ps->service?->service_url,
+                    'category' => $ps->service?->category ?: '-',
+                    'opd' => $ps->service?->category ?: '-',
+                    'level' => $ps->service?->level ?: '-',
+                    'status' => $ps->status,
+                ];
+            })
+            ->all();
+
+        $servicesList = $period->periodServices->values()->map(function ($ps, $idx) {
             return [
                 'no' => $idx + 1,
+                'id' => $ps->id,
                 'service_name' => $ps->service?->service_name ?? 'Layanan',
-                'category' => $ps->service?->category ?? 'Umum',
+                'service_url' => $ps->service?->service_url,
+                'category' => $ps->service?->category ?: '-',
+                'opd' => $ps->service?->category ?: '-',
+                'level' => $ps->service?->level ?: '-',
                 'status' => $ps->status,
             ];
-        });
+        })->all();
 
         return Inertia::render('Admin/Periods/ExportReport', [
             'report' => [
@@ -864,7 +914,8 @@ class PeriodController extends Controller
                 'pending_services' => $pendingServices,
                 'progress_percent' => $progressPercent,
             ],
-            'testers_workload' => $testersWorkload,
+            'running_services' => $runningServices,
+            'issue_services' => $issueServices,
             'services' => $servicesList,
         ]);
     }

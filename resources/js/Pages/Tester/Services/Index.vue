@@ -91,33 +91,83 @@ function showToast(msg, type = 'success') {
 // ─── Testing Modal State ─────────────────────────────────────────
 const showCheckModal = ref(false);
 const selectedService = ref(null);
-const checkForm = useForm({ status: '', description: '' });
+const attachmentInput = ref(null);
+const attachmentPreview = ref(null);
+const attachmentFile = ref(null);
+const existingAttachment = ref(null);
+const existingAttachmentName = ref(null);
+
+const checkForm = useForm({
+  status: '',
+  description: '',
+  attachment: null,
+  remove_attachment: false,
+});
 
 const isEditMode = computed(() => {
- return selectedService.value && selectedService.value.status !== 'pending';
+  return selectedService.value && selectedService.value.status !== 'pending';
 });
 
 function openCheckModal(service) {
- selectedService.value = service;
- // Pre-select existing status if already tested, otherwise default to normal
- checkForm.status = service.status === 'pending' ? 'normal' : service.status;
- checkForm.description = service.last_description || '';
- checkForm.clearErrors();
- showCheckModal.value = true;
+  selectedService.value = service;
+  checkForm.status = service.status === 'pending' ? 'normal' : service.status;
+  checkForm.description = service.last_description || '';
+  checkForm.attachment = null;
+  checkForm.remove_attachment = false;
+  existingAttachment.value = service.attachment || null;
+  existingAttachmentName.value = service.attachment_name || null;
+  attachmentPreview.value = null;
+  attachmentFile.value = null;
+  if (attachmentInput.value) attachmentInput.value.value = '';
+  checkForm.clearErrors();
+  showCheckModal.value = true;
+}
+
+function handleFileChange(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  attachmentFile.value = file;
+  checkForm.attachment = file;
+  checkForm.remove_attachment = false;
+
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      attachmentPreview.value = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  } else {
+    attachmentPreview.value = null;
+  }
+}
+
+function removeAttachment() {
+  checkForm.attachment = null;
+  attachmentFile.value = null;
+  attachmentPreview.value = null;
+  existingAttachment.value = null;
+  existingAttachmentName.value = null;
+  checkForm.remove_attachment = true;
+  if (attachmentInput.value) attachmentInput.value.value = '';
 }
 
 function submitCheck() {
- checkForm.post(route('tester.submit_check', selectedService.value.id), {
- preserveScroll: true,
- onSuccess: (pageObj) => {
- if (pageObj.props.flash && pageObj.props.flash.error) {
- showToast(pageObj.props.flash.error, 'error');
- } else {
- showCheckModal.value = false;
- showToast(isEditMode.value ? 'Hasil pengujian berhasil diperbarui.' : 'Hasil pengecekan berhasil disimpan.');
- }
- },
- });
+  checkForm.post(route('tester.submit_check', selectedService.value.id), {
+    preserveScroll: true,
+    forceFormData: true,
+    onSuccess: (pageObj) => {
+      if (pageObj.props?.flash?.error) {
+        showToast(pageObj.props.flash.error, 'error');
+      } else {
+        showCheckModal.value = false;
+        showToast(isEditMode.value ? 'Hasil pengujian berhasil diperbarui.' : 'Hasil pengecekan berhasil disimpan.');
+      }
+    },
+    onError: (errs) => {
+      const err = Object.values(errs)[0] || 'Gagal menyimpan hasil pengecekan.';
+      showToast(err, 'error');
+    }
+  });
 }
 </script>
 
@@ -477,7 +527,7 @@ function submitCheck() {
  <tr class="bg-slate-50/90 border-b border-slate-200">
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-14 text-center">No</th>
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider min-w-[260px]">Nama Layanan</th>
- <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-36">Kategori & Level</th>
+ <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-28 whitespace-nowrap">Level</th>
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider min-w-[200px]">Status & Hasil</th>
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center w-28">Aksi</th>
  </tr>
@@ -522,41 +572,43 @@ function submitCheck() {
  {{ (services.current_page - 1) * 10 + index + 1 }}
  </td>
 
- <!-- Nama Layanan & URL -->
- <td class="py-4 px-5 align-top">
- <div class="font-bold text-slate-800 text-sm group-hover:text-primary transition-colors">
- {{ service.name }}
- </div>
- <div class="flex items-center gap-1.5 mt-1">
- <a
- v-if="service.url"
- :href="service.url"
- target="_blank"
- class="text-xs text-slate-500 hover:text-primary hover:underline inline-flex items-center gap-1 truncate max-w-[320px] font-normal"
- title="Buka URL Layanan di tab baru"
- >
- <span class="truncate">{{ service.url }}</span>
- <svg class="w-3 h-3 shrink-0 text-slate-400 group-hover:text-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
- </a>
- <span v-else class="text-xs text-slate-300">-</span>
- </div>
- </td>
+ 								<!-- Nama Layanan, URL & Kategori -->
+								<td class="py-4 px-5 align-top">
+									<div class="font-bold text-slate-800 text-sm group-hover:text-primary transition-colors">
+										{{ service.name }}
+									</div>
+									<div class="flex items-center gap-1.5 mt-1">
+										<a
+											v-if="service.url"
+											:href="service.url"
+											target="_blank"
+											class="text-xs text-slate-500 hover:text-primary hover:underline inline-flex items-center gap-1 truncate max-w-[320px] font-normal"
+											title="Buka URL Layanan di tab baru"
+										>
+											<span class="truncate">{{ service.url }}</span>
+											<svg class="w-3 h-3 shrink-0 text-slate-400 group-hover:text-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+										</a>
+										<span v-else class="text-xs text-slate-300">-</span>
+									</div>
+									<!-- Kategori di bawah link layanan -->
+									<div v-if="service.category" class="mt-1.5">
+										<span class="inline-block px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/70">
+											{{ service.category }}
+										</span>
+									</div>
+								</td>
 
- <!-- Kategori & Level -->
- <td class="py-4 px-5 align-top">
- <div class="flex flex-col items-start gap-1.5">
- <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/70">
- {{ service.category || 'Umum' }}
- </span>
- <span
- v-if="service.level && service.level !== '-'"
- class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
- :class="service.level === 'Level 1' ? 'bg-primary text-white border border-primary' : (service.level === 'Level 2' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/80' : (service.level === 'Level 3' ? 'bg-purple-50 text-purple-700 border border-purple-200/80' : 'bg-slate-100 text-slate-600 border border-slate-200/60'))"
- >
- {{ service.level }}
- </span>
- </div>
- </td>
+								<!-- Level -->
+								<td class="py-4 px-5 align-top pt-4 whitespace-nowrap">
+									<span
+										v-if="service.level && service.level !== '-'"
+										class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold whitespace-nowrap"
+										:class="service.level === 'Level 1' ? 'bg-primary text-white border border-primary' : (service.level === 'Level 2' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/80' : (service.level === 'Level 3' ? 'bg-purple-50 text-purple-700 border border-purple-200/80' : 'bg-slate-100 text-slate-600 border border-slate-200/60'))"
+									>
+										{{ service.level }}
+									</span>
+									<span v-else class="text-xs font-semibold text-slate-400">-</span>
+								</td>
 
  <!-- Status & Hasil Pengujian -->
  <td class="py-4 px-5 align-top">
@@ -841,6 +893,83 @@ function submitCheck() {
  ></textarea>
  <p v-if="checkForm.errors.description" class="mt-1 text-xs text-rose-500">{{ checkForm.errors.description }}</p>
  </div>
+              <!-- SECTION 4: Lampiran / Bukti Kendala (Attachment) -->
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Lampiran / Bukti Kendala
+                    <span class="text-slate-400 font-normal lowercase">(opsional)</span>
+                  </label>
+                  <span class="text-[10px] text-slate-400">File maks. 10MB</span>
+                </div>
+
+                <!-- Existing or newly selected attachment preview -->
+                <div v-if="attachmentPreview || existingAttachment || attachmentFile" class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div v-if="attachmentPreview" class="w-12 h-12 rounded-lg border border-slate-200 overflow-hidden shrink-0 bg-white">
+                      <img :src="attachmentPreview" alt="Preview" class="w-full h-full object-cover" />
+                    </div>
+                    <div v-else class="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-xs font-semibold text-slate-800 truncate">
+                        {{ attachmentFile ? attachmentFile.name : (existingAttachmentName || 'Lampiran Kendala') }}
+                      </p>
+                      <p v-if="attachmentFile" class="text-[10px] text-slate-500">
+                        {{ (attachmentFile.size / 1024).toFixed(1) }} KB
+                      </p>
+                      <a v-else-if="existingAttachment" :href="existingAttachment" target="_blank" class="text-[10px] text-primary hover:underline inline-flex items-center gap-0.5">
+                        Lihat file saat ini
+                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      @click="attachmentInput?.click()"
+                      class="px-2.5 py-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      Ganti
+                    </button>
+                    <button
+                      type="button"
+                      @click="removeAttachment"
+                      class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                      title="Hapus Lampiran"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Upload Dropzone / Button -->
+                <div
+                  v-else
+                  @click="attachmentInput?.click()"
+                  class="border-2 border-dashed border-slate-200 hover:border-primary/50 hover:bg-primary/5 rounded-xl p-4 text-center cursor-pointer transition-all group"
+                >
+                  <svg class="w-6 h-6 mx-auto mb-1 text-slate-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <p class="text-xs font-semibold text-slate-700 group-hover:text-primary">
+                    Pilih atau unggah screenshot / bukti kendala
+                  </p>
+                  <p class="text-[10px] text-slate-400 mt-0.5">
+                    Mendukung file JPG, PNG, WEBP, PDF, DOCX, dsb. (Maksimal 10 MB)
+                  </p>
+                </div>
+
+                <input
+                  type="file"
+                  ref="attachmentInput"
+                  @change="handleFileChange"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+                  class="hidden"
+                />
+                <p v-if="checkForm.errors.attachment" class="mt-1 text-xs text-rose-500">{{ checkForm.errors.attachment }}</p>
+              </div>
  </form>
  </div>
 

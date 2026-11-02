@@ -302,6 +302,8 @@ class AssignedServiceController extends Controller
                     'deskripsi_layanan' => $ps->service?->deskripsi_layanan,
                     'tester_instruction' => $ps->service?->tester_instruction,
                     'last_description' => $ps->description,
+                    'attachment' => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                    'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
                     'checked_at' => $ps->checked_at
                         ? Carbon::parse($ps->checked_at)->format('d M Y, H:i')
                         : null,
@@ -362,15 +364,28 @@ class AssignedServiceController extends Controller
         $validated = $request->validate([
             'status' => 'required|in:normal,gangguan',
             'description' => 'required_if:status,gangguan|nullable|string|max:5000',
+            'attachment' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp,pdf,doc,docx,xls,xlsx,txt,zip|max:10240',
+            'remove_attachment' => 'nullable|boolean',
         ], [
             'description.required_if' => 'Catatan / Keterangan kendala wajib diisi jika layanan berstatus kendala.',
-            'description.max' => 'Catatan tidak boleh lebih dari 5000 karakter.'
+            'description.max' => 'Catatan tidak boleh lebih dari 5000 karakter.',
+            'attachment.file' => 'Lampiran harus berupa file yang valid.',
+            'attachment.mimes' => 'Format file yang didukung: JPG, PNG, WEBP, GIF, PDF, DOC, DOCX, XLS, XLSX, TXT, ZIP.',
+            'attachment.max' => 'Ukuran file lampiran maksimal 10 MB.',
         ]);
+
+        $attachmentPath = $periodService->attachment;
+        if ($request->hasFile('attachment')) {
+            $attachmentPath = $request->file('attachment')->store('attachments/kendala', 'public');
+        } elseif ($request->boolean('remove_attachment')) {
+            $attachmentPath = null;
+        }
 
         try {
             $periodService->update([
                 'status' => $validated['status'],
                 'description' => $validated['description'] ?? null,
+                'attachment' => $attachmentPath,
                 'checked_at' => now(),
             ]);
 
@@ -379,6 +394,7 @@ class AssignedServiceController extends Controller
                 'tester_id' => $user->id,
                 'status' => $validated['status'],
                 'description' => $validated['description'] ?? null,
+                'attachment' => $attachmentPath,
             ]);
 
             // Catat atau perbarui di tabel service_issues (layanan_terkendala)

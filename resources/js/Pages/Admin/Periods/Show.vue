@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
 import axios from 'axios';
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ClientPagination from '@/Components/ClientPagination.vue';
 
@@ -82,6 +82,92 @@ function togglePeriodStatus() {
  },
  onFinish: () => { isUpdatingStatus.value = false; }
  });
+}
+
+
+// ─── Modal Uji Layanan (Admin / Tester) ─────────────────────────
+const showCheckModal = ref(false);
+const selectedService = ref(null);
+const attachmentInput = ref(null);
+const attachmentPreview = ref(null);
+const attachmentFile = ref(null);
+const existingAttachment = ref(null);
+const existingAttachmentName = ref(null);
+
+const checkForm = useForm({
+	status: '',
+	description: '',
+	attachment: null,
+	remove_attachment: false,
+});
+
+const isEditMode = computed(() => {
+	return selectedService.value && selectedService.value.status !== 'pending';
+});
+
+function openCheckModal(service) {
+	selectedService.value = service;
+	checkForm.status = service.status === 'pending' ? 'normal' : service.status;
+	checkForm.description = service.description || service.last_description || '';
+	checkForm.attachment = null;
+	checkForm.remove_attachment = false;
+	existingAttachment.value = service.attachment || null;
+	existingAttachmentName.value = service.attachment_name || null;
+	attachmentPreview.value = null;
+	attachmentFile.value = null;
+	if (attachmentInput.value) attachmentInput.value.value = '';
+	checkForm.clearErrors();
+	showCheckModal.value = true;
+}
+
+function handleFileChange(e) {
+	const file = e.target.files[0];
+	if (!file) return;
+	attachmentFile.value = file;
+	checkForm.attachment = file;
+	checkForm.remove_attachment = false;
+
+	if (file.type.startsWith('image/')) {
+		const reader = new FileReader();
+		reader.onload = (ev) => {
+			attachmentPreview.value = ev.target.result;
+		};
+		reader.readAsDataURL(file);
+	} else {
+		attachmentPreview.value = null;
+	}
+}
+
+function removeAttachment() {
+	checkForm.attachment = null;
+	attachmentFile.value = null;
+	attachmentPreview.value = null;
+	existingAttachment.value = null;
+	existingAttachmentName.value = null;
+	checkForm.remove_attachment = true;
+	if (attachmentInput.value) attachmentInput.value.value = '';
+}
+
+function submitCheck() {
+	if (!selectedService.value) return;
+
+	checkForm.post(route('tester.submit_check', selectedService.value.id), {
+		preserveScroll: true,
+		forceFormData: true,
+		onSuccess: (pageObj) => {
+			if (pageObj.props?.flash?.error) {
+				showToast(pageObj.props.flash.error, 'error');
+			} else {
+				showCheckModal.value = false;
+				showToast(isEditMode.value ? 'Hasil pengujian berhasil diperbarui.' : 'Hasil pengecekan berhasil disimpan.', 'success');
+				router.reload({ preserveScroll: true });
+			}
+		},
+		onError: (errs) => {
+			const err = Object.values(errs)[0] || 'Gagal menyimpan hasil pengecekan.';
+			showToast(err, 'error');
+		}
+	});
 }
 
 // Filtered Services
@@ -233,7 +319,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
  Export PDF
  </a>
- <button type="button" @click="togglePeriodStatus" :disabled="isUpdatingStatus" class="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-primary bg-white hover:bg-primary rounded-lg transition-colors cursor-pointer disabled:opacity-50 shadow-sm">
+ <button type="button" @click="togglePeriodStatus" :disabled="isUpdatingStatus" class="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-primary bg-white hover:bg-primary hover:text-white border border-transparent hover:border-white/30 rounded-lg transition-all duration-150 cursor-pointer disabled:opacity-50 shadow-sm">
  <svg v-if="period.status === 'proses'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
  <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
  {{ isUpdatingStatus ? 'Memproses...' : (period.status === 'proses' ? 'Selesaikan Periode' : 'Buka Kembali Periode') }}
@@ -366,10 +452,9 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
         <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">{{ item.category }}</span>
         <span v-if="item.level && item.level !== '-'" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">Level {{ item.level }}</span>
         <span
-         class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+         class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-center"
          :class="item.has_solved ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'"
         >
-         <span class="w-1.5 h-1.5 rounded-full" :class="item.has_solved ? 'bg-emerald-500' : 'bg-amber-500'"></span>
          {{ item.has_solved_label }}
         </span>
        </div>
@@ -385,6 +470,20 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
          Catatan Kendala Tester ({{ item.tester_name }}):
         </div>
         <p class="font-medium whitespace-pre-wrap leading-relaxed">{{ item.description }}</p>
+
+        <!-- Attachment / Lampiran Bukti Kendala -->
+        <div v-if="item.attachment" class="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center gap-2">
+         <a
+          :href="item.attachment"
+          target="_blank"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 text-primary border border-slate-200 text-xs font-semibold transition-all shadow-2xs group"
+          title="Klik untuk membuka lampiran kendala"
+         >
+          <svg class="w-3.5 h-3.5 text-slate-500 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+          <span class="truncate max-w-[240px]">{{ item.attachment_name || 'Lihat Lampiran Bukti Kendala' }}</span>
+          <svg class="w-3 h-3 text-slate-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+         </a>
+        </div>
        </div>
       </div>
      </div>
@@ -503,41 +602,62 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  <table class="w-full text-left">
  <thead>
  <tr class="border-b border-slate-100 bg-slate-50/60 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
- <th class="py-3 px-6">Layanan</th>
- <th class="py-3 px-6">Kategori</th>
- <th class="py-3 px-6">Status</th>
- </tr>
+									<th class="py-3 px-6">Layanan</th>
+									<th class="py-3 px-6">Level</th>
+									<th class="py-3 px-6">Status</th>
+									<th class="py-3 px-6 text-center w-28">Aksi</th>
+								</tr>
  </thead>
  <tbody class="divide-y divide-slate-100 text-xs">
  <tr v-for="srv in paginatedServices" :key="srv.id" class="hover:bg-slate-50/50 transition-colors">
- <td class="py-3 px-6">
- <div class="flex items-center gap-3">
- <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100" v-html="getServiceIcon(srv.icon)"></div>
- <div>
- <p class="font-semibold text-slate-800">{{ srv.service_name }}</p>
- <a v-if="srv.service_url" :href="srv.service_url" target="_blank" class="text-[11px] text-primary hover:underline inline-flex items-center gap-0.5 mt-0.5 max-w-[220px] truncate">
- {{ srv.service_url }}
- <svg class="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
- </a>
- </div>
- </div>
- </td>
- <td class="py-3 px-6"><span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[11px] font-medium">{{ srv.category }}</span></td>
- <td class="py-3 px-6">
- <span v-if="srv.status === 'normal'" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
- <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Normal
- </span>
- <span v-else-if="srv.status === 'gangguan'" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-100">
- <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Kendala
- </span>
- <span v-else class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
- <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Belum Dicek
- </span>
- </td>
+ <td class="py-3.5 px-6">
+										<div class="flex items-start gap-3">
+											<div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100 mt-0.5" v-html="getServiceIcon(srv.icon)"></div>
+											<div class="min-w-0">
+												<p class="font-semibold text-slate-800 leading-snug">{{ srv.service_name }}</p>
+												<div v-if="srv.service_url" class="mt-0.5">
+													<a :href="srv.service_url" target="_blank" class="text-[11px] text-primary hover:underline inline-flex items-center gap-1 max-w-[260px] truncate">
+														<span class="truncate">{{ srv.service_url }}</span>
+														<svg class="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+													</a>
+												</div>
+												<!-- Kategori di bawah link layanan -->
+												<div v-if="srv.category" class="mt-1">
+													<span class="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium">{{ srv.category }}</span>
+												</div>
+											</div>
+										</div>
+									</td>
+									<td class="py-3.5 px-6 align-middle">
+										<span class="text-xs font-semibold text-slate-600">{{ srv.level || '-' }}</span>
+									</td>
+									<td class="py-3.5 px-6 align-middle">
+										<span v-if="srv.status === 'normal'" class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+											Normal
+										</span>
+										<span v-else-if="srv.status === 'gangguan'" class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-100">
+											Kendala
+										</span>
+										<span v-else class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+											Belum Dicek
+										</span>
+									</td>
+									<td class="py-3.5 px-6 text-center align-middle">
+										<button
+											type="button"
+											@click="openCheckModal(srv)"
+											class="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-xs transition-all border active:scale-95 cursor-pointer"
+											:class="srv.status === 'pending' ? 'bg-primary text-white border-primary hover:bg-[#1d4ed8]' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'"
+											:title="srv.status === 'pending' ? 'Lakukan Pengecekan Layanan' : 'Ubah Hasil Pengecekan'"
+										>
+											<svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+											<span>{{ srv.status === 'pending' ? 'Cek' : 'Ubah' }}</span>
+										</button>
+									</td>
  
  </tr>
  <tr v-if="filteredServices.length === 0">
- <td colspan="3" class="py-8 text-center text-slate-400 text-xs">Tidak ada layanan yang sesuai dengan filter.</td>
+ <td colspan="4" class="py-8 text-center text-slate-400 text-xs">Tidak ada layanan yang sesuai dengan filter.</td>
  </tr>
  </tbody>
  </table>
@@ -601,5 +721,290 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
    </div>
   </Transition>
  </Teleport>
- </AdminLayout>
+ 
+	<!-- ════════════════════════════════════════════════════ -->
+	<!-- Modal: Uji Layanan (Admin / Tester)                 -->
+	<!-- ════════════════════════════════════════════════════ -->
+	<Teleport to="body">
+		<Transition
+			enter-active-class="transition duration-300 ease-out"
+			enter-from-class="opacity-0 scale-95 translate-y-4"
+			enter-to-class="opacity-100 scale-100 translate-y-0"
+			leave-active-class="transition duration-200 ease-in"
+			leave-from-class="opacity-100 scale-100 translate-y-0"
+			leave-to-class="opacity-0 scale-95 translate-y-4"
+		>
+			<div v-if="showCheckModal && selectedService" class="fixed inset-0 z-[130] flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm">
+				<div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg z-10 overflow-hidden flex flex-col max-h-[90vh]">
+					<!-- Modal Header -->
+					<div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
+						<div class="flex items-center gap-3 min-w-0">
+							<div
+								class="w-8 h-8 rounded-xl flex items-center justify-center font-bold shrink-0 shadow-xs border"
+								:class="isEditMode ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-primary border-primary text-white'"
+							>
+								<svg v-if="!isEditMode" class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+								</svg>
+								<svg v-else class="w-4 h-4 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+								</svg>
+							</div>
+							<div class="min-w-0">
+								<h3 class="text-sm sm:text-base font-extrabold text-slate-800 leading-snug">
+									{{ isEditMode ? 'Edit Hasil Pengujian' : 'Uji Layanan' }}
+								</h3>
+								<p class="text-xs text-slate-500 font-medium truncate">
+									{{ selectedService.service_name || selectedService.name }}
+								</p>
+							</div>
+						</div>
+						<button
+							type="button"
+							@click="showCheckModal = false"
+							class="text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl p-1.5 transition-colors cursor-pointer"
+							aria-label="Tutup modal"
+						>
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+						</button>
+					</div>
+
+					<!-- Modal Body (Internal Scroll) -->
+					<div class="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs">
+						<!-- SECTION 1: Informasi Layanan (Compact Metadata Layout) -->
+						<div class="bg-slate-50/80 rounded-2xl border border-slate-200/80 p-4 space-y-2.5">
+							<div class="flex items-center justify-between gap-2 flex-wrap">
+								<div class="flex items-center gap-1.5 flex-wrap">
+									<span class="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold text-xs shadow-2xs">
+										{{ selectedService.category || 'Umum' }}
+									</span>
+									<span
+										v-if="selectedService.level && selectedService.level !== '-'"
+										class="px-2.5 py-0.5 rounded-full bg-primary border border-primary text-white font-bold text-[11px]"
+									>
+										{{ selectedService.level }}
+									</span>
+								</div>
+								<div v-if="selectedService.service_url || selectedService.url">
+									<a
+										:href="selectedService.service_url || selectedService.url"
+										target="_blank"
+										class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white font-bold text-xs shadow-xs transition-all hover:bg-[#1d4ed8]"
+									>
+										Buka URL Layanan
+										<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+									</a>
+								</div>
+							</div>
+
+							<div v-if="selectedService.service_url || selectedService.url" class="flex items-center gap-1.5 text-slate-500 pt-0.5">
+								<svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+								<a :href="selectedService.service_url || selectedService.url" target="_blank" class="text-primary hover:underline font-mono truncate text-[11px]">
+									{{ selectedService.service_url || selectedService.url }}
+								</a>
+							</div>
+
+							<p v-if="selectedService.deskripsi_layanan" class="text-slate-600 bg-white border border-slate-200/70 rounded-xl p-2.5 text-xs leading-relaxed">
+								{{ selectedService.deskripsi_layanan }}
+							</p>
+
+							<div v-if="selectedService.tester_instruction" class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-900 shadow-2xs">
+								<p class="font-extrabold text-[11px] text-amber-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+									<svg class="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+									Instruksi Khusus
+								</p>
+								<p class="text-xs leading-relaxed whitespace-pre-wrap">{{ selectedService.tester_instruction }}</p>
+							</div>
+
+							<!-- Previous Result Banner if Editing -->
+							<div v-if="isEditMode && selectedService.checked_at" class="bg-white border border-slate-200 rounded-xl p-2.5 flex items-center justify-between gap-2 text-slate-500">
+								<span>Pengecekan sebelumnya: <strong class="text-slate-700 font-semibold">{{ selectedService.checked_at }}</strong></span>
+								<span
+									class="px-2 py-0.5 rounded-md font-bold text-[10px] uppercase"
+									:class="selectedService.status === 'normal' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
+								>
+									{{ selectedService.status === 'normal' ? 'NORMAL' : 'TERKENDALA' }}
+								</span>
+							</div>
+						</div>
+
+						<!-- SECTION 2: Hasil Pengecekan -->
+						<form @submit.prevent="submitCheck" class="space-y-4">
+							<div>
+								<label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+									Hasil Pengecekan <span class="text-rose-500">*</span>
+								</label>
+								
+								<div class="grid grid-cols-2 gap-3">
+									<!-- NORMAL OPTION -->
+									<label class="relative cursor-pointer select-none">
+										<input type="radio" v-model="checkForm.status" value="normal" class="peer sr-only">
+										<div
+											class="p-3.5 rounded-2xl border transition-all flex items-center gap-3 bg-white"
+											:class="checkForm.status === 'normal'
+												? 'border-emerald-500 bg-emerald-50/40 text-emerald-950 ring-2 ring-emerald-500/20 shadow-xs'
+												: 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'"
+										>
+											<div
+												class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold transition-colors"
+												:class="checkForm.status === 'normal' ? 'bg-emerald-500 text-white shadow-xs' : 'bg-slate-100 text-slate-400 border border-slate-200'"
+											>
+												<svg class="w-3.5 h-3.5 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+											</div>
+											<div class="min-w-0">
+												<p class="font-extrabold text-xs leading-none">NORMAL</p>
+												<p class="text-[10px] mt-1 text-slate-500 font-medium truncate">Berfungsi normal</p>
+											</div>
+										</div>
+									</label>
+
+									<!-- KENDALA OPTION -->
+									<label class="relative cursor-pointer select-none">
+										<input type="radio" v-model="checkForm.status" value="gangguan" class="peer sr-only">
+										<div
+											class="p-3.5 rounded-2xl border transition-all flex items-center gap-3 bg-white"
+											:class="checkForm.status === 'gangguan'
+												? 'border-rose-500 bg-rose-50/40 text-rose-950 ring-2 ring-rose-500/20 shadow-xs'
+												: 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'"
+										>
+											<div
+												class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold transition-colors"
+												:class="checkForm.status === 'gangguan' ? 'bg-rose-500 text-white shadow-xs' : 'bg-slate-100 text-slate-400 border border-slate-200'"
+											>
+												<svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01"/></svg>
+											</div>
+											<div class="min-w-0">
+												<p class="font-extrabold text-xs leading-none">KENDALA</p>
+												<p class="text-[10px] mt-1 text-slate-500 font-medium truncate">Ada error / gangguan</p>
+											</div>
+										</div>
+									</label>
+								</div>
+								<p v-if="checkForm.errors.status" class="mt-1 text-xs font-semibold text-rose-500">{{ checkForm.errors.status }}</p>
+							</div>
+
+							<!-- SECTION 3: Catatan Pengujian / Keterangan Kendala -->
+							<div>
+								<label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+									{{ checkForm.status === 'gangguan' ? 'Catatan / Keterangan Kendala' : 'Catatan Pengujian' }}
+									<span v-if="checkForm.status === 'gangguan'" class="text-rose-600 font-bold lowercase">(wajib)</span>
+									<span v-else class="text-slate-400 font-normal lowercase">(opsional)</span>
+								</label>
+								<textarea
+									v-model="checkForm.description"
+									rows="3"
+									maxlength="5000"
+									class="w-full rounded-xl bg-slate-50/70 border border-slate-200 text-xs focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary p-3 leading-relaxed placeholder:text-slate-400 outline-none transition-all"
+									:placeholder="checkForm.status === 'gangguan' ? 'Jelaskan secara spesifik kendala yang dialami (misal: halaman 404, lambat diakses, SSL expired, gagal login, dsb.)...' : 'Tambahkan catatan pengujian bila ada (opsional)...'"
+								></textarea>
+								<p v-if="checkForm.errors.description" class="mt-1 text-xs text-rose-500">{{ checkForm.errors.description }}</p>
+							</div>
+
+							<!-- SECTION 4: Lampiran / Bukti Kendala (Attachment) -->
+							<div>
+								<div class="flex items-center justify-between mb-1.5">
+									<label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+										Lampiran / Bukti Kendala
+										<span class="text-slate-400 font-normal lowercase">(opsional)</span>
+									</label>
+									<span class="text-[10px] text-slate-400">File maks. 10MB</span>
+								</div>
+
+								<!-- Existing or newly selected attachment preview -->
+								<div v-if="attachmentPreview || existingAttachment || attachmentFile" class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3">
+									<div class="flex items-center gap-3 min-w-0">
+										<div v-if="attachmentPreview" class="w-12 h-12 rounded-lg border border-slate-200 overflow-hidden shrink-0 bg-white">
+											<img :src="attachmentPreview" alt="Preview" class="w-full h-full object-cover" />
+										</div>
+										<div v-else class="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+											<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+										</div>
+										<div class="min-w-0">
+											<p class="text-xs font-semibold text-slate-800 truncate">
+												{{ attachmentFile ? attachmentFile.name : (existingAttachmentName || 'Lampiran Kendala') }}
+											</p>
+											<p v-if="attachmentFile" class="text-[10px] text-slate-500">
+												{{ (attachmentFile.size / 1024).toFixed(1) }} KB
+											</p>
+											<a v-else-if="existingAttachment" :href="existingAttachment" target="_blank" class="text-[10px] text-primary hover:underline inline-flex items-center gap-0.5">
+												Lihat file saat ini
+												<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+											</a>
+										</div>
+									</div>
+									<div class="flex items-center gap-1.5 shrink-0">
+										<button
+											type="button"
+											@click="attachmentInput?.click()"
+											class="px-2.5 py-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
+										>
+											Ganti
+										</button>
+										<button
+											type="button"
+											@click="removeAttachment"
+											class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+											title="Hapus Lampiran"
+										>
+											<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+										</button>
+									</div>
+								</div>
+
+								<!-- Upload Dropzone / Button -->
+								<div
+									v-else
+									@click="attachmentInput?.click()"
+									class="border-2 border-dashed border-slate-200 hover:border-primary/50 hover:bg-primary/5 rounded-xl p-4 text-center cursor-pointer transition-all group"
+								>
+									<svg class="w-6 h-6 mx-auto mb-1 text-slate-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+									</svg>
+									<p class="text-xs font-semibold text-slate-700 group-hover:text-primary">
+										Pilih atau unggah screenshot / bukti kendala
+									</p>
+									<p class="text-[10px] text-slate-400 mt-0.5">
+										Mendukung file JPG, PNG, WEBP, PDF, DOCX, dsb. (Maksimal 10 MB)
+									</p>
+								</div>
+
+								<input
+									type="file"
+									ref="attachmentInput"
+									@change="handleFileChange"
+									accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+									class="hidden"
+								/>
+								<p v-if="checkForm.errors.attachment" class="mt-1 text-xs text-rose-500">{{ checkForm.errors.attachment }}</p>
+							</div>
+						</form>
+					</div>
+
+					<!-- Modal Footer -->
+					<div class="px-6 py-3.5 border-t border-slate-100 bg-slate-50/60 flex items-center justify-end gap-2.5 rounded-b-3xl">
+						<button
+							type="button"
+							@click="showCheckModal = false"
+							class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-semibold transition-all cursor-pointer"
+						>
+							Batal
+						</button>
+						<button
+							type="button"
+							@click="submitCheck"
+							:disabled="checkForm.processing"
+							class="px-5 py-2 rounded-xl font-bold text-xs text-white bg-primary hover:bg-[#1d4ed8] shadow-md shadow-primary/20 transition-all disabled:opacity-70 flex items-center gap-1.5 cursor-pointer active:scale-95"
+						>
+							<svg v-if="checkForm.processing" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+							</svg>
+							<span>{{ checkForm.processing ? 'Menyimpan...' : 'Simpan Hasil Pengecekan' }}</span>
+						</button>
+					</div>
+				</div>
+			</div>
+		</Transition>
+	</Teleport>
+	</AdminLayout>
 </template>
