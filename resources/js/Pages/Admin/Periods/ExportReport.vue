@@ -41,11 +41,6 @@ const defaultPageTitle = computed(() => {
 	return `Laporan Pengecekan ${props.report?.title || ''} - MAJADIGI CHECKER`;
 });
 
-// Set document.title sesegera mungkin saat setup
-if (typeof document !== 'undefined') {
-	document.title = targetFileName.value;
-}
-
 let isPrinting = false;
 
 function printDocument() {
