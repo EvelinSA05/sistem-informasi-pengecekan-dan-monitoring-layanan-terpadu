@@ -19,18 +19,26 @@ class CheckSessionTimeout
     {
         // Hanya periksa jika user sedang terautentikasi (Admin maupun Tester)
         if (Auth::check()) {
-            // Jika user memilih "Ingat Saya" (punya cookie remember_web), kita lewati fitur auto-logout 5 menit ini
+            // Jika user memilih "Ingat Saya" (punya cookie remember_web), kita lewati fitur auto-logout 1 jam ini
             $recallerName = Auth::guard('web')->getRecallerName();
             if ($request->hasCookie($recallerName)) {
                 return $next($request);
             }
 
+            $user = Auth::user();
+            $role = $user?->role;
+
+            // Session timeout 1 jam (60 menit = 3600 detik) untuk masing-masing role (Admin maupun Tester)
+            $timeoutSeconds = match ($role) {
+                'admin'  => 60 * 60,
+                'tester' => 60 * 60,
+                default  => 60 * 60,
+            };
+
             $lastActivity = $request->session()->get('last_activity_time');
-            // Timeout di-hardcode ke 5 menit (300 detik) secara eksplisit agar selalu aktif di menit ke-5
-            $timeoutSeconds = 5 * 60;
 
             if ($lastActivity && (time() - $lastActivity > $timeoutSeconds)) {
-                $message = 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit. Silakan login kembali.';
+                $message = 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 1 jam. Silakan login kembali.';
 
                 // Logout dan invalidate session
                 Auth::guard('web')->logout();
