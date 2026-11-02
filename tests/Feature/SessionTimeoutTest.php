@@ -45,44 +45,44 @@ class SessionTimeoutTest extends TestCase
     }
 
     /**
-     * Test 2: Admin yang idle lebih dari 5 menit (300 detik) otomatis logout dan diarahkan ke login.
+     * Test 2: Admin yang idle lebih dari 1 jam (3600 detik) otomatis logout dan diarahkan ke login.
      */
-    public function test_admin_session_expires_after_5_minutes_of_inactivity(): void
+    public function test_admin_session_expires_after_1_hour_of_inactivity(): void
     {
         // Login sebagai Admin
         $this->actingAs($this->admin);
 
-        // Simulasikan aktivitas terakhir terjadi 305 detik yang lalu (> 5 menit)
-        session(['last_activity_time' => time() - 305]);
+        // Simulasikan aktivitas terakhir terjadi 3605 detik yang lalu (> 1 jam)
+        session(['last_activity_time' => time() - 3605]);
 
         // Coba akses route terproteksi Admin
         $response = $this->get(route('admin.services.index'));
 
-        // Harus diarahkan ke login dengan pesan sesi berakhir
-        $response->assertRedirect(route('login'));
-        $response->assertSessionHas('session_expired', 'Sesi Anda telah berakhir karena tidak ada aktivitas. Silakan login kembali.');
+        // Harus diarahkan ke login dengan query timeout=1 dan pesan sesi berakhir
+        $response->assertRedirect('/?timeout=1');
+        $response->assertSessionHas('session_expired', 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 1 jam. Silakan login kembali.');
 
         // User harus sudah logout
         $this->assertGuest();
     }
 
     /**
-     * Test 3: Tester yang idle lebih dari 5 menit otomatis logout dan diarahkan ke login.
+     * Test 3: Tester yang idle lebih dari 1 jam otomatis logout dan diarahkan ke login.
      */
-    public function test_tester_session_expires_after_5_minutes_of_inactivity(): void
+    public function test_tester_session_expires_after_1_hour_of_inactivity(): void
     {
         // Login sebagai Tester
         $this->actingAs($this->tester);
 
-        // Simulasikan aktivitas terakhir terjadi 301 detik yang lalu (> 5 menit)
-        session(['last_activity_time' => time() - 301]);
+        // Simulasikan aktivitas terakhir terjadi 3605 detik yang lalu (> 1 jam)
+        session(['last_activity_time' => time() - 3605]);
 
         // Coba akses route terproteksi Tester
         $response = $this->get(route('tester.services.index'));
 
         // Harus diarahkan ke login
-        $response->assertRedirect(route('login'));
-        $response->assertSessionHas('session_expired', 'Sesi Anda telah berakhir karena tidak ada aktivitas. Silakan login kembali.');
+        $response->assertRedirect('/?timeout=1');
+        $response->assertSessionHas('session_expired', 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 1 jam. Silakan login kembali.');
 
         // Tester harus sudah logout
         $this->assertGuest();
@@ -95,8 +95,8 @@ class SessionTimeoutTest extends TestCase
     {
         $this->actingAs($this->admin);
 
-        // 1. Aktivitas pertama di set pada 3 menit yang lalu (180 detik < 300 detik)
-        session(['last_activity_time' => time() - 180]);
+        // 1. Aktivitas pertama di set pada 30 menit yang lalu (1800 detik < 3600 detik)
+        session(['last_activity_time' => time() - 1800]);
 
         // 2. User melakukan request -> masih aktif dan berhasil
         $response1 = $this->get(route('dashboard'));
@@ -107,16 +107,16 @@ class SessionTimeoutTest extends TestCase
         $updatedTime = session('last_activity_time');
         $this->assertGreaterThanOrEqual(time() - 2, $updatedTime);
 
-        // 4. Setelah 3 menit lagi (total 6 menit sejak awal, tapi hanya 3 menit sejak aktivitas terakhir)
-        session(['last_activity_time' => time() - 180]);
+        // 4. Setelah 30 menit lagi (total 60 menit sejak awal, tapi hanya 30 menit sejak aktivitas terakhir)
+        session(['last_activity_time' => time() - 1800]);
         $response2 = $this->get(route('admin.services.index'));
         $response2->assertOk();
         $this->assertAuthenticated();
 
-        // 5. Jika kemudian diam selama 6 menit (360 detik > 300 detik)
-        session(['last_activity_time' => time() - 360]);
+        // 5. Jika kemudian diam selama lebih dari 1 jam (3650 detik > 3600 detik)
+        session(['last_activity_time' => time() - 3650]);
         $response3 = $this->get(route('dashboard'));
-        $response3->assertRedirect(route('login'));
+        $response3->assertRedirect('/?timeout=1');
         $this->assertGuest();
     }
 
@@ -127,7 +127,7 @@ class SessionTimeoutTest extends TestCase
     {
         // 1. Sesi expired
         $this->actingAs($this->admin);
-        session(['last_activity_time' => time() - 400]);
+        session(['last_activity_time' => time() - 3700]);
         $this->get(route('dashboard'));
         $this->assertGuest();
 

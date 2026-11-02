@@ -91,83 +91,205 @@ function showToast(msg, type = 'success') {
 // ─── Testing Modal State ─────────────────────────────────────────
 const showCheckModal = ref(false);
 const selectedService = ref(null);
-const attachmentInput = ref(null);
-const attachmentPreview = ref(null);
-const attachmentFile = ref(null);
-const existingAttachment = ref(null);
-const existingAttachmentName = ref(null);
-
 const checkForm = useForm({
-  status: '',
-  description: '',
-  attachment: null,
-  remove_attachment: false,
+ status: '',
+ description: '',
+ attachment: null,
+ existing_attachment: null,
+ remove_attachment: false,
 });
 
+const fileInputRef = ref(null);
+const filePreview = ref(null);
+const selectedFileName = ref('');
+const selectedFileSize = ref('');
+const existingAttachmentName = ref('');
+const existingAttachmentUrl = ref('');
+
+// ─── History / Riwayat Kendala Modal State (Icon Jam) ───────────
+// ─── History / Riwayat Kendala Modal State (Icon Jam) ───────────
+const showHistoryModal = ref(false);
+const historyService = ref(null);
+const timelineOrder = ref('asc'); // 'asc' = Kronologis (Awal ke Baru), 'desc' = Terbaru ke Lama
+
+const historyTimelineList = computed(() => {
+  if (!historyService.value) return [];
+  const list = historyService.value.timeline || historyService.value.check_logs || [];
+  if (timelineOrder.value === 'desc') {
+    return [...list].reverse();
+  }
+  return [...list];
+});
+
+function toggleTimelineOrder() {
+  timelineOrder.value = timelineOrder.value === 'asc' ? 'desc' : 'asc';
+}
+
+function isImageAttachment(urlOrName) {
+  if (!urlOrName) return false;
+  return !!String(urlOrName).match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
+}
+
+function openHistoryModal(service) {
+  historyService.value = service;
+  timelineOrder.value = 'asc';
+  showHistoryModal.value = true;
+}
+
+function closeHistoryModal() {
+  showHistoryModal.value = false;
+  historyService.value = null;
+}
+
+function handleRecheckFromHistory(service) {
+  closeHistoryModal();
+  openCheckModal(service);
+}
+
 const isEditMode = computed(() => {
-  return selectedService.value && selectedService.value.status !== 'pending';
+ return selectedService.value && selectedService.value.status !== 'pending';
+});
+
+function formatFileSize(bytes) {
+ if (!bytes || bytes === 0) return '0 Bytes';
+ const k = 1024;
+ const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+ const i = Math.floor(Math.log(bytes) / Math.log(k));
+ return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function handleFileSelect(event) {
+ const file = event.target.files?.[0];
+ if (!file) return;
+
+ if (file.size > 10 * 1024 * 1024) {
+  checkForm.setError('attachment', 'Ukuran file melebihi batas maksimal 10MB.');
+  return;
+ }
+
+ checkForm.attachment = file;
+ checkForm.remove_attachment = false;
+ selectedFileName.value = file.name;
+ selectedFileSize.value = formatFileSize(file.size);
+ checkForm.clearErrors('attachment');
+
+ if (file.type.startsWith('image/')) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+   filePreview.value = e.target.result;
+  };
+  reader.readAsDataURL(file);
+ } else {
+  filePreview.value = null;
+ }
+}
+
+function triggerFileInput() {
+ if (fileInputRef.value) {
+  fileInputRef.value.click();
+ }
+}
+
+function removeSelectedFile() {
+ checkForm.attachment = null;
+ checkForm.existing_attachment = null;
+ checkForm.remove_attachment = true;
+ filePreview.value = null;
+ selectedFileName.value = '';
+ selectedFileSize.value = '';
+ existingAttachmentName.value = '';
+ existingAttachmentUrl.value = '';
+ if (fileInputRef.value) {
+  fileInputRef.value.value = '';
+ }
+}
+
+watch(() => checkForm.status, (newStatus) => {
+ if (newStatus === 'normal') {
+  checkForm.clearErrors('attachment');
+ }
 });
 
 function openCheckModal(service) {
-  selectedService.value = service;
+ selectedService.value = service;
+ 
+ if (service.is_recheck_needed) {
+  // Jika kendala telah ditangani admin dan perlu pengecekan ulang:
+  // Default ke normal untuk kemudahan verifikasi, atau tester bisa memilih kendala kembali jika masih error.
+  checkForm.status = 'normal';
+  checkForm.description = '';
+  checkForm.attachment = null;
+  checkForm.existing_attachment = null; // Wajib upload lampiran baru jika tetap kendala
+  checkForm.remove_attachment = false;
+  existingAttachmentName.value = '';
+  existingAttachmentUrl.value = '';
+ } else {
+  // Pre-select existing status if already tested, otherwise default to normal
   checkForm.status = service.status === 'pending' ? 'normal' : service.status;
   checkForm.description = service.last_description || '';
   checkForm.attachment = null;
-  checkForm.remove_attachment = false;
-  existingAttachment.value = service.attachment || null;
-  existingAttachmentName.value = service.attachment_name || null;
-  attachmentPreview.value = null;
-  attachmentFile.value = null;
-  if (attachmentInput.value) attachmentInput.value.value = '';
-  checkForm.clearErrors();
-  showCheckModal.value = true;
-}
-
-function handleFileChange(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  attachmentFile.value = file;
-  checkForm.attachment = file;
+  checkForm.existing_attachment = service.attachment || null;
   checkForm.remove_attachment = false;
 
-  if (file.type.startsWith('image/')) {
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      attachmentPreview.value = ev.target.result;
-    };
-    reader.readAsDataURL(file);
+  if (service.attachment) {
+   existingAttachmentName.value = service.attachment_name || (service.attachment ? service.attachment.split('/').pop() : '');
+   existingAttachmentUrl.value = service.attachment_url || null;
   } else {
-    attachmentPreview.value = null;
+   existingAttachmentName.value = '';
+   existingAttachmentUrl.value = '';
   }
-}
+ }
 
-function removeAttachment() {
-  checkForm.attachment = null;
-  attachmentFile.value = null;
-  attachmentPreview.value = null;
-  existingAttachment.value = null;
-  existingAttachmentName.value = null;
-  checkForm.remove_attachment = true;
-  if (attachmentInput.value) attachmentInput.value.value = '';
+ filePreview.value = null;
+ selectedFileName.value = '';
+ selectedFileSize.value = '';
+
+ if (fileInputRef.value) {
+  fileInputRef.value.value = '';
+ }
+ checkForm.clearErrors();
+ showCheckModal.value = true;
 }
 
 function submitCheck() {
-  checkForm.post(route('tester.submit_check', selectedService.value.id), {
-    preserveScroll: true,
-    forceFormData: true,
-    onSuccess: (pageObj) => {
-      if (pageObj.props?.flash?.error) {
-        showToast(pageObj.props.flash.error, 'error');
-      } else {
-        showCheckModal.value = false;
-        showToast(isEditMode.value ? 'Hasil pengujian berhasil diperbarui.' : 'Hasil pengecekan berhasil disimpan.');
-      }
-    },
-    onError: (errs) => {
-      const err = Object.values(errs)[0] || 'Gagal menyimpan hasil pengecekan.';
-      showToast(err, 'error');
+ if (checkForm.status === 'gangguan') {
+  if (!checkForm.description || !checkForm.description.trim()) {
+   checkForm.setError('description', selectedService.value?.is_recheck_needed
+    ? 'Catatan kendala terbaru wajib diisi.'
+    : 'Catatan / Keterangan kendala wajib diisi.');
+   return;
+  }
+  if (selectedService.value?.is_recheck_needed) {
+   if (!checkForm.attachment) {
+    checkForm.setError('attachment', 'Bukti lampiran kendala terbaru (screenshot/file) wajib diunggah.');
+    return;
+   }
+  } else {
+   if (!checkForm.attachment && !checkForm.existing_attachment) {
+    checkForm.setError('attachment', 'Bukti lampiran kendala (screenshot/file) wajib diunggah.');
+    return;
+   }
+  }
+ }
+
+ const isRecheck = selectedService.value?.is_recheck_needed;
+
+ checkForm.post(route('tester.submit_check', selectedService.value.id), {
+  preserveScroll: true,
+  forceFormData: true,
+  onSuccess: (pageObj) => {
+   if (pageObj.props.flash && pageObj.props.flash.error) {
+    showToast(pageObj.props.flash.error, 'error');
+   } else {
+    showCheckModal.value = false;
+    if (isRecheck) {
+     showToast('Hasil pengecekan ulang berhasil disimpan.');
+    } else {
+     showToast(isEditMode.value ? 'Hasil pengujian berhasil diperbarui.' : 'Hasil pengecekan berhasil disimpan.');
     }
-  });
+   }
+  },
+ });
 }
 </script>
 
@@ -527,7 +649,7 @@ function submitCheck() {
  <tr class="bg-slate-50/90 border-b border-slate-200">
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-14 text-center">No</th>
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider min-w-[260px]">Nama Layanan</th>
- <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-28 whitespace-nowrap">Level</th>
+ <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-36">Kategori & Level</th>
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider min-w-[200px]">Status & Hasil</th>
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center w-28">Aksi</th>
  </tr>
@@ -572,88 +694,163 @@ function submitCheck() {
  {{ (services.current_page - 1) * 10 + index + 1 }}
  </td>
 
- 								<!-- Nama Layanan, URL & Kategori -->
-								<td class="py-4 px-5 align-top">
-									<div class="font-bold text-slate-800 text-sm group-hover:text-primary transition-colors">
-										{{ service.name }}
-									</div>
-									<div class="flex items-center gap-1.5 mt-1">
-										<a
-											v-if="service.url"
-											:href="service.url"
-											target="_blank"
-											class="text-xs text-slate-500 hover:text-primary hover:underline inline-flex items-center gap-1 truncate max-w-[320px] font-normal"
-											title="Buka URL Layanan di tab baru"
-										>
-											<span class="truncate">{{ service.url }}</span>
-											<svg class="w-3 h-3 shrink-0 text-slate-400 group-hover:text-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-										</a>
-										<span v-else class="text-xs text-slate-300">-</span>
-									</div>
-									<!-- Kategori di bawah link layanan -->
-									<div v-if="service.category" class="mt-1.5">
-										<span class="inline-block px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/70">
-											{{ service.category }}
-										</span>
-									</div>
-								</td>
-
-								<!-- Level -->
-								<td class="py-4 px-5 align-top pt-4 whitespace-nowrap">
-									<span
-										v-if="service.level && service.level !== '-'"
-										class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold whitespace-nowrap"
-										:class="service.level === 'Level 1' ? 'bg-primary text-white border border-primary' : (service.level === 'Level 2' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/80' : (service.level === 'Level 3' ? 'bg-purple-50 text-purple-700 border border-purple-200/80' : 'bg-slate-100 text-slate-600 border border-slate-200/60'))"
-									>
-										{{ service.level }}
-									</span>
-									<span v-else class="text-xs font-semibold text-slate-400">-</span>
-								</td>
-
- <!-- Status & Hasil Pengujian -->
+ <!-- Nama Layanan & URL -->
  <td class="py-4 px-5 align-top">
- <!-- Status: Belum Dicek -->
- <div v-if="service.status === 'pending'" class="flex items-center gap-1.5">
- <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/90 shadow-2xs">
- <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7v5l3 3"/></svg>
- Belum Dicek
- </span>
+ <div class="font-bold text-slate-800 text-sm group-hover:text-primary transition-colors">
+ {{ service.name }}
  </div>
-
- <!-- Status: Normal -->
- <div v-else-if="service.status === 'normal'" class="space-y-1">
- <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/90 shadow-2xs">
- <svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
- Normal
- </span>
- <p v-if="service.checked_at" class="text-[11px] text-slate-400 font-medium">
- Diperiksa {{ service.checked_at }}
- </p>
- <p v-if="service.last_description" class="text-[11px] text-slate-600 italic line-clamp-1 max-w-[280px]">
- "{{ service.last_description }}"
- </p>
- </div>
-
- <!-- Status: Terkendala -->
- <div v-else class="space-y-1">
- <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200/90 shadow-2xs">
- <svg class="w-3.5 h-3.5 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
- Terkendala
- </span>
- <p v-if="service.checked_at" class="text-[11px] text-slate-400 font-medium">
- Diperiksa {{ service.checked_at }}
- </p>
- <div v-if="service.last_description" class="inline-block bg-rose-50/70 border border-rose-100 rounded-lg px-2.5 py-1 text-[11px] text-rose-800 max-w-[280px] truncate" :title="service.last_description">
- <span class="font-semibold">Kendala:</span> {{ service.last_description }}
- </div>
+ <div class="flex items-center gap-1.5 mt-1">
+ <a
+ v-if="service.url"
+ :href="service.url"
+ target="_blank"
+ class="text-xs text-slate-500 hover:text-primary hover:underline inline-flex items-center gap-1 truncate max-w-[320px] font-normal"
+ title="Buka URL Layanan di tab baru"
+ >
+ <span class="truncate">{{ service.url }}</span>
+ <svg class="w-3 h-3 shrink-0 text-slate-400 group-hover:text-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+ </a>
+ <span v-else class="text-xs text-slate-300">-</span>
  </div>
  </td>
 
- <!-- Action Button (Cek vs Ubah) -->
+ <!-- Kategori & Level -->
+ <td class="py-4 px-5 align-top">
+ <div class="flex flex-col items-start gap-1.5">
+ <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/70">
+ {{ service.category || 'Umum' }}
+ </span>
+ <span
+ v-if="service.level && service.level !== '-'"
+ class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
+ :class="service.level === 'Level 1' ? 'bg-primary text-white border border-primary' : (service.level === 'Level 2' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/80' : (service.level === 'Level 3' ? 'bg-purple-50 text-purple-700 border border-purple-200/80' : 'bg-slate-100 text-slate-600 border border-slate-200/60'))"
+ >
+ {{ service.level }}
+ </span>
+ </div>
+ </td>
+
+ <!-- Status & Hasil Pengujian (Simpel & Rapi + Histori Icon Jam) -->
+								<td class="py-4 px-5 align-top">
+									<!-- Status: Belum Dicek -->
+									<div v-if="service.status === 'pending'" class="flex items-center gap-1.5 pt-0.5">
+										<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/90 shadow-2xs">
+											<svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7v5l3 3"/></svg>
+											Belum Dicek
+										</span>
+									</div>
+
+									<!-- Status: Normal -->
+									<div v-else-if="service.status === 'normal'" class="space-y-1.5">
+										<div>
+											<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/90 shadow-2xs">
+												<svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+												Normal
+											</span>
+										</div>
+
+										<p v-if="service.checked_at" class="text-[11px] text-slate-400 font-medium">
+											Diperiksa {{ service.checked_at }}
+										</p>
+
+										<!-- Button Histori Icon Jam -->
+										<div class="pt-0.5">
+											<button
+												type="button"
+												@click="openHistoryModal(service)"
+												class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold text-slate-600 hover:text-primary hover:bg-slate-100 transition-colors cursor-pointer border border-slate-200/70"
+												title="Lihat riwayat pengecekan"
+											>
+												<svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 3"/></svg>
+												<span>Histori</span>
+											</button>
+										</div>
+									</div>
+
+									<!-- Status: Terkendala -->
+									<div v-else class="space-y-1.5">
+										<!-- Status Pengujian -->
+										<div>
+											<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200/90 shadow-2xs">
+												<svg class="w-3.5 h-3.5 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+												Terkendala
+											</span>
+										</div>
+
+										<!-- Hasil Tindak Lanjut / Status Penanganan -->
+										<div>
+											<span
+												v-if="service.is_recheck_needed"
+												class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 shadow-2xs"
+											>
+												<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+												Perlu Cek Ulang
+											</span>
+											<span
+												v-else-if="service.handling_status === 'selesai'"
+												class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs"
+											>
+												<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+												Selesai
+											</span>
+											<span
+												v-else
+												class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200 shadow-2xs"
+											>
+												<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+												Belum Ditindaklanjuti
+											</span>
+										</div>
+
+										<!-- Waktu Pemeriksaan -->
+										<p v-if="service.checked_at" class="text-[11px] text-slate-400 font-medium">
+											Diperiksa {{ service.checked_at }}
+										</p>
+
+										<!-- Button Histori Kendala (Di bawah Diperiksa) -->
+										<div class="pt-0.5">
+											<button
+												type="button"
+												@click="openHistoryModal(service)"
+												class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/90 border border-slate-200 transition-all cursor-pointer shadow-2xs group/btn"
+												title="Klik untuk melihat catatan kendala, bukti lampiran, dan hasil penanganan Admin"
+											>
+												<svg class="w-3.5 h-3.5 text-slate-500 group-hover/btn:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+													<circle cx="12" cy="12" r="9"/>
+													<path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 3"/>
+												</svg>
+												<span>Histori Kendala</span>
+												<svg v-if="service.attachment_url" class="w-3 h-3 text-rose-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" title="Ada file bukti lampiran">
+													<path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+												</svg>
+											</button>
+										</div>
+									</div>
+								</td>
+
+								<!-- Action Button (Cek vs Ubah vs Cek Ulang Layanan) -->
  <td class="py-4 px-5 text-center align-top pt-4">
+ <!-- Tombol Cek Ulang Layanan jika perlu pengecekan ulang -->
+ <button
+ v-if="service.is_recheck_needed"
+ type="button"
+ @click="!(periodInfo.status !== 'proses' || periodInfo.is_overdue) && openCheckModal(service)"
+ :disabled="periodInfo.status !== 'proses' || periodInfo.is_overdue"
+ class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs shadow-xs transition-all border whitespace-nowrap active:scale-95"
+ :class="(periodInfo.status !== 'proses' || periodInfo.is_overdue)
+ ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+ : 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 cursor-pointer shadow-amber-500/20'"
+ title="Kendala telah ditangani Admin. Klik untuk melakukan pengecekan ulang layanan"
+ >
+ <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+ </svg>
+ <span>Cek Ulang Layanan</span>
+ </button>
+
  <!-- Primary Cek Button for Pending -->
  <button
- v-if="service.status === 'pending'"
+ v-else-if="service.status === 'pending'"
  type="button"
  @click="!(periodInfo.status !== 'proses' || periodInfo.is_overdue) && openCheckModal(service)"
  :disabled="periodInfo.status !== 'proses' || periodInfo.is_overdue"
@@ -734,9 +931,12 @@ function submitCheck() {
  <div class="flex items-center gap-3 min-w-0">
  <div
  class="w-8 h-8 rounded-xl flex items-center justify-center font-bold shrink-0 shadow-xs border"
- :class="isEditMode ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-primary border-primary text-white'"
+ :class="selectedService?.is_recheck_needed ? 'bg-amber-500 border-amber-600 text-white' : (isEditMode ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-primary border-primary text-white')"
  >
- <svg v-if="!isEditMode" class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <svg v-if="selectedService?.is_recheck_needed" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+ </svg>
+ <svg v-else-if="!isEditMode" class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
  <svg v-else class="w-4 h-4 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -745,7 +945,7 @@ function submitCheck() {
  </div>
  <div class="min-w-0">
  <h3 class="text-sm sm:text-base font-extrabold text-slate-800 leading-snug">
- {{ isEditMode ? 'Edit Hasil Pengujian' : 'Uji Layanan' }}
+ {{ selectedService?.is_recheck_needed ? 'Cek Ulang Layanan' : (isEditMode ? 'Edit Hasil Pengujian' : 'Uji Layanan') }}
  </h3>
  <p class="text-xs text-slate-500 font-medium truncate">
  {{ selectedService.name }}
@@ -810,8 +1010,34 @@ function submitCheck() {
  <p class="text-xs leading-relaxed whitespace-pre-wrap">{{ selectedService.tester_instruction }}</p>
  </div>
 
- <!-- Previous Result Banner if Editing -->
- <div v-if="isEditMode && selectedService.checked_at" class="bg-white border border-slate-200 rounded-xl p-2.5 flex items-center justify-between gap-2 text-slate-500">
+ <!-- Banner Pengecekan Ulang jika kendala telah ditangani Admin -->
+ <div v-if="selectedService.is_recheck_needed" class="bg-amber-50 border border-amber-200/90 rounded-2xl p-4 text-amber-950 space-y-2.5 shadow-2xs">
+ <div class="flex items-start gap-2.5">
+ <div class="w-7 h-7 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs mt-0.5">
+ <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+ </div>
+ <div class="min-w-0">
+ <h4 class="font-bold text-xs text-amber-900 uppercase tracking-wider">Kendala Telah Ditangani oleh Admin</h4>
+ <p class="text-[11px] text-amber-800 leading-relaxed mt-0.5">
+ Admin telah menandai perbaikan pada kendala ini. Silakan periksa kembali tautan layanan dan tentukan apakah layanan kini normal atau masih berkendala.
+ </p>
+ </div>
+ </div>
+ <div v-if="selectedService.admin_note" class="bg-white/95 rounded-xl p-3 border border-amber-200/70 text-slate-700 text-xs shadow-2xs">
+ <p class="font-bold text-[10px] text-amber-900 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+ <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+ Catatan Terbaru dari Admin:
+ </p>
+ <p class="leading-relaxed whitespace-pre-wrap font-medium">{{ selectedService.admin_note }}</p>
+ </div>
+ <div v-if="selectedService.last_description" class="bg-white/70 rounded-xl p-2.5 border border-amber-200/50 text-slate-600 text-[11px]">
+ <p class="font-semibold text-slate-500 mb-0.5">Catatan Kendala Sebelumnya (Tester):</p>
+ <p class="leading-relaxed whitespace-pre-wrap">{{ selectedService.last_description }}</p>
+ </div>
+ </div>
+
+ <!-- Previous Result Banner if Regular Editing -->
+ <div v-else-if="isEditMode && selectedService.checked_at" class="bg-white border border-slate-200 rounded-xl p-2.5 flex items-center justify-between gap-2 text-slate-500">
  <span>Pengecekan sebelumnya: <strong class="text-slate-700 font-semibold">{{ selectedService.checked_at }}</strong></span>
  <span
  class="px-2 py-0.5 rounded-md font-bold text-[10px] uppercase"
@@ -880,7 +1106,7 @@ function submitCheck() {
  <!-- SECTION 3: Catatan Pengujian / Keterangan Kendala -->
  <div>
  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
- {{ checkForm.status === 'gangguan' ? 'Catatan / Keterangan Kendala' : 'Catatan Pengujian' }}
+ {{ checkForm.status === 'gangguan' ? (selectedService?.is_recheck_needed ? 'Catatan Kendala Terbaru' : 'Catatan / Keterangan Kendala') : 'Catatan Pengujian' }}
  <span v-if="checkForm.status === 'gangguan'" class="text-rose-600 font-bold lowercase">(wajib)</span>
  <span v-else class="text-slate-400 font-normal lowercase">(opsional)</span>
  </label>
@@ -889,87 +1115,146 @@ function submitCheck() {
  rows="3"
  maxlength="5000"
  class="w-full rounded-xl bg-slate-50/70 border border-slate-200 text-xs focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary p-3 leading-relaxed placeholder:text-slate-400 outline-none transition-all"
- :placeholder="checkForm.status === 'gangguan' ? 'Jelaskan secara spesifik kendala yang dialami (misal: halaman 404, lambat diakses, SSL expired, gagal login, dsb.)...' : 'Tambahkan catatan pengujian bila ada (opsional)...'"
+ :placeholder="checkForm.status === 'gangguan' ? (selectedService?.is_recheck_needed ? 'Tuliskan catatan kendala terbaru yang masih terjadi pada layanan ini...' : 'Jelaskan secara spesifik kendala yang dialami (misal: halaman 404, lambat diakses, SSL expired, gagal login, dsb.)...') : (selectedService?.is_recheck_needed ? 'Catatan pengujian hasil verifikasi (opsional, layanan sudah kembali normal)...' : 'Tambahkan catatan pengujian bila ada (opsional)...')"
  ></textarea>
  <p v-if="checkForm.errors.description" class="mt-1 text-xs text-rose-500">{{ checkForm.errors.description }}</p>
  </div>
-              <!-- SECTION 4: Lampiran / Bukti Kendala (Attachment) -->
-              <div>
-                <div class="flex items-center justify-between mb-1.5">
-                  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Lampiran / Bukti Kendala
-                    <span class="text-slate-400 font-normal lowercase">(opsional)</span>
-                  </label>
-                  <span class="text-[10px] text-slate-400">File maks. 10MB</span>
-                </div>
+  <!-- SECTION 4: Upload Bukti Lampiran Kendala (Wajib saat Kendala) -->
+  <div v-if="checkForm.status === 'gangguan'" class="space-y-2 pt-1">
+   <!-- Warning box jika dalam mode cek ulang dan memilih kendala -->
+   <div v-if="selectedService?.is_recheck_needed" class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
+    <svg class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+    <div class="leading-relaxed">
+     <span class="font-bold block">Pengecekan Ulang Kendala:</span>
+     Karena layanan masih mengalami kendala, Anda wajib mengisi catatan kendala terbaru dan mengunggah attachment baru sebagai bukti terkini.
+    </div>
+   </div>
 
-                <!-- Existing or newly selected attachment preview -->
-                <div v-if="attachmentPreview || existingAttachment || attachmentFile" class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3">
-                  <div class="flex items-center gap-3 min-w-0">
-                    <div v-if="attachmentPreview" class="w-12 h-12 rounded-lg border border-slate-200 overflow-hidden shrink-0 bg-white">
-                      <img :src="attachmentPreview" alt="Preview" class="w-full h-full object-cover" />
-                    </div>
-                    <div v-else class="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                    </div>
-                    <div class="min-w-0">
-                      <p class="text-xs font-semibold text-slate-800 truncate">
-                        {{ attachmentFile ? attachmentFile.name : (existingAttachmentName || 'Lampiran Kendala') }}
-                      </p>
-                      <p v-if="attachmentFile" class="text-[10px] text-slate-500">
-                        {{ (attachmentFile.size / 1024).toFixed(1) }} KB
-                      </p>
-                      <a v-else-if="existingAttachment" :href="existingAttachment" target="_blank" class="text-[10px] text-primary hover:underline inline-flex items-center gap-0.5">
-                        Lihat file saat ini
-                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                      </a>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      @click="attachmentInput?.click()"
-                      class="px-2.5 py-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
-                    >
-                      Ganti
-                    </button>
-                    <button
-                      type="button"
-                      @click="removeAttachment"
-                      class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                      title="Hapus Lampiran"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    </button>
-                  </div>
-                </div>
+   <div class="flex items-center justify-between">
+    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+     Bukti Lampiran Kendala <span class="text-rose-600 font-bold lowercase">(wajib)</span>
+    </label>
+    <span class="text-[10px] text-slate-400">PNG, JPG, JPEG, WEBP, PDF (Maks. 10MB)</span>
+   </div>
 
-                <!-- Upload Dropzone / Button -->
-                <div
-                  v-else
-                  @click="attachmentInput?.click()"
-                  class="border-2 border-dashed border-slate-200 hover:border-primary/50 hover:bg-primary/5 rounded-xl p-4 text-center cursor-pointer transition-all group"
-                >
-                  <svg class="w-6 h-6 mx-auto mb-1 text-slate-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                  </svg>
-                  <p class="text-xs font-semibold text-slate-700 group-hover:text-primary">
-                    Pilih atau unggah screenshot / bukti kendala
-                  </p>
-                  <p class="text-[10px] text-slate-400 mt-0.5">
-                    Mendukung file JPG, PNG, WEBP, PDF, DOCX, dsb. (Maksimal 10 MB)
-                  </p>
-                </div>
+   <!-- Hidden native file input -->
+   <input
+    ref="fileInputRef"
+    type="file"
+    accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf"
+    class="hidden"
+    @change="handleFileSelect"
+   />
 
-                <input
-                  type="file"
-                  ref="attachmentInput"
-                  @change="handleFileChange"
-                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
-                  class="hidden"
-                />
-                <p v-if="checkForm.errors.attachment" class="mt-1 text-xs text-rose-500">{{ checkForm.errors.attachment }}</p>
-              </div>
+   <!-- STATE 1: File Selected or Existing File -->
+   <div
+    v-if="checkForm.attachment || existingAttachmentName"
+    class="p-3 rounded-2xl bg-slate-50/80 border border-slate-200 shadow-2xs flex items-center justify-between gap-3 group transition-all hover:bg-slate-50"
+   >
+    <div class="flex items-center gap-3 min-w-0">
+     <!-- Thumbnail if image preview available -->
+     <div
+      v-if="filePreview"
+      class="w-12 h-12 rounded-xl border border-slate-200 overflow-hidden bg-white shrink-0 flex items-center justify-center shadow-2xs"
+     >
+      <img :src="filePreview" alt="Preview attachment" class="w-full h-full object-cover" />
+     </div>
+     <!-- Thumbnail if existing image URL -->
+     <div
+      v-else-if="existingAttachmentUrl && /\.(jpg|jpeg|png|webp|gif)$/i.test(existingAttachmentName)"
+      class="w-12 h-12 rounded-xl border border-slate-200 overflow-hidden bg-white shrink-0 flex items-center justify-center shadow-2xs"
+     >
+      <img :src="existingAttachmentUrl" alt="Existing attachment" class="w-full h-full object-cover" />
+     </div>
+     <!-- Document / Generic file icon -->
+     <div
+      v-else
+      class="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center shrink-0"
+     >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+     </div>
+
+     <!-- File Info -->
+     <div class="min-w-0">
+      <p class="text-xs font-bold text-slate-800 truncate max-w-[200px] sm:max-w-[280px]">
+       {{ selectedFileName || existingAttachmentName }}
+      </p>
+      <div class="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
+       <span v-if="selectedFileSize" class="font-medium">{{ selectedFileSize }}</span>
+       <span v-else class="text-emerald-600 font-semibold">Lampiran tersimpan</span>
+       <a
+        v-if="existingAttachmentUrl && !selectedFileName"
+        :href="existingAttachmentUrl"
+        target="_blank"
+        class="text-primary hover:underline font-semibold"
+       >
+        Buka File
+       </a>
+      </div>
+     </div>
+    </div>
+
+    <!-- Action Buttons: Ganti & Hapus -->
+    <div class="flex items-center gap-1.5 shrink-0">
+     <button
+      type="button"
+      @click="triggerFileInput"
+      class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+      title="Ganti file lampiran"
+     >
+      <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+      <span>Ganti</span>
+     </button>
+     <button
+      type="button"
+      @click="removeSelectedFile"
+      class="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+      title="Hapus file lampiran"
+     >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z" />
+      </svg>
+     </button>
+    </div>
+   </div>
+
+   <!-- STATE 2: Empty Dropzone -->
+   <div
+    v-else
+    @click="triggerFileInput"
+    class="border-2 border-dashed border-slate-300 hover:border-primary/60 rounded-2xl p-4 sm:p-5 text-center cursor-pointer bg-slate-50/60 hover:bg-blue-50/20 transition-all group select-none"
+   >
+    <div class="w-10 h-10 rounded-full bg-white shadow-2xs border border-slate-200/80 flex items-center justify-center mx-auto mb-2 text-slate-400 group-hover:text-primary group-hover:border-primary/30 transition-colors">
+     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+     </svg>
+    </div>
+    <p class="text-xs font-bold text-slate-700 group-hover:text-primary transition-colors">
+     Klik untuk mengunggah screenshot / bukti kendala
+    </p>
+    <p class="text-[11px] text-slate-400 mt-0.5">
+     Format PNG, JPG, JPEG, WEBP, atau PDF (Maksimal 10MB)
+    </p>
+   </div>
+
+   <!-- Error message -->
+   <p v-if="checkForm.errors.attachment" class="mt-1 text-xs text-rose-500 font-semibold flex items-center gap-1">
+    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+    <span>{{ checkForm.errors.attachment }}</span>
+   </p>
+   <p v-else-if="checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName" class="text-[11px] text-amber-600 font-medium flex items-center gap-1">
+    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+     <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <span>Upload screenshot atau file bukti pendukung untuk menyimpan kendala.</span>
+   </p>
+  </div>
  </form>
  </div>
 
@@ -985,11 +1270,16 @@ function submitCheck() {
  <button
  type="button"
  @click="submitCheck"
- :disabled="checkForm.processing"
- class="px-5 py-2 rounded-xl font-bold text-xs text-white bg-primary hover:bg-primary shadow-md shadow-primary/20 transition-all disabled:opacity-70 flex items-center gap-1.5 cursor-pointer active:scale-95"
+ :disabled="checkForm.processing || (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName)"
+ :class="[
+ 'px-5 py-2 rounded-xl font-bold text-xs text-white transition-all flex items-center gap-1.5 cursor-pointer active:scale-95',
+ (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName)
+ ? 'bg-slate-300 cursor-not-allowed text-slate-500 shadow-none'
+ : (selectedService?.is_recheck_needed ? 'bg-amber-500 hover:bg-amber-600 shadow-md shadow-amber-500/20' : 'bg-primary hover:bg-[#1d4ed8] shadow-md shadow-primary/20 disabled:opacity-70')
+ ]"
  >
  <svg v-if="checkForm.processing" class="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
- <span>{{ isEditMode ? 'Simpan Perubahan' : 'Simpan Hasil Pengecekan' }}</span>
+ <span>{{ selectedService?.is_recheck_needed ? 'Simpan Hasil Cek Ulang' : (isEditMode ? 'Simpan Perubahan' : 'Simpan Hasil Pengecekan') }}</span>
  </button>
  </div>
 
@@ -997,5 +1287,382 @@ function submitCheck() {
  </div>
  </Transition>
 
- </AdminLayout>
+ 
+		<!-- ── Modal Histori & Detail Pengecekan (Icon Jam) ── -->
+		<Transition
+			enter-active-class="transition duration-200 ease-out"
+			enter-from-class="opacity-0 scale-95"
+			enter-to-class="opacity-100 scale-100"
+			leave-active-class="transition duration-150 ease-in"
+			leave-from-class="opacity-100 scale-100"
+			leave-to-class="opacity-0 scale-95"
+		>
+			<div
+				v-if="showHistoryModal && historyService"
+				class="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-xs overflow-y-auto"
+				@click.self="closeHistoryModal"
+			>
+				<div class="bg-white rounded-3xl shadow-2xl shadow-slate-950/30 w-full max-w-xl overflow-hidden flex flex-col max-h-[88vh] border border-slate-200/90 my-auto">
+					<!-- Header -->
+					<div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
+						<div class="flex items-center gap-3 min-w-0">
+							<div class="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center font-bold shrink-0 shadow-2xs">
+								<svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+									<circle cx="12" cy="12" r="9"/>
+									<path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 3"/>
+								</svg>
+							</div>
+							<div class="min-w-0">
+								<h3 class="text-sm sm:text-base font-extrabold text-slate-800 leading-snug">
+									Riwayat & Detail Kendala
+								</h3>
+								<p class="text-xs text-slate-500 font-medium truncate">
+									{{ historyService.name }}
+								</p>
+							</div>
+						</div>
+						<button
+							type="button"
+							@click="closeHistoryModal"
+							class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+						>
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+						</button>
+					</div>
+
+					<!-- Body (Scrollable) -->
+					<div class="p-6 space-y-5 overflow-y-auto max-h-[calc(88vh-130px)]">
+						<!-- Status Overview Card -->
+						<div class="bg-slate-50 border border-slate-200/90 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+							<div class="space-y-1">
+								<span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Status Layanan & Penanganan</span>
+								<div class="flex items-center gap-2 flex-wrap">
+									<span
+										v-if="historyService.status === 'normal'"
+										class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs"
+									>
+										<svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+										Normal
+									</span>
+									<span
+										v-else-if="historyService.status === 'gangguan'"
+										class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs"
+									>
+										<svg class="w-3.5 h-3.5 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+										Terkendala
+									</span>
+									<span
+										v-else
+										class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200"
+									>
+										Belum Dicek
+									</span>
+
+									<!-- Handling status badge -->
+									<span
+										v-if="historyService.is_recheck_needed"
+										class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 shadow-2xs"
+									>
+										<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+										Perlu Pengecekan Ulang
+									</span>
+									<span
+										v-else-if="historyService.handling_status === 'selesai'"
+										class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs"
+									>
+										<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+										Selesai Ditindaklanjuti
+									</span>
+									<span
+										v-else-if="historyService.status === 'gangguan'"
+										class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200 shadow-2xs"
+									>
+										<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+										Belum Ditindaklanjuti
+									</span>
+								</div>
+							</div>
+							<div v-if="historyService.checked_at" class="text-left sm:text-right text-[11px] text-slate-400">
+								<span>Pemeriksaan Terkini: </span>
+								<strong class="text-slate-600 block sm:inline">{{ historyService.checked_at }}</strong>
+							</div>
+						</div>
+
+						<!-- Timeline Alur Pemeriksaan & Penanganan Kendala -->
+						<div class="space-y-3.5">
+							<div class="flex items-center justify-between gap-2 flex-wrap">
+								<div>
+									<h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+										<svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+											<circle cx="12" cy="12" r="9"/>
+											<path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 3"/>
+										</svg>
+										<span>Alur Log Pemeriksaan & Penanganan ({{ historyTimelineList.length }})</span>
+									</h4>
+									<p class="text-[11px] text-slate-400 mt-0.5">
+										Dari log kendala awal, tindak lanjut penanganan Admin, hingga pengecekan baru.
+									</p>
+								</div>
+
+								<!-- Button Urutan / Toggle Sort Order -->
+								<button
+									type="button"
+									@click="toggleTimelineOrder"
+									class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white hover:bg-slate-50 text-slate-600 border border-slate-200/90 shadow-2xs transition-all cursor-pointer"
+									:title="timelineOrder === 'asc' ? 'Klik untuk urutkan terbaru ke terlama' : 'Klik untuk urutkan kronologis awal ke baru'"
+								>
+									<svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
+									</svg>
+									<span>{{ timelineOrder === 'asc' ? 'Kronologis (Awal → Baru)' : 'Terbaru → Lama' }}</span>
+								</button>
+							</div>
+
+							<!-- Timeline List with Connected Line -->
+							<div v-if="historyTimelineList && historyTimelineList.length > 0" class="relative pl-7 space-y-4 before:absolute before:left-3 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200">
+								<div
+									v-for="(item, idx) in historyTimelineList"
+									:key="item.id || idx"
+									class="relative group"
+								>
+									<!-- Dot Icon / Indicator -->
+									<div
+										class="absolute -left-7 top-1 w-6 h-6 rounded-full border-2 border-white shadow-xs flex items-center justify-center text-[10px] font-bold text-white transition-transform group-hover:scale-110"
+										:class="[
+											item.stage === 'initial_check'
+												? (item.status === 'normal' ? 'bg-emerald-500' : 'bg-rose-500')
+												: item.stage === 'admin_handling'
+													? 'bg-amber-500'
+													: (item.status === 'normal' ? 'bg-emerald-500' : 'bg-rose-500')
+										]"
+									>
+										<span v-if="item.step_number">{{ item.step_number }}</span>
+										<span v-else>{{ idx + 1 }}</span>
+									</div>
+
+									<!-- Card Container -->
+									<div
+										class="rounded-2xl border p-4 space-y-3 transition-all shadow-2xs"
+										:class="[
+											item.stage === 'admin_handling'
+												? 'bg-amber-50/60 border-amber-200/90'
+												: item.stage === 'initial_check'
+													? (item.status === 'normal' ? 'bg-white border-slate-200' : 'bg-rose-50/40 border-rose-200/90')
+													: (item.status === 'normal' ? 'bg-emerald-50/40 border-emerald-200/90' : 'bg-rose-50/40 border-rose-200/90')
+										]"
+									>
+										<!-- Header Card: Badge Tahapan + Waktu & Pelaku -->
+										<div class="flex items-start justify-between gap-2 flex-wrap">
+											<div class="flex items-center gap-2 flex-wrap">
+												<!-- Badge Stage -->
+												<span
+													class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide border shadow-2xs"
+													:class="[
+														item.stage === 'admin_handling'
+															? 'bg-amber-100 text-amber-900 border-amber-300'
+															: item.stage === 'initial_check'
+																? (item.status === 'normal' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : 'bg-rose-100 text-rose-900 border-rose-300')
+																: (item.status === 'normal' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : 'bg-rose-100 text-rose-900 border-rose-300')
+													]"
+												>
+													{{ item.stage_label || (item.status === 'normal' ? 'Normal' : 'Terkendala') }}
+												</span>
+
+												<!-- Badge Hasil Terkini jika is_latest -->
+												<span
+													v-if="item.is_latest"
+													class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-primary text-white shadow-2xs"
+												>
+													<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+													Log Terbaru
+												</span>
+											</div>
+
+											<!-- Tanggal & Waktu -->
+											<div class="text-right">
+												<span class="text-xs font-bold text-slate-700 block">
+													{{ item.created_at || '-' }}
+												</span>
+												<span v-if="item.created_at_human" class="text-[10px] text-slate-400">
+													{{ item.created_at_human }}
+												</span>
+											</div>
+										</div>
+
+										<!-- Pelaku / Actor -->
+										<div class="flex items-center gap-1.5 text-[11px] text-slate-500">
+											<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+											</svg>
+											<span>{{ item.actor_role || 'Pemeriksa' }}:</span>
+											<strong class="text-slate-700 font-semibold">{{ item.actor_name || 'Petugas' }}</strong>
+										</div>
+
+										<!-- Keterangan / Catatan -->
+										<div class="bg-white/90 rounded-xl p-3 border border-slate-200/80 text-xs text-slate-700 leading-relaxed shadow-2xs">
+											<p class="font-bold text-[10px] text-slate-400 uppercase tracking-wider mb-1">
+												{{ item.stage === 'admin_handling' ? 'Catatan Tindak Lanjut Admin:' : 'Catatan Pemeriksaan:' }}
+											</p>
+											<p v-if="item.description" class="whitespace-pre-wrap font-medium text-slate-800">
+												{{ item.description }}
+											</p>
+											<p v-else class="text-slate-400 italic">
+												(Tidak ada catatan keterangan)
+											</p>
+										</div>
+
+										<!-- Bukti Lampiran Kendala jika ada pada log ini -->
+										<div v-if="item.attachment_url" class="space-y-2 pt-1 border-t border-slate-200/60">
+											<p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+												<svg class="w-3 h-3 text-rose-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+												Bukti Lampiran Pemeriksaan
+											</p>
+
+											<!-- Preview Gambar jika file gambar -->
+											<div
+												v-if="isImageAttachment(item.attachment_url || item.attachment_name)"
+												class="relative rounded-xl overflow-hidden bg-slate-100 border border-slate-200/90 p-1 flex items-center justify-center max-h-56 group/img"
+											>
+												<img
+													:src="item.attachment_url"
+													:alt="item.attachment_name || 'Bukti Kendala'"
+													class="max-h-52 object-contain rounded-lg w-auto mx-auto"
+												/>
+												<a
+													:href="item.attachment_url"
+													target="_blank"
+													class="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-all flex items-center justify-center opacity-0 group-hover/img:opacity-100 cursor-pointer"
+												>
+													<span class="px-2.5 py-1 rounded-lg bg-black/80 text-white text-[11px] font-semibold flex items-center gap-1 shadow-sm">
+														<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+														Buka Gambar Penuh
+													</span>
+												</a>
+											</div>
+
+											<!-- Chip File & Tombol Download/Buka -->
+											<div class="flex items-center justify-between gap-2 p-2 bg-slate-50/80 rounded-xl border border-slate-200/80">
+												<div class="flex items-center gap-2 min-w-0">
+													<div class="w-7 h-7 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
+														<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+													</div>
+													<p class="text-xs font-semibold text-slate-800 truncate" :title="item.attachment_name">
+														{{ item.attachment_name || 'lampiran_kendala' }}
+													</p>
+												</div>
+												<a
+													:href="item.attachment_url"
+													target="_blank"
+													class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-primary text-white hover:bg-primary/90 transition-colors shadow-2xs shrink-0"
+												>
+													<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+													<span>Buka / Unduh</span>
+												</a>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<!-- Pending Stage Indicator (Jika masih ada proses yang berjalan/menunggu) -->
+								<div v-if="historyService.pending_stage" class="relative group">
+									<!-- Pulse Dot -->
+									<div
+										class="absolute -left-7 top-1.5 w-6 h-6 rounded-full border-2 border-white shadow-xs flex items-center justify-center text-[10px] font-bold text-white animate-pulse"
+										:class="historyService.pending_stage.type === 'solved' ? 'bg-emerald-500' : (historyService.pending_stage.type === 'waiting_recheck' ? 'bg-amber-500' : 'bg-rose-500')"
+									>
+										<span v-if="historyService.pending_stage.type === 'solved'">✓</span>
+										<span v-else-if="historyService.pending_stage.type === 'waiting_recheck'">🔄</span>
+										<span v-else>⏳</span>
+									</div>
+
+									<div
+										class="rounded-2xl border-2 border-dashed p-4 space-y-2.5"
+										:class="[
+											historyService.pending_stage.type === 'solved'
+												? 'bg-emerald-50/50 border-emerald-300'
+												: historyService.pending_stage.type === 'waiting_recheck'
+													? 'bg-amber-50/70 border-amber-300'
+													: 'bg-rose-50/40 border-rose-300'
+										]"
+									>
+										<div class="flex items-center justify-between gap-2 flex-wrap">
+											<div class="flex items-center gap-2">
+												<span
+													class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border shadow-2xs"
+													:class="historyService.pending_stage.badge_class || 'bg-slate-100 text-slate-700 border-slate-200'"
+												>
+													{{ historyService.pending_stage.badge }}
+												</span>
+												<h5 class="text-xs font-bold text-slate-800">
+													{{ historyService.pending_stage.title }}
+												</h5>
+											</div>
+										</div>
+
+										<p class="text-xs text-slate-600 leading-relaxed font-medium">
+											{{ historyService.pending_stage.description }}
+										</p>
+
+										<div v-if="historyService.pending_stage.type === 'waiting_recheck' && !(periodInfo.status !== 'proses' || periodInfo.is_overdue)" class="pt-1">
+											<button
+												type="button"
+												@click="handleRecheckFromHistory(historyService)"
+												class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-600 text-white shadow-sm shadow-amber-500/20 transition-all cursor-pointer"
+											>
+												<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+												</svg>
+												<span>Lakukan Pengecekan Ulang Sekarang</span>
+											</button>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<!-- Fallback jika belum ada log sama sekali -->
+							<div v-else class="text-xs text-slate-400 italic p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center">
+								Belum ada catatan riwayat pemeriksaan untuk layanan ini.
+							</div>
+						</div>
+					</div>
+
+					<!-- Footer -->
+					<div class="px-6 py-3.5 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between gap-2.5 rounded-b-3xl">
+						<button
+							type="button"
+							@click="closeHistoryModal"
+							class="px-4.5 py-2 rounded-xl font-semibold text-xs text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
+						>
+							Tutup
+						</button>
+
+						<div class="flex items-center gap-2">
+							<button
+								v-if="historyService.is_recheck_needed && !(periodInfo.status !== 'proses' || periodInfo.is_overdue)"
+								type="button"
+								@click="handleRecheckFromHistory(historyService)"
+								class="px-4.5 py-2 rounded-xl font-bold text-xs text-white bg-amber-500 hover:bg-amber-600 shadow-md shadow-amber-500/20 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+							>
+								<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+								</svg>
+								<span>Cek Ulang Layanan</span>
+							</button>
+
+							<button
+								v-else-if="historyService.status !== 'pending' && !(periodInfo.status !== 'proses' || periodInfo.is_overdue)"
+								type="button"
+								@click="handleRecheckFromHistory(historyService)"
+								class="px-4.5 py-2 rounded-xl font-bold text-xs text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+							>
+								<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+								<span>Ubah Hasil</span>
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</Transition>
+
+	</AdminLayout>
 </template>

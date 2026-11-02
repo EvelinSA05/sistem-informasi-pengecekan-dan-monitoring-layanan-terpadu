@@ -15,11 +15,16 @@ class ServiceIssue extends Model
         'period_service_id',
         'has_notif',
         'has_solved',
+        'handling_status',
+        'admin_note',
+        'admin_handled_at',
+        'admin_id',
     ];
 
     protected $casts = [
-        'has_notif'  => 'boolean',
-        'has_solved' => 'boolean',
+        'has_notif'        => 'boolean',
+        'has_solved'       => 'boolean',
+        'admin_handled_at' => 'datetime',
     ];
 
     /**
@@ -44,5 +49,13 @@ class ServiceIssue extends Model
     public function periodService(): BelongsTo
     {
         return $this->belongsTo(PeriodService::class, 'period_service_id');
+    }
+
+    /**
+     * Relasi ke User Admin penangan kendala
+     */
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'admin_id');
     }
 }

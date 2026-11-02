@@ -254,6 +254,9 @@ class AssignedServiceController extends Controller
                     'is_active'
                 );
             },
+            'serviceIssue.admin',
+            'checkLogs.tester',
+            'tester',
         ])
             ->where('period_id', $period->id);
 
@@ -290,6 +293,40 @@ class AssignedServiceController extends Controller
             ->paginate($request->input('per_page', 5))
             ->withQueryString()
             ->through(function ($ps) {
+                $issue = $ps->serviceIssue;
+                $handlingStatus = $issue?->handling_status ?? 'belum_ditindaklanjuti';
+                $adminNote = $issue?->admin_note ?? $ps->admin_note;
+                $isRecheckNeeded = ($ps->status === 'gangguan' && $handlingStatus === 'perlu_pengecekan_ulang');
+
+                $timeline = $this->buildTimeline($ps);
+
+                $pendingStage = null;
+                if ($ps->status === 'gangguan' && $handlingStatus === 'belum_ditindaklanjuti') {
+                    $pendingStage = [
+                        'type' => 'waiting_admin',
+                        'title' => 'Menunggu Tindak Lanjut oleh Admin',
+                        'description' => 'Kendala telah dilaporkan oleh Tester. Menunggu tindakan perbaikan dari Administrator.',
+                        'badge' => 'Belum Ditindaklanjuti',
+                        'badge_class' => 'bg-rose-100 text-rose-800 border-rose-200',
+                    ];
+                } elseif ($isRecheckNeeded) {
+                    $pendingStage = [
+                        'type' => 'waiting_recheck',
+                        'title' => 'Menunggu Pengecekan Ulang oleh Tester',
+                        'description' => 'Administrator telah menandai kendala sudah ditangani. Silakan lakukan pengujian kembali melalui tombol Cek Ulang Layanan.',
+                        'badge' => 'Perlu Pengecekan Ulang',
+                        'badge_class' => 'bg-amber-100 text-amber-800 border-amber-200',
+                    ];
+                } elseif ($ps->status === 'normal' && $handlingStatus === 'selesai' && count($timeline) > 1) {
+                    $pendingStage = [
+                        'type' => 'solved',
+                        'title' => 'Kendala Berhasil Diselesaikan',
+                        'description' => 'Layanan telah ditangani oleh Administrator dan berhasil diverifikasi berstatus Normal pada pengecekan ulang.',
+                        'badge' => 'Selesai Teratasi',
+                        'badge_class' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                    ];
+                }
+
                 return [
                     'id' => $ps->id,
                     'service_id' => $ps->service?->id,
@@ -302,14 +339,24 @@ class AssignedServiceController extends Controller
                     'deskripsi_layanan' => $ps->service?->deskripsi_layanan,
                     'tester_instruction' => $ps->service?->tester_instruction,
                     'last_description' => $ps->description,
-                    'attachment' => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                    'admin_note' => $adminNote,
+                    'handling_status' => $handlingStatus,
+                    'is_recheck_needed' => $isRecheckNeeded,
+                    'admin_handled_at' => $issue?->admin_handled_at
+                        ? Carbon::parse($issue->admin_handled_at)->format('d M Y, H:i')
+                        : null,
+                    'attachment' => $ps->attachment,
                     'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
+                    'attachment_url' => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
                     'checked_at' => $ps->checked_at
                         ? Carbon::parse($ps->checked_at)->format('d M Y, H:i')
                         : null,
                     'checked_at_human' => $ps->checked_at
                         ? Carbon::parse($ps->checked_at)->diffForHumans()
                         : null,
+                    'timeline' => $timeline,
+                    'pending_stage' => $pendingStage,
+                    'check_logs' => $timeline,
                 ];
             });
 
@@ -361,27 +408,60 @@ class AssignedServiceController extends Controller
             }
         }
 
+        $periodService->load('serviceIssue');
+        $issue = $periodService->serviceIssue;
+        $isRecheck = ($periodService->status === 'gangguan' && ($issue?->handling_status === 'perlu_pengecekan_ulang'));
+
         $validated = $request->validate([
             'status' => 'required|in:normal,gangguan',
             'description' => 'required_if:status,gangguan|nullable|string|max:5000',
-            'attachment' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp,pdf,doc,docx,xls,xlsx,txt,zip|max:10240',
+            'attachment' => [
+                \Illuminate\Validation\Rule::requiredIf(function () use ($request, $periodService, $isRecheck) {
+                    if ($request->input('status') !== 'gangguan') {
+                        return false;
+                    }
+                    if ($isRecheck) {
+                        return true;
+                    }
+                    if ($request->boolean('remove_attachment')) {
+                        return true;
+                    }
+                    $hasExisting = $request->filled('existing_attachment') || !empty($periodService->attachment);
+                    return !$hasExisting;
+                }),
+                'nullable',
+                'file',
+                'mimes:jpg,jpeg,png,webp,pdf,gif',
+                'max:10240',
+            ],
+            'existing_attachment' => 'nullable|string',
             'remove_attachment' => 'nullable|boolean',
         ], [
-            'description.required_if' => 'Catatan / Keterangan kendala wajib diisi jika layanan berstatus kendala.',
+            'description.required_if' => $isRecheck 
+                ? 'Catatan kendala terbaru wajib diisi.' 
+                : 'Catatan / Keterangan kendala wajib diisi jika layanan berstatus kendala.',
             'description.max' => 'Catatan tidak boleh lebih dari 5000 karakter.',
-            'attachment.file' => 'Lampiran harus berupa file yang valid.',
-            'attachment.mimes' => 'Format file yang didukung: JPG, PNG, WEBP, GIF, PDF, DOC, DOCX, XLS, XLSX, TXT, ZIP.',
-            'attachment.max' => 'Ukuran file lampiran maksimal 10 MB.',
+            'attachment.required' => $isRecheck 
+                ? 'Bukti lampiran kendala terbaru (screenshot/file) wajib diunggah sebagai bukti.' 
+                : 'Bukti lampiran kendala (screenshot/file) wajib diunggah.',
+            'attachment.file' => 'Bukti lampiran harus berupa file yang valid.',
+            'attachment.mimes' => 'Format file lampiran harus berupa gambar (JPG, JPEG, PNG, WEBP, GIF) atau dokumen PDF.',
+            'attachment.max' => 'Ukuran file lampiran maksimal 10MB.',
         ]);
 
-        $attachmentPath = $periodService->attachment;
-        if ($request->hasFile('attachment')) {
-            $attachmentPath = $request->file('attachment')->store('attachments/kendala', 'public');
-        } elseif ($request->boolean('remove_attachment')) {
-            $attachmentPath = null;
-        }
-
         try {
+            $attachmentPath = $periodService->attachment;
+
+            if ($validated['status'] === 'normal') {
+                $attachmentPath = null;
+            } else {
+                if ($request->hasFile('attachment')) {
+                    $attachmentPath = $request->file('attachment')->store('attachments', 'public');
+                } elseif ($request->boolean('remove_attachment')) {
+                    $attachmentPath = null;
+                }
+            }
+
             $periodService->update([
                 'status' => $validated['status'],
                 'description' => $validated['description'] ?? null,
@@ -408,6 +488,10 @@ class AssignedServiceController extends Controller
                             period_service_id BIGINT NOT NULL,
                             has_notif BOOLEAN DEFAULT FALSE,
                             has_solved BOOLEAN DEFAULT FALSE,
+                            handling_status VARCHAR(50) DEFAULT 'belum_ditindaklanjuti',
+                            admin_note TEXT NULL,
+                            admin_handled_at TIMESTAMP NULL,
+                            admin_id BIGINT NULL,
                             created_at TIMESTAMP NULL,
                             updated_at TIMESTAMP NULL
                         )
@@ -418,16 +502,18 @@ class AssignedServiceController extends Controller
                     ServiceIssue::updateOrCreate(
                         ['period_service_id' => $periodService->id],
                         [
-                            'layanan_id'  => $periodService->service_id,
-                            'periode_id'  => $periodService->period_id,
-                            'has_notif'   => false,
-                            'has_solved'  => false,
+                            'layanan_id'      => $periodService->service_id,
+                            'periode_id'      => $periodService->period_id,
+                            'has_notif'       => false,
+                            'has_solved'      => false,
+                            'handling_status' => 'belum_ditindaklanjuti',
                         ]
                     );
                 } else if ($validated['status'] === 'normal') {
                     // Jika sebelumnya ada catatan kendala pada penugasan ini, tandai sudah selesai/teratasi
                     ServiceIssue::where('period_service_id', $periodService->id)->update([
-                        'has_solved' => true,
+                        'has_solved'      => true,
+                        'handling_status' => 'selesai',
                     ]);
                 }
             } catch (\Throwable $issueErr) {
@@ -456,5 +542,127 @@ class AssignedServiceController extends Controller
 
             return back()->with('error', 'Terjadi kesalahan saat menyimpan hasil pengecekan.');
         }
+    }
+
+    /**
+     * Menyusun timeline alur pemeriksaan secara lengkap dan kronologis:
+     * Dari log kendala awal, tindak lanjut penanganan admin, hingga log pengecekan baru/ulang.
+     */
+    protected function buildTimeline(PeriodService $ps): array
+    {
+        $issue = $ps->serviceIssue;
+        $events = collect();
+
+        // 1. Ambil seluruh log pemeriksaan dari tabel service_check_logs
+        $logs = $ps->checkLogs && $ps->checkLogs->isNotEmpty()
+            ? $ps->checkLogs->sortBy('created_at')->values()
+            : collect();
+
+        // Fallback jika migrasi lama belum ada data di service_check_logs tapi layanan sudah pernah dicek
+        if ($logs->isEmpty() && $ps->status !== 'pending') {
+            $logs = collect([(object) [
+                'id' => 0,
+                'status' => $ps->status,
+                'description' => $ps->description,
+                'attachment' => $ps->attachment,
+                'created_at' => $ps->checked_at ?? $ps->updated_at,
+                'tester' => $ps->tester,
+            ]]);
+        }
+
+        $firstCheckAt = null;
+        $logCount = $logs->count();
+
+        foreach ($logs as $idx => $log) {
+            $isFirst = ($idx === 0);
+            $createdAt = $log->created_at ? Carbon::parse($log->created_at) : null;
+            if ($isFirst && $createdAt) {
+                $firstCheckAt = $createdAt;
+            }
+
+            // Tentukan label tahapan
+            if ($isFirst) {
+                $stage = 'initial_check';
+                $stageLabel = ($log->status === 'gangguan') 
+                    ? 'Log Kendala (Pemeriksaan Awal)' 
+                    : 'Pemeriksaan Awal';
+            } else {
+                $stage = 'new_check';
+                $stageLabel = ($log->status === 'normal') 
+                    ? 'Log Pengecekan Baru (Normal)' 
+                    : 'Log Pengecekan Baru (Terkendala)';
+            }
+
+            $events->push([
+                'id' => 'check_' . ($log->id ?? $idx),
+                'type' => 'tester_check',
+                'stage' => $stage,
+                'stage_label' => $stageLabel,
+                'is_initial' => $isFirst,
+                'is_new_check' => !$isFirst,
+                'status' => $log->status,
+                'status_label' => ($log->status === 'normal') ? 'Normal' : 'Terkendala',
+                'actor_name' => $log->tester?->name ?? $ps->tester?->name ?? 'Tester',
+                'actor_role' => 'Tester Layanan',
+                'description' => $log->description,
+                'attachment' => $log->attachment,
+                'attachment_name' => $log->attachment ? basename($log->attachment) : null,
+                'attachment_url' => $log->attachment ? asset('storage/' . $log->attachment) : null,
+                'created_at' => $createdAt ? $createdAt->format('d M Y, H:i') : '-',
+                'created_at_human' => $createdAt ? $createdAt->diffForHumans() : null,
+                'timestamp' => $createdAt ? $createdAt->timestamp : ($idx * 10),
+            ]);
+        }
+
+        // 2. Sertakan tahapan tindak lanjut penanganan oleh Admin jika ada
+        $adminNote = $issue?->admin_note ?? $ps->admin_note;
+        $adminHandledAt = $issue?->admin_handled_at;
+        $hasAdminHandled = !empty($adminNote) || !empty($adminHandledAt) || ($issue && $issue->has_solved);
+
+        if ($hasAdminHandled) {
+            $handledCarbon = $adminHandledAt ? Carbon::parse($adminHandledAt) : null;
+            $ts = $handledCarbon 
+                ? $handledCarbon->timestamp 
+                : ($firstCheckAt ? $firstCheckAt->timestamp + 60 : time());
+
+            $events->push([
+                'id' => 'admin_handling_' . ($issue?->id ?? $ps->id),
+                'type' => 'admin_handling',
+                'stage' => 'admin_handling',
+                'stage_label' => 'Tindak Lanjut Penanganan (Admin)',
+                'is_initial' => false,
+                'is_new_check' => false,
+                'status' => $issue?->handling_status ?? 'perlu_pengecekan_ulang',
+                'status_label' => match($issue?->handling_status) {
+                    'perlu_pengecekan_ulang' => 'Ditangani Admin (Perlu Cek Ulang)',
+                    'selesai' => 'Selesai Ditindaklanjuti',
+                    default => 'Telah Ditindaklanjuti',
+                },
+                'actor_name' => $issue?->admin?->name ?? 'Administrator',
+                'actor_role' => 'Admin Sistem',
+                'description' => $adminNote,
+                'attachment' => null,
+                'attachment_name' => null,
+                'attachment_url' => null,
+                'created_at' => $handledCarbon ? $handledCarbon->format('d M Y, H:i') : '-',
+                'created_at_human' => $handledCarbon ? $handledCarbon->diffForHumans() : null,
+                'timestamp' => $ts,
+            ]);
+        }
+
+        // Urutkan kronologis (dari awal kendala -> penanganan admin -> log pengecekan baru)
+        $sorted = $events->sortBy('timestamp')->values();
+
+        // Tandai item terakhir sebagai 'is_latest' dan berikan nomor langkah
+        if ($sorted->isNotEmpty()) {
+            $lastIdx = $sorted->count() - 1;
+            $sorted = $sorted->map(function ($item, $key) use ($lastIdx) {
+                $item['is_latest'] = ($key === $lastIdx);
+                $item['step_number'] = $key + 1;
+                return $item;
+            });
+        }
+
+        return $sorted->all();
     }
 }
