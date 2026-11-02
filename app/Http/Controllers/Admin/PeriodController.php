@@ -839,8 +839,12 @@ class PeriodController extends Controller
 
         $carbonDate = Carbon::parse($period->date);
         $periodTitle = $this->formatIndonesianDate($carbonDate);
+        $dayNumber = (int) $carbonDate->format('j');
         $monthName = $this->indonesianMonths[(int) $carbonDate->format('n')] ?? $carbonDate->format('F');
         $year = $carbonDate->format('Y');
+
+        // Format nama file PDF sesuai ketentuan: Laporan_Pengecekan_[Tanggal]_[Bulan]_[Tahun]
+        $pdfFileName = "Laporan_Pengecekan_{$dayNumber}_{$monthName}_{$year}";
 
         $totalServices = $period->periodServices->count();
         $checkedServices = $period->periodServices->filter(fn($ps) => $ps->status !== 'pending' && !empty($ps->checked_at))->count();
@@ -899,6 +903,8 @@ class PeriodController extends Controller
         return Inertia::render('Admin/Periods/ExportReport', [
             'report' => [
                 'title' => $periodTitle,
+                'file_name' => $pdfFileName,
+                'pdf_filename' => "{$pdfFileName}.pdf",
                 'month_name' => $monthName,
                 'year' => $year,
                 'period_date' => $carbonDate->format('Y-m-d'),

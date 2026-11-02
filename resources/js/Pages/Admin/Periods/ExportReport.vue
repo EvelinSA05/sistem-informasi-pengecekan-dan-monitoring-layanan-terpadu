@@ -28,20 +28,74 @@ const issueServicesList = computed(() => {
 		.map((s, idx) => ({ ...s, no: idx + 1 }));
 });
 
+// Nama file PDF yang diharapkan: Laporan_Pengecekan_[Tanggal]_[Bulan]_[Tahun]
+const targetFileName = computed(() => {
+	if (props.report?.file_name) {
+		return props.report.file_name;
+	}
+	return 'Laporan_Pengecekan';
+});
+
+// Judul halaman standar saat dokumen dibuka di tab browser
+const defaultPageTitle = computed(() => {
+	return `Laporan Pengecekan ${props.report?.title || ''} - MAJADIGI CHECKER`;
+});
+
+// Set document.title sesegera mungkin saat setup
+if (typeof document !== 'undefined') {
+	document.title = targetFileName.value;
+}
+
+let isPrinting = false;
+
 function printDocument() {
+	if (isPrinting) return;
+	isPrinting = true;
+
+	const originalTitle = defaultPageTitle.value;
+
+	// Atur document.title menjadi nama file yang diharapkan agar dialog print menyarankan nama ini
+	document.title = targetFileName.value;
+
+	const handleAfterPrint = () => {
+		document.title = originalTitle;
+		isPrinting = false;
+		window.removeEventListener('afterprint', handleAfterPrint);
+	};
+
+	window.addEventListener('afterprint', handleAfterPrint);
+
 	window.print();
+
+	// Fallback pemulihan judul jika event afterprint tidak tertrigger di browser tertentu
+	setTimeout(() => {
+		if (isPrinting) {
+			handleAfterPrint();
+		}
+	}, 1500);
 }
 
 onMounted(() => {
-	// Memberikan jeda singkat agar font dan SVG selesai dirender sebelum dialog cetak terbuka
+	document.title = targetFileName.value;
+
+	// Listener jika user melakukan print melalui pintasan keyboard browser (Ctrl+P / Cmd+P)
+	window.addEventListener('beforeprint', () => {
+		document.title = targetFileName.value;
+	});
+	window.addEventListener('afterprint', () => {
+		document.title = defaultPageTitle.value;
+		isPrinting = false;
+	});
+
+	// Memberikan jeda singkat agar font dan SVG selesai dirender sebelum dialog cetak terbuka otomatis
 	setTimeout(() => {
-		window.print();
+		printDocument();
 	}, 600);
 });
 </script>
 
 <template>
-	<Head :title="`Laporan Pengecekan ${report.title} - MAJADIGI CHECKER`" />
+	<Head :title="defaultPageTitle" />
 
 	<div class="min-h-screen bg-slate-100 py-8 px-4 font-sans text-slate-800 antialiased print:p-0 print:bg-white">
 
