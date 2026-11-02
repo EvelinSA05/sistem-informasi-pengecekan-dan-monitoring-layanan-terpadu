@@ -14,6 +14,7 @@ class PeriodService extends Model
         'tester_id',
         'status',
         'description',
+        'admin_note',
         'attachment',
         'checked_at',
     ];
@@ -43,5 +44,10 @@ class PeriodService extends Model
     public function serviceIssue()
     {
         return $this->hasOne(ServiceIssue::class, 'period_service_id');
+    }
+
+    public function checkLogs()
+    {
+        return $this->hasMany(ServiceCheckLog::class, 'period_service_id')->latest();
     }
 }

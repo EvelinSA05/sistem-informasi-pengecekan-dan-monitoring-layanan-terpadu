@@ -470,32 +470,134 @@ function showToast(msg, type = 'success') {
  toastTimer = setTimeout(() => { toast.value = ''; }, 4000);
 }
 
+const showCheckModal = ref(false);
+const selectedService = ref(null);
+const checkForm = useForm({
+ status: '',
+ description: '',
+ attachment: null,
+ existing_attachment: null,
+ remove_attachment: false,
+});
+
+const fileInputRef = ref(null);
+const filePreview = ref(null);
+const selectedFileName = ref('');
+const selectedFileSize = ref('');
+const existingAttachmentName = ref('');
+const existingAttachmentUrl = ref('');
+
 const isEditMode = computed(() => {
  return selectedService.value && selectedService.value.status !== 'pending';
 });
+
+function formatFileSize(bytes) {
+ if (!bytes || bytes === 0) return '0 Bytes';
+ const k = 1024;
+ const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+ const i = Math.floor(Math.log(bytes) / Math.log(k));
+ return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function handleFileSelect(event) {
+ const file = event.target.files?.[0];
+ if (!file) return;
+
+ if (file.size > 10 * 1024 * 1024) {
+  checkForm.setError('attachment', 'Ukuran file melebihi batas maksimal 10MB.');
+  return;
+ }
+
+ checkForm.attachment = file;
+ checkForm.remove_attachment = false;
+ selectedFileName.value = file.name;
+ selectedFileSize.value = formatFileSize(file.size);
+ checkForm.clearErrors('attachment');
+
+ if (file.type.startsWith('image/')) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+   filePreview.value = e.target.result;
+  };
+  reader.readAsDataURL(file);
+ } else {
+  filePreview.value = null;
+ }
+}
+
+function triggerFileInput() {
+ if (fileInputRef.value) {
+  fileInputRef.value.click();
+ }
+}
+
+function removeSelectedFile() {
+ checkForm.attachment = null;
+ checkForm.existing_attachment = null;
+ checkForm.remove_attachment = true;
+ filePreview.value = null;
+ selectedFileName.value = '';
+ selectedFileSize.value = '';
+ existingAttachmentName.value = '';
+ existingAttachmentUrl.value = '';
+ if (fileInputRef.value) {
+  fileInputRef.value.value = '';
+ }
+}
 
 function openCheckModal(service) {
  selectedService.value = service;
  checkForm.status = service.status === 'pending' ? 'normal' : service.status;
  checkForm.description = service.last_description || '';
+ checkForm.attachment = null;
+ checkForm.existing_attachment = service.attachment || null;
+ checkForm.remove_attachment = false;
+
+ filePreview.value = null;
+ selectedFileName.value = '';
+ selectedFileSize.value = '';
+
+ if (service.attachment) {
+  existingAttachmentName.value = service.attachment_name || (service.attachment ? service.attachment.split('/').pop() : '');
+  existingAttachmentUrl.value = service.attachment_url || null;
+ } else {
+  existingAttachmentName.value = '';
+  existingAttachmentUrl.value = '';
+ }
+
+ if (fileInputRef.value) {
+  fileInputRef.value.value = '';
+ }
  checkForm.clearErrors();
  showCheckModal.value = true;
 }
 
 function submitCheck() {
- checkForm.post(route('tester.submit_check', selectedService.value.id), {
- preserveScroll: true,
- onSuccess: (pageObj) => {
- if (pageObj.props.flash && pageObj.props.flash.error) {
- showToast(pageObj.props.flash.error, 'error');
- } else {
- showCheckModal.value = false;
- showToast(isEditMode.value ? 'Hasil pengujian berhasil diperbarui.' : 'Hasil pengecekan berhasil disimpan.');
- nextTick(() => {
- renderTesterStatusChart();
- });
+ if (checkForm.status === 'gangguan') {
+  if (!checkForm.description || !checkForm.description.trim()) {
+   checkForm.setError('description', 'Catatan / Keterangan kendala wajib diisi.');
+   return;
+  }
+  if (!checkForm.attachment && !checkForm.existing_attachment) {
+   checkForm.setError('attachment', 'Bukti lampiran kendala (screenshot/file) wajib diunggah.');
+   return;
+  }
  }
- },
+
+ checkForm.post(route('tester.submit_check', selectedService.value.id), {
+  preserveScroll: true,
+  forceFormData: true,
+  onSuccess: (pageObj) => {
+   if (pageObj.props.flash && pageObj.props.flash.error) {
+    showToast(pageObj.props.flash.error, 'error');
+   } else {
+    showCheckModal.value = false;
+    showToast(isEditMode.value ? 'Hasil pengujian berhasil diperbarui.' : 'Hasil pengecekan berhasil disimpan.');
+    nextTick(() => {
+     renderTesterStatusChart();
+    });
+   }
+  },
  });
 }
 </script>
@@ -1747,6 +1849,133 @@ function submitCheck() {
  ></textarea>
  <p v-if="checkForm.errors.description" class="mt-1 text-xs text-rose-500">{{ checkForm.errors.description }}</p>
  </div>
+  <!-- SECTION 4: Upload Bukti Lampiran Kendala (Wajib saat Kendala) -->
+  <div v-if="checkForm.status === 'gangguan'" class="space-y-2 pt-1">
+   <div class="flex items-center justify-between">
+    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+     Bukti Lampiran Kendala <span class="text-rose-600 font-bold lowercase">(wajib)</span>
+    </label>
+    <span class="text-[10px] text-slate-400">PNG, JPG, JPEG, WEBP, PDF (Maks. 10MB)</span>
+   </div>
+
+   <!-- Hidden native file input -->
+   <input
+    ref="fileInputRef"
+    type="file"
+    accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf"
+    class="hidden"
+    @change="handleFileSelect"
+   />
+
+   <!-- STATE 1: File Selected or Existing File -->
+   <div
+    v-if="checkForm.attachment || existingAttachmentName"
+    class="p-3 rounded-2xl bg-slate-50/80 border border-slate-200 shadow-2xs flex items-center justify-between gap-3 group transition-all hover:bg-slate-50"
+   >
+    <div class="flex items-center gap-3 min-w-0">
+     <!-- Thumbnail if image preview available -->
+     <div
+      v-if="filePreview"
+      class="w-12 h-12 rounded-xl border border-slate-200 overflow-hidden bg-white shrink-0 flex items-center justify-center shadow-2xs"
+     >
+      <img :src="filePreview" alt="Preview attachment" class="w-full h-full object-cover" />
+     </div>
+     <!-- Thumbnail if existing image URL -->
+     <div
+      v-else-if="existingAttachmentUrl && /\.(jpg|jpeg|png|webp|gif)$/i.test(existingAttachmentName)"
+      class="w-12 h-12 rounded-xl border border-slate-200 overflow-hidden bg-white shrink-0 flex items-center justify-center shadow-2xs"
+     >
+      <img :src="existingAttachmentUrl" alt="Existing attachment" class="w-full h-full object-cover" />
+     </div>
+     <!-- Document / Generic file icon -->
+     <div
+      v-else
+      class="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center shrink-0"
+     >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+     </div>
+
+     <!-- File Info -->
+     <div class="min-w-0">
+      <p class="text-xs font-bold text-slate-800 truncate max-w-[200px] sm:max-w-[280px]">
+       {{ selectedFileName || existingAttachmentName }}
+      </p>
+      <div class="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
+       <span v-if="selectedFileSize" class="font-medium">{{ selectedFileSize }}</span>
+       <span v-else class="text-emerald-600 font-semibold">Lampiran tersimpan</span>
+       <a
+        v-if="existingAttachmentUrl && !selectedFileName"
+        :href="existingAttachmentUrl"
+        target="_blank"
+        class="text-primary hover:underline font-semibold"
+       >
+        Buka File
+       </a>
+      </div>
+     </div>
+    </div>
+
+    <!-- Action Buttons: Ganti & Hapus -->
+    <div class="flex items-center gap-1.5 shrink-0">
+     <button
+      type="button"
+      @click="triggerFileInput"
+      class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+      title="Ganti file lampiran"
+     >
+      <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+      <span>Ganti</span>
+     </button>
+     <button
+      type="button"
+      @click="removeSelectedFile"
+      class="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+      title="Hapus file lampiran"
+     >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z" />
+      </svg>
+     </button>
+    </div>
+   </div>
+
+   <!-- STATE 2: Empty Dropzone -->
+   <div
+    v-else
+    @click="triggerFileInput"
+    class="border-2 border-dashed border-slate-300 hover:border-primary/60 rounded-2xl p-4 sm:p-5 text-center cursor-pointer bg-slate-50/60 hover:bg-blue-50/20 transition-all group select-none"
+   >
+    <div class="w-10 h-10 rounded-full bg-white shadow-2xs border border-slate-200/80 flex items-center justify-center mx-auto mb-2 text-slate-400 group-hover:text-primary group-hover:border-primary/30 transition-colors">
+     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+     </svg>
+    </div>
+    <p class="text-xs font-bold text-slate-700 group-hover:text-primary transition-colors">
+     Klik untuk mengunggah screenshot / bukti kendala
+    </p>
+    <p class="text-[11px] text-slate-400 mt-0.5">
+     Format PNG, JPG, JPEG, WEBP, atau PDF (Maksimal 10MB)
+    </p>
+   </div>
+
+   <!-- Error message -->
+   <p v-if="checkForm.errors.attachment" class="mt-1 text-xs text-rose-500 font-semibold flex items-center gap-1">
+    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+    <span>{{ checkForm.errors.attachment }}</span>
+   </p>
+   <p v-else-if="checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName" class="text-[11px] text-amber-600 font-medium flex items-center gap-1">
+    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+     <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <span>Upload screenshot atau file bukti pendukung untuk menyimpan kendala.</span>
+   </p>
+  </div>
  </form>
  </div>
 
@@ -1762,8 +1991,13 @@ function submitCheck() {
  <button
  type="button"
  @click="submitCheck"
- :disabled="checkForm.processing"
- class="px-5 py-2 rounded-xl font-bold text-xs text-white bg-primary hover:bg-primary shadow-md shadow-primary/20 transition-all disabled:opacity-70 flex items-center gap-1.5 cursor-pointer active:scale-95"
+ :disabled="checkForm.processing || (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName)"
+ :class="[
+ 'px-5 py-2 rounded-xl font-bold text-xs text-white transition-all flex items-center gap-1.5 cursor-pointer active:scale-95',
+ (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName)
+ ? 'bg-slate-300 cursor-not-allowed text-slate-500 shadow-none'
+ : 'bg-primary hover:bg-primary shadow-md shadow-primary/20 disabled:opacity-70'
+ ]"
  >
  <svg v-if="checkForm.processing" class="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
  <span>{{ isEditMode ? 'Simpan Perubahan' : 'Simpan Hasil Pengecekan' }}</span>

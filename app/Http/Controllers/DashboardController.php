@@ -419,6 +419,9 @@ class DashboardController extends Controller
                         'deskripsi_layanan' => $ps->service?->deskripsi_layanan,
                         'tester_instruction' => $ps->service?->tester_instruction,
                         'last_description' => $ps->description,
+                        'attachment' => $ps->attachment,
+                        'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
+                        'attachment_url' => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
                         'checked_at' => $ps->checked_at
                             ? Carbon::parse($ps->checked_at)->format('d M Y, H:i')
                             : null,
@@ -447,6 +450,9 @@ class DashboardController extends Controller
                     'level' => $ps->service?->level ?? '-',
                     'status' => $ps->status,
                     'description' => $ps->description,
+                    'attachment' => $ps->attachment,
+                    'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
+                    'attachment_url' => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
                     'checked_at' => $ps->checked_at
                         ? Carbon::parse($ps->checked_at)->format('d M Y, H:i')
                         : null,

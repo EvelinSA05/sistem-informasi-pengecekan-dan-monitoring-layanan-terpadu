@@ -12,6 +12,8 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -326,6 +328,7 @@ class PeriodController extends Controller
             'periodTesters.tester:id,name,email,bidang,nip',
             'periodServices.service:id,source_service_id,service_name,category,level,icon,service_url,deskripsi_layanan,tester_instruction',
             'periodServices.tester:id,name,email,bidang',
+            'periodServices.serviceIssue',
         ]);
 
         $carbonDate = Carbon::parse($period->date);
@@ -348,7 +351,7 @@ class PeriodController extends Controller
                 ? strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1))
                 : strtoupper(substr($parts[0] ?? 'T', 0, 2));
 
-            $assignedServices = $period->periodServices->where('tester_id', $tester->id)->map(function ($ps) {
+            $assignedServices = $period->periodServices->where('tester_id', $tester->id)->map(function ($ps) use ($tester) {
                 return [
                     'id' => $ps->id,
                     'service_id' => $ps->service_id,
@@ -362,9 +365,14 @@ class PeriodController extends Controller
                     'status' => $ps->status,
                     'description' => $ps->description,
                     'last_description' => $ps->description,
-                    'attachment' => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                    'admin_note' => $ps->serviceIssue?->admin_note ?? $ps->admin_note,
+                    'handling_status' => $ps->serviceIssue?->handling_status ?? 'belum_ditindaklanjuti',
+                    'attachment' => $ps->attachment,
                     'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
-                    'checked_at' => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y H:i') : null,
+                    'attachment_url' => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                    'checked_at' => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : null,
+                    'tester_name' => $ps->tester?->name ?? ($tester->name ?? 'Tester'),
+                    'tester_bidang' => $ps->tester?->bidang ?? ($tester->bidang ?? '-'),
                 ];
             })->values();
 
@@ -405,7 +413,8 @@ class PeriodController extends Controller
                 $troubledServices = PeriodService::with([
                     'service',
                     'tester',
-                    'serviceIssue'
+                    'serviceIssue.admin',
+                    'checkLogs.tester',
                 ])
                 ->where('period_id', $period->id)
                 ->whereIn('status', ['gangguan', 'kendala', 'tidak_aktif', 'error'])
@@ -429,6 +438,8 @@ class PeriodController extends Controller
                         }
                     }
 
+                    $timeline = $this->buildTimeline($ps);
+
                     return [
                         'id'               => $ps->id,
                         'issue_id'         => $issue?->id,
@@ -441,12 +452,21 @@ class PeriodController extends Controller
                         'tester_name'      => $ps->tester?->name ?? 'Tester',
                         'tester_bidang'    => $ps->tester?->bidang ?? '-',
                         'description'      => $ps->description ?: 'Kendala dilaporkan oleh tester',
-                        'attachment'       => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                        'admin_note'       => $issue?->admin_note ?? $ps->admin_note,
+                        'handling_status'  => $issue?->handling_status ?? 'belum_ditindaklanjuti',
+                        'admin_handled_at' => $issue?->admin_handled_at ? Carbon::parse($issue->admin_handled_at)->format('d M Y, H:i') : null,
+                        'attachment'       => $ps->attachment,
                         'attachment_name'  => $ps->attachment ? basename($ps->attachment) : null,
+                        'attachment_url'   => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
                         'checked_at'       => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : '-',
                         'has_solved'       => (bool) ($issue?->has_solved ?? false),
-                        'has_solved_label' => ($issue && $issue->has_solved) ? 'sudah tindak lanjuti' : 'belum tindak lanjuti',
+                        'has_solved_label' => match($issue?->handling_status) {
+                            'perlu_pengecekan_ulang' => 'perlu pengecekan ulang',
+                            'selesai' => 'sudah tindak lanjuti',
+                            default => ($issue && $issue->has_solved) ? 'sudah tindak lanjuti' : 'belum tindak lanjuti',
+                        },
                         'has_notif'        => (bool) ($issue?->has_notif ?? false),
+                        'timeline'         => $timeline,
                     ];
                 })
                 ->values();
@@ -924,5 +944,146 @@ class PeriodController extends Controller
             'issue_services' => $issueServices,
             'services' => $servicesList,
         ]);
+    }
+
+    /**
+     * Unduh attachment bukti kendala pengecekan layanan.
+     */
+    public function downloadAttachment(PeriodService $periodService)
+    {
+        if (!$periodService->attachment) {
+            abort(404, 'File lampiran tidak ditemukan.');
+        }
+
+        $disk = Storage::disk('public');
+        if (!$disk->exists($periodService->attachment)) {
+            abort(404, 'File lampiran tidak tersedia di server storage.');
+        }
+
+        $extension = pathinfo($periodService->attachment, PATHINFO_EXTENSION);
+        $serviceName = $periodService->service?->service_name ?? 'Kendala';
+        $serviceSlug = Str::slug($serviceName);
+        $dateSuffix = $periodService->checked_at ? Carbon::parse($periodService->checked_at)->format('Ymd_His') : date('Ymd');
+        $downloadName = 'Bukti_Kendala_' . ($serviceSlug ?: 'layanan') . '_' . $dateSuffix . ($extension ? ('.' . $extension) : '');
+
+        return $disk->download($periodService->attachment, $downloadName);
+    }
+
+    /**
+     * Menyusun timeline alur pemeriksaan secara lengkap dan kronologis:
+     * Dari log kendala awal, tindak lanjut penanganan admin, hingga log pengecekan baru/ulang.
+     */
+    protected function buildTimeline(PeriodService $ps): array
+    {
+        $issue = $ps->serviceIssue;
+        $events = collect();
+
+        // 1. Ambil seluruh log pemeriksaan dari tabel service_check_logs
+        $logs = $ps->checkLogs && $ps->checkLogs->isNotEmpty()
+            ? $ps->checkLogs->sortBy('created_at')->values()
+            : collect();
+
+        // Fallback jika migrasi lama belum ada data di service_check_logs tapi layanan sudah pernah dicek
+        if ($logs->isEmpty() && $ps->status !== 'pending') {
+            $logs = collect([(object) [
+                'id' => 0,
+                'status' => $ps->status,
+                'description' => $ps->description,
+                'attachment' => $ps->attachment,
+                'created_at' => $ps->checked_at ?? $ps->updated_at,
+                'tester' => $ps->tester,
+            ]]);
+        }
+
+        $firstCheckAt = null;
+
+        foreach ($logs as $idx => $log) {
+            $isFirst = ($idx === 0);
+            $createdAt = $log->created_at ? Carbon::parse($log->created_at) : null;
+            if ($isFirst && $createdAt) {
+                $firstCheckAt = $createdAt;
+            }
+
+            if ($isFirst) {
+                $stage = 'initial_check';
+                $stageLabel = ($log->status === 'gangguan') 
+                    ? 'Log Kendala (Pemeriksaan Awal)' 
+                    : 'Pemeriksaan Awal';
+            } else {
+                $stage = 'new_check';
+                $stageLabel = ($log->status === 'normal') 
+                    ? 'Log Pengecekan Baru (Normal)' 
+                    : 'Log Pengecekan Baru (Terkendala)';
+            }
+
+            $events->push([
+                'id' => 'check_' . ($log->id ?? $idx),
+                'type' => 'tester_check',
+                'stage' => $stage,
+                'stage_label' => $stageLabel,
+                'is_initial' => $isFirst,
+                'is_new_check' => !$isFirst,
+                'status' => $log->status,
+                'status_label' => ($log->status === 'normal') ? 'Normal' : 'Terkendala',
+                'actor_name' => $log->tester?->name ?? $ps->tester?->name ?? 'Tester',
+                'actor_role' => 'Tester Layanan',
+                'description' => $log->description,
+                'attachment' => $log->attachment,
+                'attachment_name' => $log->attachment ? basename($log->attachment) : null,
+                'attachment_url' => $log->attachment ? asset('storage/' . $log->attachment) : null,
+                'created_at' => $createdAt ? $createdAt->format('d M Y, H:i') : '-',
+                'created_at_human' => $createdAt ? $createdAt->diffForHumans() : null,
+                'timestamp' => $createdAt ? $createdAt->timestamp : ($idx * 10),
+            ]);
+        }
+
+        // 2. Tindak lanjut penanganan oleh Admin
+        $adminNote = $issue?->admin_note ?? $ps->admin_note;
+        $adminHandledAt = $issue?->admin_handled_at;
+        $hasAdminHandled = !empty($adminNote) || !empty($adminHandledAt) || ($issue && $issue->has_solved);
+
+        if ($hasAdminHandled) {
+            $handledCarbon = $adminHandledAt ? Carbon::parse($adminHandledAt) : null;
+            $ts = $handledCarbon 
+                ? $handledCarbon->timestamp 
+                : ($firstCheckAt ? $firstCheckAt->timestamp + 60 : time());
+
+            $events->push([
+                'id' => 'admin_handling_' . ($issue?->id ?? $ps->id),
+                'type' => 'admin_handling',
+                'stage' => 'admin_handling',
+                'stage_label' => 'Tindak Lanjut Penanganan (Admin)',
+                'is_initial' => false,
+                'is_new_check' => false,
+                'status' => $issue?->handling_status ?? 'perlu_pengecekan_ulang',
+                'status_label' => match($issue?->handling_status) {
+                    'perlu_pengecekan_ulang' => 'Ditangani Admin (Perlu Cek Ulang)',
+                    'selesai' => 'Selesai Ditindaklanjuti',
+                    default => 'Telah Ditindaklanjuti',
+                },
+                'actor_name' => $issue?->admin?->name ?? 'Administrator',
+                'actor_role' => 'Admin Sistem',
+                'description' => $adminNote,
+                'attachment' => null,
+                'attachment_name' => null,
+                'attachment_url' => null,
+                'created_at' => $handledCarbon ? $handledCarbon->format('d M Y, H:i') : '-',
+                'created_at_human' => $handledCarbon ? $handledCarbon->diffForHumans() : null,
+                'timestamp' => $ts,
+            ]);
+        }
+
+        $sorted = $events->sortBy('timestamp')->values();
+
+        if ($sorted->isNotEmpty()) {
+            $lastIdx = $sorted->count() - 1;
+            $sorted = $sorted->map(function ($item, $key) use ($lastIdx) {
+                $item['is_latest'] = ($key === $lastIdx);
+                $item['step_number'] = $key + 1;
+                return $item;
+            });
+        }
+
+        return $sorted->all();
     }
 }

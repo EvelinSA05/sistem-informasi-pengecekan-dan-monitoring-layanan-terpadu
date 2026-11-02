@@ -9,8 +9,8 @@ import { Link } from '@inertiajs/vue3';
 
 const showingNavigationDropdown = ref(false);
 
-// ─── Real-Time Inactivity Timeout (Auto Logout 5 Menit) ─────────────────
-const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 Menit
+// ─── Real-Time Inactivity Timeout (Auto Logout 1 Jam) ───────────────────
+const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 1 Jam (60 Menit)
 let lastActivityTime = Date.now();
 let inactivityInterval = null;
 
@@ -28,7 +28,7 @@ function performAutoLogout() {
 
 function handleUserActivity() {
 	const elapsed = Date.now() - lastActivityTime;
-	// Jika waktu inaktivitas sudah melampaui 5 menit saat event baru masuk, langsung logout!
+	// Jika waktu inaktivitas sudah melampaui 1 jam saat event baru masuk, langsung logout!
 	if (elapsed >= INACTIVITY_TIMEOUT_MS) {
 		performAutoLogout();
 		return;

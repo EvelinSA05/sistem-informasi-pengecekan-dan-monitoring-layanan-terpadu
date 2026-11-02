@@ -28,7 +28,7 @@ class AuthenticatedSessionController extends Controller
         $sessionExpiredMsg = null;
         if ($request->has('timeout') || $request->session()->get('session_expired')) {
             $sessionExpiredMsg = $request->session()->get('session_expired')
-                ?? 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit. Silakan login kembali.';
+                ?? 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 1 jam. Silakan login kembali.';
         }
 
         return Inertia::render('Auth/Login', [
@@ -63,7 +63,7 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         if ($request->has('timeout') || $request->input('timeout')) {
-            $request->session()->flash('session_expired', 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit. Silakan login kembali.');
+            $request->session()->flash('session_expired', 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 1 jam. Silakan login kembali.');
             if ($request->header('X-Inertia')) {
                 return Inertia::location('/?timeout=1');
             }

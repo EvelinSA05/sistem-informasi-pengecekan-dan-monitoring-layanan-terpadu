@@ -29,7 +29,7 @@ const sessionExpiredMessage = ref(
     typeof initialTimeoutMessage === 'string' && initialTimeoutMessage.length > 0
         ? initialTimeoutMessage
         : (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('timeout')
-            ? 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit. Silakan login kembali.'
+            ? 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 1 jam. Silakan login kembali.'
             : '')
 );
 
@@ -60,7 +60,7 @@ onMounted(() => {
     const propMessage = props.sessionExpired || page.props.sessionExpired || page.props.flash?.session_expired;
 
     if (hasTimeoutQuery || hasLocalTimeout || propMessage) {
-        sessionExpiredMessage.value = propMessage || sessionExpiredMessage.value || 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit. Silakan login kembali.';
+        sessionExpiredMessage.value = propMessage || sessionExpiredMessage.value || 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 1 jam. Silakan login kembali.';
     }
 
     if (!siteKey) return;
