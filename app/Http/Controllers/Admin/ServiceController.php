@@ -258,12 +258,57 @@ class ServiceController extends Controller
     }
 
     /**
-     * Dapatkan daftar riwayat kendala khusus untuk layanan ini.
+     * Tampilkan halaman detail master layanan.
      */
+    public function show(Service $service): Response
+    {
+        $service->loadCount('periodServices');
+
+        $issues = $this->fetchServiceIssues($service);
+
+        return Inertia::render('Admin/Services/Show', [
+            'service' => [
+                'id'                    => $service->id,
+                'source_service_id'     => $service->source_service_id,
+                'service_name'          => $service->service_name,
+                'category'              => $service->category,
+                'level'                 => $service->level,
+                'icon'                  => $service->icon,
+                'service_url'           => $service->service_url,
+                'deskripsi_layanan'     => $service->deskripsi_layanan,
+                'tester_instruction'    => $service->tester_instruction,
+                'is_active'             => (bool) $service->is_active,
+                'status'                => $service->status,
+                'notes'                 => $service->notes,
+                'synced_at'             => $service->synced_at ? \Carbon\Carbon::parse($service->synced_at)->format('d M Y, H:i') : null,
+                'created_at'            => $service->created_at ? \Carbon\Carbon::parse($service->created_at)->format('d M Y, H:i') : null,
+                'updated_at'            => $service->updated_at ? \Carbon\Carbon::parse($service->updated_at)->format('d M Y, H:i') : null,
+                'period_services_count' => $service->period_services_count,
+            ],
+            'issues'  => $issues,
+            'flash'   => [
+                'success' => session('success'),
+                'error'   => session('error'),
+            ],
+        ]);
+    }
+
     /**
-     * Memuat history kendala untuk layanan tertentu (Tugas 12).
+     * Dapatkan daftar riwayat kendala khusus untuk layanan ini (API).
      */
     public function issues(Service $service)
+    {
+        $issues = $this->fetchServiceIssues($service);
+
+        return response()->json($issues)
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
+    }
+
+    /**
+     * Helper untuk mengambil data riwayat kendala layanan.
+     */
+    public function fetchServiceIssues(Service $service): array
     {
         try {
             // 1. Pastikan tabel service_issues ada di PostgreSQL
@@ -380,12 +425,18 @@ class ServiceController extends Controller
                         'period_date'           => $formattedDate,
                         'status'                => 'tidak aktif',
                         'period_service_status' => $issue->periodService?->status ?? 'gangguan',
-                        'catatan'               => $issue->periodService?->description ?: ($issue->periodService?->attachment ? 'Lampiran Bukti' : '-'),
+                        'catatan'               => $issue->periodService?->description ?: 'attachment',
                         'attachment'            => $issue->periodService?->attachment ? asset('storage/' . $issue->periodService->attachment) : null,
                         'attachment_name'       => $issue->periodService?->attachment ? basename($issue->periodService->attachment) : null,
                         'has_notif'             => (bool) $issue->has_notif,
                         'has_solved'            => (bool) $issue->has_solved,
-                        'has_solved_label'      => $issue->has_solved ? 'sudah tindak lanjuti' : 'belum tindak lanjuti',
+                        'handling_status'       => $issue->handling_status ?? ($issue->has_solved ? 'selesai' : 'belum_ditindaklanjuti'),
+                        'admin_note'            => $issue->admin_note ?? $issue->periodService?->admin_note,
+                        'has_solved_label'      => match($issue->handling_status) {
+                            'perlu_pengecekan_ulang' => 'perlu pengecekan ulang',
+                            'selesai' => 'sudah tindak lanjuti',
+                            default => $issue->has_solved ? 'sudah tindak lanjuti' : 'belum tindak lanjuti',
+                        },
                         'tester_name'           => $issue->periodService?->tester?->name ?? 'Tester',
                         'checked_at'            => $issue->periodService?->checked_at ? \Carbon\Carbon::parse($issue->periodService->checked_at)->format('d M Y, H:i') : null,
                     ];
@@ -417,7 +468,9 @@ class ServiceController extends Controller
                         'period_date'           => $formattedDate,
                         'status'                => 'tidak aktif',
                         'period_service_status' => $ps->status,
-                        'catatan'               => $ps->description ?: ($ps->attachment ? 'Lampiran Bukti' : '-'),
+                        'catatan'               => $ps->description ?: 'attachment',
+                        'admin_note'            => $ps->admin_note,
+                        'handling_status'       => 'belum_ditindaklanjuti',
                         'attachment'            => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
                         'attachment_name'       => $ps->attachment ? basename($ps->attachment) : null,
                         'has_notif'             => false,
@@ -429,22 +482,20 @@ class ServiceController extends Controller
                 }
             }
 
-            return response()->json($issues)
-                ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-                ->header('Pragma', 'no-cache');
+            return $issues;
         } catch (\Throwable $e) {
             Log::error('Gagal memuat history kendala layanan: ' . $e->getMessage(), [
                 'service_id' => $service->id,
             ]);
 
-            return response()->json([], 500);
+            return [];
         }
     }
 
     /**
-     * Toggle status tindak lanjut kendala (has_solved).
+     * Toggle status tindak lanjut kendala (has_solved) dan perbarui catatan jika disediakan.
      */
-    public function toggleIssueSolved($issueId)
+    public function toggleIssueSolved(Request $request, $issueId)
     {
         try {
             $issue = ServiceIssue::find($issueId);
@@ -461,17 +512,72 @@ class ServiceController extends Controller
                 );
             }
 
-            $issue->update([
-                'has_solved' => !$issue->has_solved,
-            ]);
+            $periodService = PeriodService::find($issue->period_service_id);
+
+            // Simpan perubahan catatan penanganan kendala jika dikirim dari request
+            $adminNote = null;
+            if ($request->has('description') || $request->has('admin_note')) {
+                $validated = $request->validate([
+                    'description' => 'nullable|string|max:5000',
+                    'admin_note'  => 'nullable|string|max:5000',
+                ], [
+                    'description.max' => 'Catatan kendala maksimal 5000 karakter.',
+                    'admin_note.max'  => 'Catatan admin maksimal 5000 karakter.',
+                ]);
+
+                $adminNote = $validated['description'] ?? $validated['admin_note'] ?? null;
+
+                if ($periodService && $adminNote !== null) {
+                    $periodService->update([
+                        'admin_note' => $adminNote,
+                    ]);
+                }
+            }
+
+            // Tentukan status has_solved: jika diberikan secara eksplisit gunakan itu, jika tidak toggle
+            if ($request->has('has_solved')) {
+                $nextSolved = $request->boolean('has_solved');
+            } else {
+                $nextSolved = !$issue->has_solved;
+            }
+
+            // Tentukan handling_status:
+            // Jika ditandai selesai oleh admin, status penanganan menjadi 'perlu_pengecekan_ulang' (bukan langsung selesai)
+            // Hasil pengecekan layanan (status) tetap 'gangguan' sampai tester melakukan pengecekan ulang.
+            $handlingStatus = $nextSolved ? 'perlu_pengecekan_ulang' : 'belum_ditindaklanjuti';
+
+            $updateData = [
+                'has_solved'      => $nextSolved,
+                'handling_status' => $handlingStatus,
+            ];
+
+            if ($adminNote !== null) {
+                $updateData['admin_note'] = $adminNote;
+            }
+
+            if ($nextSolved) {
+                $updateData['admin_handled_at'] = now();
+                $updateData['admin_id'] = auth()->id();
+            }
+
+            $issue->update($updateData);
 
             return response()->json([
-                'success'    => true,
-                'has_solved' => (bool) $issue->has_solved,
-                'message'    => $issue->has_solved 
-                    ? 'Kendala telah ditandai sudah ditindaklanjuti.' 
+                'success'         => true,
+                'has_solved'      => (bool) $issue->has_solved,
+                'handling_status' => $issue->handling_status,
+                'admin_note'      => $issue->admin_note,
+                'description'     => $periodService?->description ?? null,
+                'message'         => $issue->has_solved 
+                    ? 'Kendala telah ditandai selesai. Status penanganan: Perlu Pengecekan Ulang.' 
                     : 'Status kendala diubah menjadi belum ditindaklanjuti.',
             ]);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            return response()->json([
+                'success' => false,
+                'message' => $ve->validator->errors()->first(),
+                'errors'  => $ve->errors(),
+            ], 422);
         } catch (\Throwable $e) {
             Log::error('Gagal mengubah status tindak lanjut: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Terjadi kesalahan sistem.'], 500);

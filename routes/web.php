@@ -33,6 +33,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/services', [\App\Http\Controllers\Admin\ServiceController::class, 'index'])->name('services.index');
         Route::post('/services', [\App\Http\Controllers\Admin\ServiceController::class, 'store'])->name('services.store');
         Route::post('/services/sync-majadigi', [\App\Http\Controllers\Admin\ServiceController::class, 'syncMajadigi'])->name('services.sync_majadigi');
+        Route::get('/services/{service}', [\App\Http\Controllers\Admin\ServiceController::class, 'show'])->name('services.show');
         Route::get('/services/{service}/history', [\App\Http\Controllers\Admin\ServiceController::class, 'history'])->name('services.history');
         Route::get('/services/{service}/issues', [\App\Http\Controllers\Admin\ServiceController::class, 'issues'])->name('services.issues');
         Route::post('/services/issues/{issue}/toggle-solved', [\App\Http\Controllers\Admin\ServiceController::class, 'toggleIssueSolved'])->name('services.issues.toggle_solved');
@@ -49,6 +50,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/periods/{period}', [AdminPeriodController::class, 'destroy'])->name('periods.destroy');
         Route::get('/periods/{period}/export/excel', [AdminPeriodController::class, 'exportExcel'])->name('periods.export.excel');
         Route::get('/periods/{period}/export/pdf', [AdminPeriodController::class, 'exportPdf'])->name('periods.export.pdf');
+        Route::get('/periods/attachment/{periodService}/download', [AdminPeriodController::class, 'downloadAttachment'])->name('periods.attachment.download');
     });
 });
 
