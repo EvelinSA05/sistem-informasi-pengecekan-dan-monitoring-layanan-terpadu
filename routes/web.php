@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/periods/{period}', [AdminPeriodController::class, 'destroy'])->name('periods.destroy');
         Route::get('/periods/{period}/export/excel', [AdminPeriodController::class, 'exportExcel'])->name('periods.export.excel');
         Route::get('/periods/{period}/export/pdf', [AdminPeriodController::class, 'exportPdf'])->name('periods.export.pdf');
+        Route::post('/periods/{period}/sync-services', [AdminPeriodController::class, 'syncPeriodServices'])->name('periods.sync_services');
         Route::get('/periods/attachment/{periodService}/download', [AdminPeriodController::class, 'downloadAttachment'])->name('periods.attachment.download');
     });
 });

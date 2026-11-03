@@ -42,6 +42,7 @@ class AssignedServiceController extends Controller
     public function index(Request $request)
     {
         CheckingPeriod::syncOverdueStatuses();
+        CheckingPeriod::syncAllActivePeriodsWithMasterServices();
 
         $user = $request->user();
 
@@ -149,6 +150,12 @@ class AssignedServiceController extends Controller
             if (!$isAssigned) {
                 abort(403, 'Anda tidak ditugaskan pada periode pengecekan ini.');
             }
+        }
+
+        // Sinkronkan layanan periode aktif dengan Master Layanan Majadigi
+        if ($period->status === 'proses') {
+            $period->syncWithMasterServices();
+            $period->refresh();
         }
 
         $periodCarbon = Carbon::parse($period->date);

@@ -324,6 +324,19 @@ class PeriodController extends Controller
         CheckingPeriod::syncOverdueStatuses();
         $period->refresh();
 
+        // Selalu sinkronkan layanan periode jika berstatus 'proses' atau terdapat layanan yang tidak tersinkronisasi
+        $hasInvalidServices = PeriodService::where('period_id', $period->id)
+            ->where(function ($q) {
+                $q->whereNull('service_id')
+                  ->orWhereHas('service', fn($sq) => $sq->whereNull('synced_at'));
+            })
+            ->exists();
+
+        if ($period->status === 'proses' || $hasInvalidServices) {
+            $period->syncWithMasterServices();
+            $period->refresh();
+        }
+
         $period->load([
             'creator:id,name,email',
             'periodTesters.tester:id,name,email,bidang,nip',
@@ -1086,5 +1099,14 @@ class PeriodController extends Controller
         }
 
         return $sorted->all();
+    }
+
+    /**
+     * Sinkronisasikan layanan periode dengan Master Layanan Majadigi secara manual.
+     */
+    public function syncPeriodServices(CheckingPeriod $period): RedirectResponse
+    {
+        $period->syncWithMasterServices();
+        return back()->with('success', 'Layanan periode berhasil disinkronkan dengan Master Layanan Majadigi (' . $period->periodServices()->count() . ' layanan).');
     }
 }
