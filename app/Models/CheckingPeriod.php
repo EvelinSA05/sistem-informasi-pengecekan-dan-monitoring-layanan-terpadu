@@ -119,4 +119,69 @@ class CheckingPeriod extends Model
     {
         return $this->hasMany(ServiceIssue::class, 'periode_id');
     }
+
+    /**
+     * Sinkronisasikan layanan pada periode ini dengan master layanan aktif yang tersinkronisasi dari Majadigi.
+     */
+    public function syncWithMasterServices(): void
+    {
+        // 1. Dapatkan daftar master layanan aktif yang tersinkronisasi dari Majadigi
+        $activeMasterServices = Service::where('is_active', true)
+            ->whereNotNull('synced_at')
+            ->orderBy('id')
+            ->get();
+
+        $activeMasterServiceIds = $activeMasterServices->pluck('id')->all();
+
+        // 2. Hapus seluruh period_services pada periode ini yang BUKAN merupakan layanan tersinkronisasi Majadigi
+        $invalidPs = PeriodService::where('period_id', $this->id)
+            ->where(function ($q) use ($activeMasterServiceIds) {
+                $q->whereNull('service_id')
+                  ->orWhereNotIn('service_id', $activeMasterServiceIds);
+            })
+            ->get();
+
+        if ($invalidPs->isNotEmpty()) {
+            $invalidPsIds = $invalidPs->pluck('id')->all();
+            ServiceIssue::whereIn('period_service_id', $invalidPsIds)->delete();
+            ServiceCheckLog::whereIn('period_service_id', $invalidPsIds)->delete();
+            PeriodService::whereIn('id', $invalidPsIds)->delete();
+        }
+
+        // 3. Pastikan seluruh layanan aktif Majadigi ada di periode ini
+        $existingPs = PeriodService::where('period_id', $this->id)->get()->keyBy('service_id');
+
+        $testerIds = $this->periodTesters()->pluck('tester_id')->all();
+        if (empty($testerIds)) {
+            $testerIds = User::where('role', 'tester')->pluck('id')->all();
+        }
+
+        if (!empty($testerIds) && $activeMasterServices->isNotEmpty()) {
+            $testerCount = count($testerIds);
+            foreach ($activeMasterServices as $index => $service) {
+                if (!$existingPs->has($service->id)) {
+                    $assignedTesterId = $testerIds[$index % $testerCount];
+                    PeriodService::create([
+                        'period_id'   => $this->id,
+                        'service_id'  => $service->id,
+                        'tester_id'   => $assignedTesterId,
+                        'status'      => 'pending',
+                        'description' => null,
+                        'checked_at'  => null,
+                    ]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Sinkronisasikan seluruh periode aktif ('proses') dengan Master Layanan Majadigi.
+     */
+    public static function syncAllActivePeriodsWithMasterServices(): void
+    {
+        $activePeriods = static::where('status', 'proses')->get();
+        foreach ($activePeriods as $period) {
+            $period->syncWithMasterServices();
+        }
+    }
 }

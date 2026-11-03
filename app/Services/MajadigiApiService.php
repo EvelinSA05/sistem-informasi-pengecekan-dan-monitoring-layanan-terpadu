@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CheckingPeriod;
 use App\Models\PeriodService;
 use App\Models\Service;
 use App\Models\ServiceCheckLog;
@@ -191,6 +192,13 @@ class MajadigiApiService
 
             ServiceIssue::whereIn('layanan_id', $invalidIds)->delete();
             $deleted = Service::whereIn('id', $invalidIds)->delete();
+        }
+
+        // Sinkronkan seluruh periode yang aktif dengan master layanan terbaru
+        try {
+            CheckingPeriod::syncAllActivePeriodsWithMasterServices();
+        } catch (\Throwable $e) {
+            Log::warning('Gagal menyinkronkan periode aktif setelah sync Majadigi: ' . $e->getMessage());
         }
 
         return [
