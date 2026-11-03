@@ -62,14 +62,15 @@ class DashboardController extends Controller
             $periodProses = CheckingPeriod::where('status', 'proses')->count();
             $periodSelesai = CheckingPeriod::where('status', 'selesai')->count();
 
-            // --- Service Stats ---
-            $serviceTotal         = Service::count();
-            $serviceAktif         = Service::where('status', 'aktif')->count();
-            $serviceNonaktif      = Service::where('status', 'tidak_aktif')->count();
-            $serviceBtuhKonfirmasi = Service::where('status', 'butuh_konfirmasi')->count();
+            // --- Service Stats (Layanan Tersinkronisasi dari Majadigi) ---
+            $baseServiceQuery     = Service::whereNotNull('synced_at');
+            $serviceTotal         = (clone $baseServiceQuery)->count();
+            $serviceAktif         = (clone $baseServiceQuery)->where('status', 'aktif')->count();
+            $serviceNonaktif      = (clone $baseServiceQuery)->where('status', 'tidak_aktif')->count();
+            $serviceBtuhKonfirmasi = (clone $baseServiceQuery)->where('status', 'butuh_konfirmasi')->count();
 
             // --- Distribusi Kategori Layanan ---
-            $categoryRows = Service::selectRaw('category, count(*) as total')
+            $categoryRows = (clone $baseServiceQuery)->selectRaw('category, count(*) as total')
                 ->whereNotNull('category')
                 ->where('category', '!=', '')
                 ->groupBy('category')
@@ -82,7 +83,7 @@ class DashboardController extends Controller
             ])->values();
 
             // --- Distribusi Level Layanan ---
-            $levelRows = Service::select('level')
+            $levelRows = (clone $baseServiceQuery)->select('level')
                 ->selectRaw('count(*) as total')
                 ->whereNotNull('level')
                 ->where('level', '!=', '')

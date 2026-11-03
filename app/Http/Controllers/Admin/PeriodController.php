@@ -161,6 +161,7 @@ class PeriodController extends Controller
             });
 
         $services = Service::where('is_active', true)
+            ->whereNotNull('synced_at')
             ->orderBy('id')
             ->get(['id', 'source_service_id', 'service_name', 'category', 'icon', 'service_url']);
 
@@ -296,7 +297,7 @@ class PeriodController extends Controller
                 ]);
             }
 
-            $services = Service::where('is_active', true)->orderBy('id')->get();
+            $services = Service::where('is_active', true)->whereNotNull('synced_at')->orderBy('id')->get();
             $testerCount = count($testerIds);
 
             foreach ($services as $index => $service) {
@@ -641,7 +642,7 @@ class PeriodController extends Controller
             }
 
             // Redistribusi layanan aktif
-            $services = Service::where('is_active', true)->orderBy('id')->get();
+            $services = Service::where('is_active', true)->whereNotNull('synced_at')->orderBy('id')->get();
             $testerCount = count($testerIds);
 
             PeriodService::where('period_id', $period->id)->delete();

@@ -54,9 +54,18 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-Route::get('/run-migrations', function () {
+Route::get('/run-migrations', function (\App\Services\MajadigiApiService $apiService) {
     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-    return 'Migrations and seeders ran successfully! You can now go back and login.';
+    $syncMsg = '';
+    try {
+        $result = $apiService->syncServices();
+        $syncMsg = " Sinkronisasi Majadigi otomatis: {$result['total']} layanan diproses ({$result['deleted']} data non-sinkronisasi dibersihkan).";
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::warning('Run-migrations syncMajadigi: ' . $e->getMessage());
+        $syncMsg = " (Catatan sinkronisasi otomatis: " . $e->getMessage() . ")";
+    }
+    $total = \App\Models\Service::whereNotNull('synced_at')->count();
+    return "Migrations and cleanup ran successfully! Total layanan aktif tersinkronisasi dari Majadigi: {$total}.{$syncMsg}";
 });
 
 Route::get('/test-session', function (\Illuminate\Http\Request $request) {

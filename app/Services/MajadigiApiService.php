@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\PeriodService;
 use App\Models\Service;
+use App\Models\ServiceCheckLog;
+use App\Models\ServiceIssue;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -109,6 +112,7 @@ class MajadigiApiService
 
         $created = 0;
         $updated = 0;
+        $validSourceIds = [];
 
         foreach ($items as $item) {
             $sourceId = trim((string) ($item['id'] ?? ''));
@@ -117,6 +121,8 @@ class MajadigiApiService
             if (empty($sourceId) || empty($name)) {
                 continue;
             }
+
+            $validSourceIds[] = $sourceId;
 
             $rawLevel = $item['level'] ?? null;
             $level = null;
@@ -167,10 +173,31 @@ class MajadigiApiService
             }
         }
 
+        // Bersihkan semua layanan yang tidak ada dalam API Majadigi atau belum pernah disinkronisasi
+        $invalidServices = Service::whereNotIn('source_service_id', $validSourceIds)
+            ->orWhereNull('synced_at')
+            ->get();
+
+        $deleted = 0;
+        if ($invalidServices->isNotEmpty()) {
+            $invalidIds = $invalidServices->pluck('id')->all();
+            $invalidPsIds = PeriodService::whereIn('service_id', $invalidIds)->pluck('id')->all();
+
+            if (!empty($invalidPsIds)) {
+                ServiceIssue::whereIn('period_service_id', $invalidPsIds)->delete();
+                ServiceCheckLog::whereIn('period_service_id', $invalidPsIds)->delete();
+                PeriodService::whereIn('id', $invalidPsIds)->delete();
+            }
+
+            ServiceIssue::whereIn('layanan_id', $invalidIds)->delete();
+            $deleted = Service::whereIn('id', $invalidIds)->delete();
+        }
+
         return [
             'total'   => count($items),
             'created' => $created,
             'updated' => $updated,
+            'deleted' => $deleted,
         ];
     }
 }
