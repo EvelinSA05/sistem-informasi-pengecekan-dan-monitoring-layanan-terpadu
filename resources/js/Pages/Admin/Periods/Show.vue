@@ -190,6 +190,24 @@ function togglePeriodStatus() {
  });
 }
 
+// Sinkronisasi Layanan Periode dengan Master Layanan Majadigi
+const isSyncingServices = ref(false);
+function syncServicesWithMaster() {
+ isSyncingServices.value = true;
+ router.post(route('admin.periods.sync_services', props.period.id), {}, {
+ preserveScroll: true,
+ onSuccess: () => {
+ showToast('Layanan periode berhasil disinkronkan dengan Master Layanan Majadigi.', 'success');
+ },
+ onError: () => {
+ showToast('Gagal menyinkronkan layanan periode.', 'error');
+ },
+ onFinish: () => {
+ isSyncingServices.value = false;
+ }
+ });
+}
+
 
 // ─── Modal Uji Layanan (Admin / Tester) ─────────────────────────
 const showCheckModal = ref(false);
@@ -417,6 +435,16 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 018.586 12z"/></svg>
  Edit Periode
  </Link>
+ <button
+  type="button"
+  @click="syncServicesWithMaster"
+  :disabled="isSyncingServices"
+  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/15 border border-white/20 rounded-lg hover:bg-white/25 transition-colors cursor-pointer backdrop-blur-sm disabled:opacity-50"
+  title="Sinkronkan daftar layanan periode dengan Master Layanan Majadigi terbaru"
+ >
+  <svg class="w-3.5 h-3.5" :class="{'animate-spin': isSyncingServices}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+  {{ isSyncingServices ? 'Menyinkronkan...' : 'Sinkron Layanan' }}
+ </button>
  <a :href="route('admin.periods.export.excel', period.id)" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/15 border border-white/20 rounded-lg hover:bg-white/25 transition-colors cursor-pointer backdrop-blur-sm">
  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
  Export Excel
