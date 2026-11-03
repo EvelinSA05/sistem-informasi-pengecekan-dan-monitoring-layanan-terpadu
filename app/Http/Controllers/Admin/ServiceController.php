@@ -31,7 +31,10 @@ class ServiceController extends Controller
         $status = (string) $request->get('status', '');
         $level  = (string) $request->get('level', '');
 
-        $services = Service::query()
+        // Master Layanan hanya menampilkan data yang sudah tersinkronisasi dari web Majadigi
+        $baseQuery = Service::query()->whereNotNull('synced_at');
+
+        $services = (clone $baseQuery)
             ->withCount('periodServices')
             ->when(!empty($search), function ($query) use ($search) {
                 $searchTerm = strtolower($search);
@@ -52,10 +55,10 @@ class ServiceController extends Controller
             ->withQueryString();
 
         $stats = [
-            'total'              => Service::count(),
-            'aktif'              => Service::where('status', Service::STATUS_AKTIF)->count(),
-            'nonaktif'           => Service::where('status', Service::STATUS_TIDAK_AKTIF)->count(),
-            'butuhkonfirmasi'    => Service::where('status', Service::STATUS_BUTUH_KONFIRMASI)->count(),
+            'total'              => (clone $baseQuery)->count(),
+            'aktif'              => (clone $baseQuery)->where('status', Service::STATUS_AKTIF)->count(),
+            'nonaktif'           => (clone $baseQuery)->where('status', Service::STATUS_TIDAK_AKTIF)->count(),
+            'butuhkonfirmasi'    => (clone $baseQuery)->where('status', Service::STATUS_BUTUH_KONFIRMASI)->count(),
         ];
 
         $levels = collect(['Level 1', 'Level 2', 'Level 3']);
@@ -86,7 +89,8 @@ class ServiceController extends Controller
         try {
             $result = $apiService->syncServices();
 
-            $message = "Sinkronisasi berhasil! Total {$result['total']} layanan dari Majadigi diproses ({$result['created']} data baru ditambahkan, {$result['updated']} data diperbarui).";
+            $deletedMsg = !empty($result['deleted']) ? ", {$result['deleted']} data non-sinkronisasi berhasil dibersihkan" : "";
+            $message = "Sinkronisasi berhasil! Total {$result['total']} layanan dari Majadigi diproses ({$result['created']} data baru ditambahkan, {$result['updated']} data diperbarui{$deletedMsg}).";
             return back()->with('success', $message);
         } catch (\Throwable $e) {
             Log::error('Majadigi sync error: ' . $e->getMessage(), [
