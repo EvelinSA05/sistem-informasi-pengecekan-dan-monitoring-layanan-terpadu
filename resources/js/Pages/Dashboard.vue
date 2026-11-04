@@ -711,17 +711,14 @@ function submitCheck() {
  </div>
  <div class="flex flex-col gap-1 text-xs">
  <div class="flex items-center gap-1.5">
- <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
  <span class="font-semibold text-emerald-600">{{ serviceStats.aktif }}</span>
  <span class="text-slate-400">Aktif</span>
  </div>
  <div class="flex items-center gap-1.5">
- <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
  <span class="font-semibold text-rose-600">{{ serviceStats.nonaktif }}</span>
  <span class="text-slate-400">Tidak Aktif</span>
  </div>
  <div class="flex items-center gap-1.5">
- <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
  <span class="font-semibold text-amber-600">{{ serviceStats.butuhkonfirmasi ?? 0 }}</span>
  <span class="text-slate-400">Butuh Konfirmasi</span>
  </div>
@@ -958,10 +955,9 @@ function submitCheck() {
  <div class="flex items-center justify-between mb-1">
  <div class="flex items-center gap-2 min-w-0">
  <span
- class="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold"
+ class="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
  :class="statusClass(p.status)"
  >
- <span class="w-1.5 h-1.5 rounded-full" :class="statusDotClass(p.status)"></span>
  {{ statusLabel(p.status) }}
  </span>
  <span class="text-xs text-slate-600 font-medium truncate">{{ p.date_label }}</span>
@@ -1016,10 +1012,9 @@ function submitCheck() {
  </td>
  <td class="px-4 py-3.5">
  <span
- class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold"
+ class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold"
  :class="statusClass(p.status)"
  >
- <span class="w-1.5 h-1.5 rounded-full" :class="statusDotClass(p.status)"></span>
  {{ statusLabel(p.status) }}
  </span>
  </td>
