@@ -169,10 +169,9 @@ const filteredServices = computed(() => {
 
  <div class="shrink-0 flex items-center gap-3">
  <span
- class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
+ class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
  :class="service.status === 'normal' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : (service.status === 'gangguan' ? 'bg-rose-50 text-rose-700 border border-rose-100' : 'bg-slate-100 text-slate-500 border border-slate-200')"
  >
- <span class="w-1.5 h-1.5 rounded-full" :class="service.status === 'normal' ? 'bg-emerald-500' : (service.status === 'gangguan' ? 'bg-rose-500' : 'bg-slate-400')"></span>
  {{ service.status === 'normal' ? 'Normal' : (service.status === 'gangguan' ? 'Kendala' : 'Belum Dicek') }}
  </span>
  <svg class="w-4 h-4 text-slate-300 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
