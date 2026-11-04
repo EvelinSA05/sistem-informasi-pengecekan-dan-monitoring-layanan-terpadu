@@ -215,8 +215,7 @@ function confirmDelete() {
       <div class="absolute inset-0 opacity-70 bg-cover bg-center" style="background-image: url('/images/banner_3.jpg');"></div>
       <div class="absolute inset-0 bg-gradient-to-r from-[#1e3a8a]/85 via-[#1e3a8a]/45 to-transparent pointer-events-none"></div>
       <div class="relative z-10">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
-          <span class="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
+        <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
           Pengguna Sistem
         </div>
         <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Manajemen User & Tester</h2>
@@ -314,13 +313,12 @@ function confirmDelete() {
  <td class="px-3 sm:px-6 py-4 text-left w-36 sm:w-44">
  <span
  :class="[
- 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold',
+ 'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold',
  user.status === 'aktif'
  ? 'bg-emerald-50 border border-emerald-100 text-emerald-700'
  : 'bg-slate-100 border border-slate-200 text-slate-500'
  ]"
  >
- <span :class="['w-1.5 h-1.5 rounded-full', user.status === 'aktif' ? 'bg-emerald-500' : 'bg-slate-400']"></span>
  {{ user.status === 'aktif' ? 'Aktif' : 'Nonaktif' }}
  </span>
  </td>
@@ -489,8 +487,8 @@ function confirmDelete() {
                                             addForm.status === 'aktif' ? 'border-primary bg-primary/10' : 'border-slate-200 bg-white hover:border-slate-300'
                                         ]">
                                             <input type="radio" v-model="addForm.status" value="aktif" class="accent-primary"/>
-                                            <span class="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-                                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Aktif
+                                            <span class="text-sm font-semibold text-slate-700">
+                                                Aktif
                                             </span>
                                         </label>
                                         <label :class="[
@@ -498,8 +496,8 @@ function confirmDelete() {
                                             addForm.status === 'tidak aktif' ? 'border-primary bg-primary/10' : 'border-slate-200 bg-white hover:border-slate-300'
                                         ]">
                                             <input type="radio" v-model="addForm.status" value="tidak aktif" class="accent-primary"/>
-                                            <span class="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-                                                <span class="w-2 h-2 rounded-full bg-slate-400"></span> Nonaktif
+                                            <span class="text-sm font-semibold text-slate-700">
+                                                Nonaktif
                                             </span>
                                         </label>
                                     </div>
@@ -574,8 +572,8 @@ function confirmDelete() {
  editForm.status === 'aktif' ? 'border-primary bg-primary/10' : 'border-slate-200 bg-white hover:border-slate-300'
  ]">
  <input type="radio" v-model="editForm.status" value="aktif" class="accent-primary"/>
- <span class="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
- <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Aktif
+ <span class="text-sm font-semibold text-slate-700">
+ Aktif
  </span>
  </label>
  <label :class="[
@@ -583,8 +581,8 @@ function confirmDelete() {
  editForm.status === 'tidak aktif' ? 'border-primary bg-primary/10' : 'border-slate-200 bg-white hover:border-slate-300'
  ]">
  <input type="radio" v-model="editForm.status" value="tidak aktif" class="accent-primary"/>
- <span class="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
- <span class="w-2 h-2 rounded-full bg-slate-400"></span> Nonaktif
+ <span class="text-sm font-semibold text-slate-700">
+ Nonaktif
  </span>
  </label>
  </div>
@@ -638,10 +636,9 @@ function confirmDelete() {
  <p class="font-bold text-slate-800 text-sm">{{ selectedUser.name }}</p>
  <p class="text-xs text-slate-500">{{ selectedUser.email }}</p>
  <span :class="[
- 'inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md text-[11px] font-semibold',
+ 'inline-flex items-center mt-1 px-2 py-0.5 rounded-md text-[11px] font-semibold',
  selectedUser.status === 'aktif' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
  ]">
- <span :class="['w-1.5 h-1.5 rounded-full', selectedUser.status === 'aktif' ? 'bg-emerald-500' : 'bg-slate-400']"></span>
  {{ selectedUser.status === 'aktif' ? 'Aktif' : 'Nonaktif' }}
  </span>
  </div>
