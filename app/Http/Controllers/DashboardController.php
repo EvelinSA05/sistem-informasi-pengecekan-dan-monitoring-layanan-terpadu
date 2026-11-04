@@ -395,6 +395,16 @@ class DashboardController extends Controller
                     );
                 }
             ])
+                ->select([
+                    'id',
+                    'period_id',
+                    'service_id',
+                    'tester_id',
+                    'status',
+                    'description',
+                    'attachment',
+                    'checked_at',
+                ])
                 ->where('period_id', $activePeriod->id)
                 ->where('tester_id', $user->id)
                 ->orderByRaw(
@@ -438,6 +448,15 @@ class DashboardController extends Controller
         $recentActivities = PeriodService::with(
             'service:id,service_name,category,level'
         )
+            ->select([
+                'id',
+                'service_id',
+                'tester_id',
+                'status',
+                'description',
+                'attachment',
+                'checked_at',
+            ])
             ->where('tester_id', $user->id)
             ->whereNotNull('checked_at')
             ->orderBy('checked_at', 'desc')
