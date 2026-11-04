@@ -109,9 +109,7 @@ try {
     $app = require_once __DIR__ . '/../bootstrap/app.php';
     $app->useStoragePath('/tmp');
     $request = Illuminate\Http\Request::capture();
-    $response = $app->handleRequest($request);
-    $response->send();
-    $app->terminate($request, $response);
+    $app->handleRequest($request);
 } catch (\Throwable $e) {
     http_response_code(500);
     header('Content-Type: text/plain');

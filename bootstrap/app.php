@@ -34,19 +34,18 @@ return Application::configure(basePath: dirname(__DIR__))
                 'url'  => $request->fullUrl(),
             ]);
 
-            $errMsg = $e->getMessage() . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')';
-
             if ($request->expectsJson() || $request->header('X-Inertia')) {
+                $msg = config('app.debug') 
+                    ? ($e->getMessage() . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')') 
+                    : 'Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.';
                 if ($request->header('X-Inertia')) {
-                    return back()->with('error', $errMsg);
+                    return back()->with('error', $msg);
                 }
                 return response()->json([
-                    'message' => $errMsg
+                    'message' => $msg
                 ], 500);
             }
 
-            return response()->view('errors.500', [
-                'message' => $errMsg
-            ], 500);
+            return null;
         });
     })->create();
