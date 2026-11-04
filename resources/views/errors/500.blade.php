@@ -32,6 +32,12 @@
             <p class="text-slate-500 text-sm leading-relaxed mb-6">
                 {{ $message ?? 'Maaf, terjadi kesalahan saat memproses permintaan Anda. Silakan periksa kembali input Anda atau coba beberapa saat lagi.' }}
             </p>
+            @if(isset($exception) && $exception)
+                <div style="background: #fff1f2; color: #b91c1c; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 11px; text-align: left; margin-bottom: 16px; word-break: break-all;">
+                    <strong>Error:</strong> {{ $exception->getMessage() }}<br>
+                    <strong>File:</strong> {{ $exception->getFile() }}:{{ $exception->getLine() }}
+                </div>
+            @endif
 
             <a href="{{ url('/') }}" class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-md shadow-blue-600/20 transition-all">
                 Kembali ke Beranda
