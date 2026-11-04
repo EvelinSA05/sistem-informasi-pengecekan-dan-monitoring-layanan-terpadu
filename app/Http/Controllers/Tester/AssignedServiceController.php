@@ -354,7 +354,7 @@ class AssignedServiceController extends Controller
                         : null,
                     'attachment' => $ps->attachment,
                     'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
-                    'attachment_url' => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                    'attachment_url' => $ps->attachment ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                     'checked_at' => $ps->checked_at
                         ? Carbon::parse($ps->checked_at)->format('d M Y, H:i')
                         : null,
@@ -644,7 +644,7 @@ class AssignedServiceController extends Controller
                 'description' => $log->description,
                 'attachment' => $log->attachment,
                 'attachment_name' => $log->attachment ? basename($log->attachment) : null,
-                'attachment_url' => $log->attachment ? asset('storage/' . $log->attachment) : null,
+                'attachment_url' => $log->attachment ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                 'created_at' => $createdAt ? $createdAt->format('d M Y, H:i') : '-',
                 'created_at_human' => $createdAt ? $createdAt->diffForHumans() : null,
                 'timestamp' => $createdAt ? $createdAt->timestamp : ($idx * 10),

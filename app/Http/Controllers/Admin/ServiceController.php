@@ -232,26 +232,79 @@ class ServiceController extends Controller
     public function history(Service $service)
     {
         try {
-            $history = \App\Models\ServiceCheckLog::with(['periodService.period', 'tester'])
-                ->whereHas('periodService', function ($query) use ($service) {
-                    $query->where('service_id', $service->id);
-                })
-                ->orderByDesc('created_at')
-                ->get()
-                ->map(function ($log) {
-                    return [
-                        'id'          => $log->id,
-                        'period_date' => $log->periodService?->period?->date ? \Carbon\Carbon::parse($log->periodService->period->date)->format('d M Y') : '-',
-                        'tester'      => $log->tester ? $log->tester->name : 'Unknown',
+            $logs = collect();
+
+            // 1. Ambil dari ServiceCheckLog jika ada
+            try {
+                $checkLogs = \App\Models\ServiceCheckLog::with(['periodService.period', 'tester'])
+                    ->whereHas('periodService', function ($query) use ($service) {
+                        $query->where('service_id', $service->id);
+                    })
+                    ->orderByDesc('created_at')
+                    ->get();
+
+                foreach ($checkLogs as $log) {
+                    $ps = $log->periodService;
+                    $createdAt = $log->created_at ? \Carbon\Carbon::parse($log->created_at) : null;
+                    $logs->push([
+                        'id'          => 'log_' . $log->id,
+                        'period_service_id' => $log->period_service_id,
+                        'period_date' => $ps?->period?->date ? \Carbon\Carbon::parse($ps->period->date)->format('d M Y') : '-',
+                        'tester'      => $log->tester?->name ?? ($ps?->tester?->name ?? 'Tester'),
                         'status'      => $log->status,
                         'description' => $log->description,
-                        'attachment'  => $log->attachment ? asset('storage/' . $log->attachment) : null,
+                        'attachment'  => $log->attachment,
                         'attachment_name' => $log->attachment ? basename($log->attachment) : null,
-                        'checked_at'  => $log->created_at ? \Carbon\Carbon::parse($log->created_at)->format('d M Y H:i:s') : '-',
-                    ];
-                });
+                        'attachment_url'  => $log->attachment && $ps ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
+                        'checked_at'  => $createdAt ? $createdAt->format('d M Y H:i') : '-',
+                        'timestamp'   => $createdAt ? $createdAt->timestamp : 0,
+                    ]);
+                }
+            } catch (\Throwable $logEx) {
+                Log::warning('Gagal query ServiceCheckLog di history: ' . $logEx->getMessage());
+            }
 
-            return response()->json($history);
+            // 2. Ambil dari PeriodService yang telah diperiksa (checked_at tidak null)
+            try {
+                $periodServices = \App\Models\PeriodService::with(['period', 'tester'])
+                    ->where('service_id', $service->id)
+                    ->whereNotNull('checked_at')
+                    ->where('status', '!=', 'pending')
+                    ->orderByDesc('checked_at')
+                    ->get();
+
+                foreach ($periodServices as $ps) {
+                    $checkedAt = $ps->checked_at ? \Carbon\Carbon::parse($ps->checked_at) : null;
+                    $ts = $checkedAt ? $checkedAt->timestamp : 0;
+
+                    // Hindari duplikasi jika log di atas sudah mencatat pemeriksaan yang sama
+                    $isDuplicate = $logs->contains(function ($item) use ($ps, $ts) {
+                        return $item['period_service_id'] == $ps->id && abs($item['timestamp'] - $ts) < 60;
+                    });
+
+                    if (!$isDuplicate) {
+                        $logs->push([
+                            'id'          => 'ps_' . $ps->id,
+                            'period_service_id' => $ps->id,
+                            'period_date' => $ps->period?->date ? \Carbon\Carbon::parse($ps->period->date)->format('d M Y') : '-',
+                            'tester'      => $ps->tester?->name ?? 'Tester',
+                            'status'      => $ps->status,
+                            'description' => $ps->description,
+                            'attachment'  => $ps->attachment,
+                            'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
+                            'attachment_url'  => $ps->attachment ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
+                            'checked_at'  => $checkedAt ? $checkedAt->format('d M Y H:i') : '-',
+                            'timestamp'   => $ts,
+                        ]);
+                    }
+                }
+            } catch (\Throwable $psEx) {
+                Log::warning('Gagal query PeriodService di history: ' . $psEx->getMessage());
+            }
+
+            $sortedHistory = $logs->sortByDesc('timestamp')->values();
+
+            return response()->json($sortedHistory);
         } catch (\Throwable $e) {
             Log::error('Gagal memuat riwayat layanan: ' . $e->getMessage(), [
                 'service_id' => $service->id,

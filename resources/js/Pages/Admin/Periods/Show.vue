@@ -13,8 +13,29 @@ const props = defineProps({
 
 // Layanan Terkendala state & actions
 const troubledList = ref([...props.troubled_services]);
+const troubledCurrentPage = ref(1);
+const troubledPerPage = ref(5);
+
+const paginatedTroubledList = computed(() => {
+ const start = (troubledCurrentPage.value - 1) * troubledPerPage.value;
+ return troubledList.value.slice(start, start + troubledPerPage.value);
+});
+
+const totalTroubledPages = computed(() => {
+ return Math.ceil(troubledList.value.length / troubledPerPage.value) || 1;
+});
+
+function goToTroubledPage(page) {
+ if (page >= 1 && page <= totalTroubledPages.value) {
+  troubledCurrentPage.value = page;
+ }
+}
+
 watch(() => props.troubled_services, (val) => {
  troubledList.value = [...(val || [])];
+ if (troubledCurrentPage.value > totalTroubledPages.value) {
+  troubledCurrentPage.value = 1;
+ }
 }, { deep: true });
 
 // Detail Kendala Modal state
@@ -436,9 +457,11 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  </div>
 
  <div class="flex items-center gap-2 flex-wrap shrink-0">
- <Link :href="route('admin.periods.edit', period.id)" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/15 border border-white/20 rounded-lg hover:bg-white/25 transition-colors cursor-pointer backdrop-blur-sm">
- <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 018.586 12z"/></svg>
- Edit Periode
+ <Link :href="route('admin.periods.edit', period.id)" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/20 border border-white/25 rounded-xl hover:bg-white/30 transition-all cursor-pointer backdrop-blur-sm shadow-2xs">
+  <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+   <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+  </svg>
+  <span>Edit Periode</span>
  </Link>
  <button
   type="button"
@@ -571,90 +594,130 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
   </div>
 
   <!-- List Layanan Terkendala -->
-  <div v-else class="space-y-3">
-   <div
-    v-for="(item, idx) in troubledList"
-    :key="item.id"
-    class="p-4 sm:p-5 rounded-2xl border transition-all text-xs"
-    :class="item.has_solved ? 'bg-slate-50/70 border-slate-200 text-slate-700' : 'bg-rose-50/40 border-rose-200/90 text-slate-800 shadow-2xs'"
-   >
-    <!-- Baris Atas: Header Informasi Layanan & Tombol Tindak Lanjut -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-     <div class="flex items-center gap-2 flex-wrap font-medium">
-      <span class="font-bold text-slate-900 w-5">{{ idx + 1 }}.</span>
-      <h4 class="text-sm font-bold text-slate-800">{{ item.service_name }}</h4>
-      <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">{{ item.category }}</span>
-      <span v-if="item.level && item.level !== '-'" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">Level {{ item.level }}</span>
+  <div v-else class="space-y-4">
+   <div class="space-y-3">
+    <div
+     v-for="(item, idx) in paginatedTroubledList"
+     :key="item.id"
+     class="p-4 sm:p-5 rounded-2xl border transition-all text-xs"
+     :class="item.has_solved ? 'bg-slate-50/70 border-slate-200 text-slate-700' : 'bg-rose-50/40 border-rose-200/90 text-slate-800 shadow-2xs'"
+    >
+     <!-- Baris Atas: Header Informasi Layanan & Tombol Tindak Lanjut -->
+     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="flex items-center gap-2 flex-wrap font-medium">
+       <span class="font-bold text-slate-900 w-5">{{ (troubledCurrentPage - 1) * troubledPerPage + idx + 1 }}.</span>
+       <h4 class="text-sm font-bold text-slate-800">{{ item.service_name }}</h4>
+       <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">{{ item.category }}</span>
+       <span v-if="item.level && item.level !== '-'" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">Level {{ item.level }}</span>
 
-      <span class="text-slate-300 hidden sm:inline">|</span>
-      <span class="text-slate-500">
-       Tester: <strong class="text-slate-700">{{ item.tester_name }}</strong>
-       <span v-if="item.tester_bidang && item.tester_bidang !== '-'" class="text-slate-400 font-normal"> ({{ item.tester_bidang }})</span>
-      </span>
+       <span class="text-slate-300 hidden sm:inline">|</span>
+       <span class="text-slate-500">
+        Tester: <strong class="text-slate-700">{{ item.tester_name }}</strong>
+        <span v-if="item.tester_bidang && item.tester_bidang !== '-'" class="text-slate-400 font-normal"> ({{ item.tester_bidang }})</span>
+       </span>
 
-      <span class="text-slate-300 hidden sm:inline">|</span>
-      <span class="text-slate-500">
-       Diperiksa: <strong class="text-slate-700">{{ item.checked_at }}</strong>
-      </span>
+       <span class="text-slate-300 hidden sm:inline">|</span>
+       <span class="text-slate-500">
+        Diperiksa: <strong class="text-slate-700">{{ item.checked_at }}</strong>
+       </span>
 
-      <span class="text-slate-300 hidden sm:inline">|</span>
-      <!-- Badge Status Tindak Lanjut -->
-      <span
-       class="px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase inline-flex items-center shadow-2xs"
-       :class="{
-        'bg-amber-100 text-amber-800 border border-amber-200': item.handling_status === 'perlu_pengecekan_ulang',
-        'bg-emerald-100 text-emerald-800 border border-emerald-200': item.has_solved || item.handling_status === 'selesai',
-        'bg-rose-100 text-rose-800 border border-rose-200': !item.has_solved && item.handling_status !== 'perlu_pengecekan_ulang',
-       }"
-      >
-       {{ item.has_solved_label }}
-      </span>
+       <span class="text-slate-300 hidden sm:inline">|</span>
+       <!-- Badge Status Tindak Lanjut -->
+       <span
+        class="px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase inline-flex items-center shadow-2xs"
+        :class="{
+         'bg-amber-100 text-amber-800 border border-amber-200': item.handling_status === 'perlu_pengecekan_ulang',
+         'bg-emerald-100 text-emerald-800 border border-emerald-200': item.has_solved || item.handling_status === 'selesai',
+         'bg-rose-100 text-rose-800 border border-rose-200': !item.has_solved && item.handling_status !== 'perlu_pengecekan_ulang',
+        }"
+       >
+        {{ item.has_solved_label }}
+       </span>
+      </div>
+
+      <!-- Tombol Tindak Lanjut & Tombol Detail (Ikon Mata) -->
+      <div class="flex items-center gap-2 shrink-0">
+       <button
+        type="button"
+        @click="openIssueDetail(item)"
+        class="inline-flex items-center justify-center p-2 rounded-xl text-rose-700 bg-white border border-rose-200/80 hover:bg-rose-50 hover:border-rose-300 transition-all cursor-pointer active:scale-95 shadow-2xs"
+        title="Lihat Detail Hasil Pengujian & Bukti Kendala"
+       >
+        <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+       </button>
+
+       <button
+        type="button"
+        @click="openSolveModal(item)"
+        class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer active:scale-95 flex items-center gap-1.5 shadow-xs"
+        :class="item.has_solved
+         ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-2xs'
+         : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600'"
+        :title="item.has_solved ? 'Perbarui catatan penanganan kendala' : 'Buka modal untuk mengisi catatan dan tandai selesai kendala'"
+       >
+        <svg v-if="item.has_solved" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        {{ item.has_solved ? 'Edit Catatan' : 'Tandai Selesai' }}
+       </button>
+      </div>
      </div>
 
-     <!-- Tombol Tindak Lanjut & Tombol Detail (Ikon Mata) -->
-     <div class="flex items-center gap-2 shrink-0">
-      <button
-       type="button"
-       @click="openIssueDetail(item)"
-       class="inline-flex items-center justify-center p-2 rounded-xl text-rose-700 bg-white border border-rose-200/80 hover:bg-rose-50 hover:border-rose-300 transition-all cursor-pointer active:scale-95 shadow-2xs"
-       title="Lihat Detail Hasil Pengujian & Bukti Kendala"
-      >
-       <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-      </button>
+     <!-- Catatan Penanganan Admin & Tester -->
+     <div class="mt-3 pt-3 border-t border-slate-200/70 space-y-2">
+      <!-- Catatan Kendala Tester -->
+      <div class="p-2.5 rounded-xl bg-white/80 border border-rose-200/80 text-xs">
+       <span class="font-bold text-rose-800">Catatan Tester:</span>
+       <span class="text-slate-700 ml-1.5 whitespace-pre-wrap">{{ item.description || '-' }}</span>
+      </div>
 
-      <button
-       type="button"
-       @click="openSolveModal(item)"
-       class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer active:scale-95 flex items-center gap-1.5 shadow-xs"
-       :class="item.has_solved
-        ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-2xs'
-        : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600'"
-       :title="item.has_solved ? 'Perbarui catatan penanganan kendala' : 'Buka modal untuk mengisi catatan dan tandai selesai kendala'"
-      >
-       <svg v-if="item.has_solved" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-       <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-       {{ item.has_solved ? 'Edit Catatan' : 'Tandai Selesai' }}
-      </button>
+      <!-- Catatan Penanganan Admin -->
+      <div v-if="item.admin_note" class="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs">
+       <div class="flex items-center gap-1 font-bold text-emerald-800 mb-0.5">
+        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>Catatan Penanganan Admin:</span>
+        <span v-if="item.admin_handled_at" class="text-[10px] text-slate-400 font-normal">({{ item.admin_handled_at }})</span>
+       </div>
+       <p class="text-slate-700 whitespace-pre-wrap leading-relaxed">{{ item.admin_note }}</p>
+      </div>
      </div>
     </div>
+   </div>
 
-    <!-- Catatan Penanganan Admin & Tester -->
-    <div class="mt-3 pt-3 border-t border-slate-200/70 space-y-2">
-     <!-- Catatan Kendala Tester -->
-     <div class="p-2.5 rounded-xl bg-white/80 border border-rose-200/80 text-xs">
-      <span class="font-bold text-rose-800">Catatan Tester:</span>
-      <span class="text-slate-700 ml-1.5 whitespace-pre-wrap">{{ item.description || '-' }}</span>
-     </div>
+   <!-- Pagination Bar Layanan Terkendala -->
+   <div v-if="troubledList.length > troubledPerPage" class="pt-3 px-1 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200/80">
+    <p class="text-xs text-slate-500 font-medium">
+     Menampilkan <span class="font-bold text-slate-800">{{ (troubledCurrentPage - 1) * troubledPerPage + 1 }}</span> - <span class="font-bold text-slate-800">{{ Math.min(troubledCurrentPage * troubledPerPage, troubledList.length) }}</span> dari <span class="font-bold text-slate-800">{{ troubledList.length }}</span> layanan terkendala
+    </p>
 
-     <!-- Catatan Penanganan Admin -->
-     <div v-if="item.admin_note" class="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs">
-      <div class="flex items-center gap-1 font-bold text-emerald-800 mb-0.5">
-       <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-       <span>Catatan Penanganan Admin:</span>
-       <span v-if="item.admin_handled_at" class="text-[10px] text-slate-400 font-normal">({{ item.admin_handled_at }})</span>
-      </div>
-      <p class="text-slate-700 whitespace-pre-wrap leading-relaxed">{{ item.admin_note }}</p>
-     </div>
+    <div class="flex items-center gap-1.5">
+     <button
+      type="button"
+      @click="goToTroubledPage(troubledCurrentPage - 1)"
+      :disabled="troubledCurrentPage === 1"
+      class="px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 transition-colors shadow-2xs cursor-pointer"
+     >
+      &laquo; Sebelumnya
+     </button>
+
+     <button
+      v-for="p in totalTroubledPages"
+      :key="p"
+      type="button"
+      @click="goToTroubledPage(p)"
+      class="w-8 h-8 text-xs font-bold rounded-xl border transition-all cursor-pointer"
+      :class="p === troubledCurrentPage ? 'bg-primary text-white border-primary shadow-xs' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 shadow-2xs'"
+     >
+      {{ p }}
+     </button>
+
+     <button
+      type="button"
+      @click="goToTroubledPage(troubledCurrentPage + 1)"
+      :disabled="troubledCurrentPage === totalTroubledPages"
+      class="px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 transition-colors shadow-2xs cursor-pointer"
+     >
+      Berikutnya &raquo;
+     </button>
     </div>
    </div>
   </div>
@@ -1061,7 +1124,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
 								<div class="flex items-center justify-between mb-1.5">
 									<label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
 										Lampiran / Bukti Kendala
-										<span class="text-slate-400 font-normal lowercase">(opsional)</span>
+										<span class="text-rose-600 font-bold lowercase">(wajib)</span>
 									</label>
 									<span class="text-[10px] text-slate-400">File maks. 10MB</span>
 								</div>

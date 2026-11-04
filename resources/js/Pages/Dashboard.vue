@@ -1124,9 +1124,10 @@ function submitCheck() {
 
  <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
  <div class="max-w-2xl">
- <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-3 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
- Monitoring Center Tester
- </div>
+ <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/15 border border-white/20 mb-3 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm shadow-xs">
+              <span class="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></span>
+              MONITORING CENTER TESTER
+            </div>
  <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight leading-tight">
  Selamat Datang, {{ user?.name }}!
  </h2>

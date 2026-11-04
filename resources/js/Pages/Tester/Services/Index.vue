@@ -355,61 +355,59 @@ function submitCheck() {
 
  <div class="space-y-6 max-w-7xl mx-auto">
 
- <!-- ── Top Action Bar (Back to Periods List) ──────────────── -->
- <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs">
- <Link
- :href="route('tester.services.index')"
- class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-[#1e3a8a] text-xs sm:text-sm font-bold transition-all active:scale-95 group w-fit"
- >
- <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5 text-slate-500 group-hover:text-[#1e3a8a]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
- <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
- </svg>
- <span>Kembali ke Daftar Periode</span>
- </Link>
+  <template v-if="periodInfo">
+  <!-- ── Top Action Bar (Back to Periods List) ──────────────── -->
+	<div class="flex flex-row items-center justify-between gap-3 bg-white px-4 sm:px-6 py-3.5 rounded-2xl border border-slate-200/80 shadow-xs mb-4">
+		<Link
+			:href="route('tester.periods.index')"
+			class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs sm:text-sm font-medium transition-all active:scale-95 group w-fit"
+		>
+			<svg class="w-4 h-4 text-slate-600 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+			</svg>
+			<span>Kembali ke Daftar Periode</span>
+		</Link>
 
- <div v-if="periodInfo" class="flex items-center gap-2">
- <span
- v-if="periodInfo.status === 'proses' && !periodInfo.is_overdue"
- class="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold uppercase bg-[#1e3a8a] text-white shadow-xs"
- >
- Status: Proses
- </span>
- <span
- v-else-if="periodInfo.status === 'proses' && periodInfo.is_overdue"
- class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold uppercase bg-rose-100 border border-rose-200 text-rose-600 shadow-xs"
- >
- <svg class="w-3.5 h-3.5 text-rose-500 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
- <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
- Status: Terkunci (Overdue)
- </span>
- <span
- v-else
- class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold uppercase bg-slate-100 border border-slate-200 text-slate-600"
- >
- <svg class="w-3.5 h-3.5 text-slate-500 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
- <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
- </svg>
- Status: Selesai (Terkunci)
- </span>
- </div>
- </div>
- 
- <template v-if="periodInfo">
- <!-- ── Header Banner ────────────────────────────────────── -->
-    <div v-if="periodInfo" class="relative rounded-2xl overflow-hidden bg-primary p-6 sm:p-8 shadow-lg mb-4">
-      <div class="absolute inset-0 opacity-70 bg-cover bg-center" style="background-image: url('/images/banner_3.jpg');"></div>
-      <div class="absolute inset-0 bg-gradient-to-r from-[#1e3a8a]/85 via-[#1e3a8a]/45 to-transparent pointer-events-none"></div>
-      <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
-            Pengujian Layanan
-          </div>
-          <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Pengecekan: {{ periodInfo.month_name || 'Periode Pengujian' }}</h2>
-          <p class="text-white/80 text-xs sm:text-sm mt-1">Lakukan evaluasi dan catat status pengujian layanan digital yang ditugaskan kepada Anda.</p>
-        </div>
-      </div>
-    </div>
+		<div v-if="periodInfo" class="flex items-center gap-2">
+			<span
+				v-if="periodInfo.status === 'proses' && !periodInfo.is_overdue"
+				class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#021344] text-white shadow-xs"
+			>
+				<span class="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></span>
+				STATUS: PROSES
+			</span>
+			<span
+				v-else-if="periodInfo.status === 'proses' && periodInfo.is_overdue"
+				class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-rose-600 text-white shadow-xs"
+			>
+				<span class="w-2 h-2 rounded-full bg-rose-200 shrink-0"></span>
+				STATUS: TERKUNCI (OVERDUE)
+			</span>
+			<span
+				v-else
+				class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#eff4fa] text-slate-600 border border-slate-200/80"
+			>
+				<span class="w-2 h-2 rounded-full bg-slate-400 shrink-0"></span>
+				STATUS: SELESAI
+			</span>
+		</div>
+	</div>
+
+	<!-- ── Header Banner ────────────────────────────────────── -->
+	<div v-if="periodInfo" class="relative rounded-2xl overflow-hidden bg-primary p-6 sm:p-8 shadow-lg mb-4">
+		<div class="absolute inset-0 opacity-70 bg-cover bg-center" style="background-image: url('/images/banner_3.jpg');"></div>
+		<div class="absolute inset-0 bg-gradient-to-r from-[#1e3a8a]/85 via-[#1e3a8a]/45 to-transparent pointer-events-none"></div>
+		<div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+			<div>
+				<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm shadow-xs">
+					<span class="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></span>
+					PENGUJIAN LAYANAN
+				</div>
+				<h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Pengecekan: {{ periodInfo.month_name || 'Periode Pengujian' }}</h2>
+				<p class="text-white/80 text-xs sm:text-sm mt-1">Lakukan evaluasi dan catat status pengujian layanan digital yang ditugaskan kepada Anda.</p>
+			</div>
+		</div>
+	</div>
 
     <!-- ── Deadline Banner ─────────────────────────────────── -->
  <div

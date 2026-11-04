@@ -1022,6 +1022,22 @@ function confirmDelete() {
  </div>
  <p class="text-sm font-bold text-slate-800 mb-0.5">Tester: {{ log.tester }}</p>
  <p class="text-sm text-slate-600 mt-2 p-3 bg-slate-50 rounded-lg border border-slate-100 whitespace-pre-wrap">{{ log.description || 'Tidak ada catatan.' }}</p>
+
+ <!-- Bukti Attachment jika ada -->
+ <div v-if="log.attachment_url" class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+  <div class="flex items-center gap-1.5 text-xs text-slate-600 truncate min-w-0">
+   <svg class="w-3.5 h-3.5 text-primary shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+   <span class="truncate font-medium">{{ log.attachment_name || 'Lampiran Bukti' }}</span>
+  </div>
+  <a
+   :href="log.attachment_url"
+   target="_blank"
+   class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors shrink-0"
+  >
+   <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+   <span>Buka File</span>
+  </a>
+ </div>
  </div>
  <div class="shrink-0">
  <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm" :class="log.status === 'normal' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : (log.status === 'gangguan' ? 'bg-rose-50 text-rose-700 border border-rose-100' : 'bg-slate-100 text-slate-600 border border-slate-200')">
