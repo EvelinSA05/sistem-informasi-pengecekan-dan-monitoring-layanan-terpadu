@@ -457,32 +457,65 @@ class AssignedServiceController extends Controller
         ]);
 
         try {
+            // Pastikan kolom dan tabel yang dibutuhkan ada di database produksi
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasTable('period_services')) {
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('period_services', 'attachment')) {
+                        \Illuminate\Support\Facades\DB::statement('ALTER TABLE period_services ADD COLUMN IF NOT EXISTS attachment VARCHAR(500) NULL');
+                    }
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('period_services', 'admin_note')) {
+                        \Illuminate\Support\Facades\DB::statement('ALTER TABLE period_services ADD COLUMN IF NOT EXISTS admin_note TEXT NULL');
+                    }
+                }
+                if (\Illuminate\Support\Facades\Schema::hasTable('service_check_logs')) {
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('service_check_logs', 'attachment')) {
+                        \Illuminate\Support\Facades\DB::statement('ALTER TABLE service_check_logs ADD COLUMN IF NOT EXISTS attachment VARCHAR(500) NULL');
+                    }
+                }
+            } catch (\Throwable $colErr) {
+                \Illuminate\Support\Facades\Log::warning('Auto add columns notice: ' . $colErr->getMessage());
+            }
+
             $attachmentPath = $periodService->attachment;
 
             if ($validated['status'] === 'normal') {
                 $attachmentPath = null;
             } else {
                 if ($request->hasFile('attachment')) {
-                    $attachmentPath = $request->file('attachment')->store('attachments', 'public');
+                    try {
+                        $tmpPublic = storage_path('app/public/attachments');
+                        if (!is_dir($tmpPublic)) {
+                            @mkdir($tmpPublic, 0777, true);
+                        }
+                        $attachmentPath = $request->file('attachment')->store('attachments', 'public');
+                    } catch (\Throwable $storeErr) {
+                        \Illuminate\Support\Facades\Log::warning('Attachment store failed: ' . $storeErr->getMessage());
+                    }
                 } elseif ($request->boolean('remove_attachment')) {
                     $attachmentPath = null;
                 }
             }
 
-            $periodService->update([
+            $updateData = [
                 'status' => $validated['status'],
                 'description' => $validated['description'] ?? null,
-                'attachment' => $attachmentPath,
                 'checked_at' => now(),
-            ]);
+            ];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('period_services', 'attachment')) {
+                $updateData['attachment'] = $attachmentPath;
+            }
+            $periodService->update($updateData);
 
-            ServiceCheckLog::create([
+            $logData = [
                 'period_service_id' => $periodService->id,
                 'tester_id' => $user->id,
                 'status' => $validated['status'],
                 'description' => $validated['description'] ?? null,
-                'attachment' => $attachmentPath,
-            ]);
+            ];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('service_check_logs', 'attachment')) {
+                $logData['attachment'] = $attachmentPath;
+            }
+            ServiceCheckLog::create($logData);
 
             // Catat atau perbarui di tabel service_issues (layanan_terkendala)
             try {
@@ -503,6 +536,19 @@ class AssignedServiceController extends Controller
                             updated_at TIMESTAMP NULL
                         )
                     ");
+                } else {
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('service_issues', 'handling_status')) {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE service_issues ADD COLUMN IF NOT EXISTS handling_status VARCHAR(50) DEFAULT 'belum_ditindaklanjuti'");
+                    }
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('service_issues', 'admin_note')) {
+                        \Illuminate\Support\Facades\DB::statement('ALTER TABLE service_issues ADD COLUMN IF NOT EXISTS admin_note TEXT NULL');
+                    }
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('service_issues', 'admin_handled_at')) {
+                        \Illuminate\Support\Facades\DB::statement('ALTER TABLE service_issues ADD COLUMN IF NOT EXISTS admin_handled_at TIMESTAMP NULL');
+                    }
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('service_issues', 'admin_id')) {
+                        \Illuminate\Support\Facades\DB::statement('ALTER TABLE service_issues ADD COLUMN IF NOT EXISTS admin_id BIGINT NULL');
+                    }
                 }
 
                 if ($validated['status'] === 'gangguan') {
@@ -547,7 +593,7 @@ class AssignedServiceController extends Controller
                 'period_service_id' => $periodService->id,
             ]);
 
-            return back()->with('error', 'Terjadi kesalahan saat menyimpan hasil pengecekan.');
+            return back()->with('error', 'Terjadi kesalahan saat menyimpan hasil pengecekan: ' . $e->getMessage());
         }
     }
 
