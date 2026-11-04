@@ -216,8 +216,7 @@ onUnmounted(() => {
  </div>
 
  <!-- Sub-title Badge Below Logo -->
- <div class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 shadow-sm">
- <span class="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
+ <div class="inline-flex items-center px-3 py-1 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 shadow-sm">
  <span class="text-[10.5px] font-bold tracking-widest text-cyan-200 uppercase">CHECKER SYSTEM</span>
  </div>
  </div>
