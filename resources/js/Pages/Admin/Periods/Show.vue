@@ -426,7 +426,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  </div>
  <p class="text-xs text-white/70 mt-1.5">
  Dibuat pada {{ period.created_at_label }} oleh {{ period.creator_name }}
- <template v-if="period.deadline_date"> &bull; Tenggat Waktu: {{ period.deadline_date }}</template>
+ <template v-if="period.deadline_date"> <span class="mx-1 text-white/40">|</span> Tenggat Waktu: {{ period.deadline_date }}</template>
  </p>
  </div>
 
@@ -488,8 +488,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  </div>
  </div>
  <p class="text-3xl font-bold text-slate-900">{{ period.normal_services }}</p>
- <p class="text-xs text-cyan-600 mt-1 flex items-center gap-1.5">
- <span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+ <p class="text-xs text-cyan-600 mt-1 flex items-center">
  Berjalan Optimal
  </p>
  </div>
@@ -582,35 +581,27 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
       <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">{{ item.category }}</span>
       <span v-if="item.level && item.level !== '-'" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">Level {{ item.level }}</span>
 
-      <span class="text-slate-300 hidden sm:inline">&bull;</span>
+      <span class="text-slate-300 hidden sm:inline">|</span>
       <span class="text-slate-500">
        Tester: <strong class="text-slate-700">{{ item.tester_name }}</strong>
        <span v-if="item.tester_bidang && item.tester_bidang !== '-'" class="text-slate-400 font-normal"> ({{ item.tester_bidang }})</span>
       </span>
 
-      <span class="text-slate-300 hidden sm:inline">&bull;</span>
+      <span class="text-slate-300 hidden sm:inline">|</span>
       <span class="text-slate-500">
        Diperiksa: <strong class="text-slate-700">{{ item.checked_at }}</strong>
       </span>
 
-      <span class="text-slate-300 hidden sm:inline">&bull;</span>
+      <span class="text-slate-300 hidden sm:inline">|</span>
       <!-- Badge Status Tindak Lanjut -->
       <span
-       class="px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase inline-flex items-center gap-1 shadow-2xs"
+       class="px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase inline-flex items-center shadow-2xs"
        :class="{
         'bg-amber-100 text-amber-800 border border-amber-200': item.handling_status === 'perlu_pengecekan_ulang',
         'bg-emerald-100 text-emerald-800 border border-emerald-200': item.has_solved || item.handling_status === 'selesai',
         'bg-rose-100 text-rose-800 border border-rose-200': !item.has_solved && item.handling_status !== 'perlu_pengecekan_ulang',
        }"
       >
-       <span
-        class="w-1.5 h-1.5 rounded-full"
-        :class="{
-         'bg-amber-500 animate-pulse': item.handling_status === 'perlu_pengecekan_ulang',
-         'bg-emerald-500': item.has_solved || item.handling_status === 'selesai',
-         'bg-rose-500': !item.has_solved && item.handling_status !== 'perlu_pengecekan_ulang',
-        }"
-       ></span>
        {{ item.has_solved_label }}
       </span>
      </div>
@@ -1231,8 +1222,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
          </div>
 
          <!-- Status Badge -->
-         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200 shadow-2xs">
-          <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+         <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200 shadow-2xs">
           KENDALA
          </span>
         </div>
@@ -1569,7 +1559,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
          </div>
          <h4 class="text-sm font-bold text-slate-800">{{ solveTargetItem.service_name }}</h4>
          <p class="text-[11px] text-slate-400 mt-1">
-          Diperiksa oleh <span class="font-semibold text-slate-600">{{ solveTargetItem.tester_name }}</span> &bull; {{ solveTargetItem.checked_at }}
+          Diperiksa oleh <span class="font-semibold text-slate-600">{{ solveTargetItem.tester_name }}</span> <span class="mx-1 text-slate-300">|</span> {{ solveTargetItem.checked_at }}
          </p>
         </div>
 
