@@ -41,8 +41,12 @@ class AssignedServiceController extends Controller
 
     public function index(Request $request)
     {
+        $isPartialPoll = $request->hasHeader('X-Inertia-Partial-Data');
+
         CheckingPeriod::syncOverdueStatuses();
-        CheckingPeriod::syncAllActivePeriodsWithMasterServices();
+        if (!$isPartialPoll) {
+            CheckingPeriod::syncAllActivePeriodsWithMasterServices();
+        }
 
         $user = $request->user();
 
@@ -55,7 +59,7 @@ class AssignedServiceController extends Controller
         $periods = CheckingPeriod::with([
             'periodTesters.tester:id,name,bidang,email',
             'periodServices' => function ($q) use ($user) {
-                $q->withoutAttachmentData();
+                $q->select(['id', 'period_id', 'tester_id', 'status', 'checked_at']);
                 if ($user->role !== 'admin') {
                     $q->where('tester_id', $user->id);
                 }
@@ -153,8 +157,10 @@ class AssignedServiceController extends Controller
             }
         }
 
-        // Sinkronkan layanan periode aktif dengan Master Layanan Majadigi
-        if ($period->status === 'proses') {
+        $isPartialPoll = $request->hasHeader('X-Inertia-Partial-Data');
+
+        // Sinkronkan layanan periode aktif dengan Master Layanan Majadigi (lewatkan saat background polling)
+        if ($period->status === 'proses' && !$isPartialPoll) {
             $period->syncWithMasterServices();
             $period->refresh();
         }
@@ -188,26 +194,23 @@ class AssignedServiceController extends Controller
             'is_overdue' => $isOverdue,
         ];
 
-        // Base query for tester assignments in this period
+        // Gabungkan 4 query COUNT menjadi 1 query agregat tunggal untuk efisiensi beban database
         $baseTesterQuery = PeriodService::where('period_id', $period->id);
         if ($user->role !== 'admin') {
             $baseTesterQuery->where('tester_id', $user->id);
         }
 
-        $totalAssigned = (clone $baseTesterQuery)->count();
+        $agg = $baseTesterQuery->selectRaw("
+            COUNT(*) as total_assigned,
+            SUM(CASE WHEN status = 'normal' THEN 1 ELSE 0 END) as normal_count,
+            SUM(CASE WHEN status = 'gangguan' THEN 1 ELSE 0 END) as issues_count,
+            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_count
+        ")->first();
 
-        $normalCount = (clone $baseTesterQuery)
-            ->where('status', 'normal')
-            ->count();
-
-        $issuesCount = (clone $baseTesterQuery)
-            ->where('status', 'gangguan')
-            ->count();
-
-        $pendingCount = (clone $baseTesterQuery)
-            ->where('status', 'pending')
-            ->count();
-
+        $totalAssigned = (int) ($agg->total_assigned ?? 0);
+        $normalCount = (int) ($agg->normal_count ?? 0);
+        $issuesCount = (int) ($agg->issues_count ?? 0);
+        $pendingCount = (int) ($agg->pending_count ?? 0);
         $checkedCount = $normalCount + $issuesCount;
 
         $progressPct = $totalAssigned > 0
@@ -230,149 +233,9 @@ class AssignedServiceController extends Controller
         $levelFilter = $request->input('level', '');
         $categoryFilter = $request->input('category', '');
 
-        // Categories available in tester's assigned services in this period
-        $categoriesQuery = PeriodService::where('period_id', $period->id)
-            ->join('services', 'period_services.service_id', '=', 'services.id')
-            ->whereNotNull('services.category')
-            ->where('services.category', '!=', '');
-
-        if ($user->role !== 'admin') {
-            $categoriesQuery->where('period_services.tester_id', $user->id);
-        }
-
-        $categories = $categoriesQuery
-            ->distinct()
-            ->orderBy('services.category')
-            ->pluck('services.category')
-            ->values()
-            ->all();
-
-        // Filtered and paginated assigned services (tanpa kolom blob attachment_data)
-        $servicesQuery = PeriodService::withoutAttachmentData()->with([
-            'service' => function ($q) {
-                $q->select(
-                    'id',
-                    'service_name',
-                    'category',
-                    'level',
-                    'icon',
-                    'service_url',
-                    'deskripsi_layanan',
-                    'tester_instruction',
-                    'is_active'
-                );
-            },
-            'serviceIssue.admin',
-            'checkLogs.tester',
-            'tester',
-        ])
-            ->where('period_id', $period->id);
-
-        if ($user->role !== 'admin') {
-            $servicesQuery->where('tester_id', $user->id);
-        }
-
-        if (!empty($search)) {
-            $servicesQuery->whereHas('service', function ($q) use ($search) {
-                $q->where('service_name', 'like', "%{$search}%")
-                    ->orWhere('category', 'like', "%{$search}%")
-                    ->orWhere('service_url', 'like', "%{$search}%");
-            });
-        }
-
-        if (!empty($statusFilter)) {
-            $servicesQuery->where('status', $statusFilter);
-        }
-
-        if (!empty($levelFilter)) {
-            $servicesQuery->whereHas('service', function ($q) use ($levelFilter) {
-                $q->where('level', $levelFilter);
-            });
-        }
-
-        if (!empty($categoryFilter)) {
-            $servicesQuery->whereHas('service', function ($q) use ($categoryFilter) {
-                $q->where('category', $categoryFilter);
-            });
-        }
-
-        $paginatedServices = $servicesQuery
-            ->orderBy('id', 'asc')
-            ->paginate($request->input('per_page', 5))
-            ->withQueryString()
-            ->through(function ($ps) {
-                $issue = $ps->serviceIssue;
-                $handlingStatus = $issue?->handling_status ?? 'belum_ditindaklanjuti';
-                $adminNote = $issue?->admin_note ?? $ps->admin_note;
-                $isRecheckNeeded = ($ps->status === 'gangguan' && $handlingStatus === 'perlu_pengecekan_ulang');
-
-                $timeline = $this->buildTimeline($ps);
-
-                $pendingStage = null;
-                if ($ps->status === 'gangguan' && $handlingStatus === 'belum_ditindaklanjuti') {
-                    $pendingStage = [
-                        'type' => 'waiting_admin',
-                        'title' => 'Menunggu Tindak Lanjut oleh Admin',
-                        'description' => 'Kendala telah dilaporkan oleh Tester. Menunggu tindakan perbaikan dari Administrator.',
-                        'badge' => 'Belum Ditindaklanjuti',
-                        'badge_class' => 'bg-rose-100 text-rose-800 border-rose-200',
-                    ];
-                } elseif ($isRecheckNeeded) {
-                    $pendingStage = [
-                        'type' => 'waiting_recheck',
-                        'title' => 'Menunggu Pengecekan Ulang oleh Tester',
-                        'description' => 'Administrator telah menandai kendala sudah ditangani. Silakan lakukan pengujian kembali melalui tombol Cek Ulang Layanan.',
-                        'badge' => 'Perlu Pengecekan Ulang',
-                        'badge_class' => 'bg-amber-100 text-amber-800 border-amber-200',
-                    ];
-                } elseif ($ps->status === 'normal' && $handlingStatus === 'selesai' && count($timeline) > 1) {
-                    $pendingStage = [
-                        'type' => 'solved',
-                        'title' => 'Kendala Berhasil Diselesaikan',
-                        'description' => 'Layanan telah ditangani oleh Administrator dan berhasil diverifikasi berstatus Normal pada pengecekan ulang.',
-                        'badge' => 'Selesai Teratasi',
-                        'badge_class' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
-                    ];
-                }
-
-                return [
-                    'id' => $ps->id,
-                    'service_id' => $ps->service?->id,
-                    'name' => $ps->service?->service_name ?? '-',
-                    'category' => $ps->service?->category ?? 'Umum',
-                    'level' => $ps->service?->level ?? '-',
-                    'icon' => $ps->service?->icon,
-                    'url' => $ps->service?->service_url,
-                    'status' => $ps->status,
-                    'deskripsi_layanan' => $ps->service?->deskripsi_layanan,
-                    'tester_instruction' => $ps->service?->tester_instruction,
-                    'last_description' => $ps->description,
-                    'admin_note' => $adminNote,
-                    'handling_status' => $handlingStatus,
-                    'is_recheck_needed' => $isRecheckNeeded,
-                    'admin_handled_at' => $issue?->admin_handled_at
-                        ? Carbon::parse($issue->admin_handled_at)->format('d M Y, H:i')
-                        : null,
-                    'attachment' => $ps->attachment,
-                    'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
-                    'attachment_url' => $ps->attachment ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
-                    'checked_at' => $ps->checked_at
-                        ? Carbon::parse($ps->checked_at)->format('d M Y, H:i')
-                        : null,
-                    'checked_at_human' => $ps->checked_at
-                        ? Carbon::parse($ps->checked_at)->diffForHumans()
-                        : null,
-                    'timeline' => $timeline,
-                    'pending_stage' => $pendingStage,
-                    'check_logs' => $timeline,
-                ];
-            });
-
         return Inertia::render('Tester/Services/Index', [
             'periodInfo' => $periodInfo,
-            'services' => $paginatedServices,
             'stats' => $stats,
-            'categories' => $categories,
             'levels' => $levels,
             'filters' => [
                 'search' => $search,
@@ -384,6 +247,139 @@ class AssignedServiceController extends Controller
                 'success' => session('success'),
                 'error' => session('error'),
             ],
+            // Gunakan lazy evaluation (closure) agar saat usePoll meminta only: ['periodInfo', 'stats'],
+            // query daftar kategori dan layanan beserta timeline tidak dieksekusi sia-sia.
+            'categories' => fn () => PeriodService::where('period_id', $period->id)
+                ->join('services', 'period_services.service_id', '=', 'services.id')
+                ->whereNotNull('services.category')
+                ->where('services.category', '!=', '')
+                ->when($user->role !== 'admin', fn ($q) => $q->where('period_services.tester_id', $user->id))
+                ->distinct()
+                ->orderBy('services.category')
+                ->pluck('services.category')
+                ->values()
+                ->all(),
+            'services' => function () use ($period, $user, $search, $statusFilter, $levelFilter, $categoryFilter, $request) {
+                $servicesQuery = PeriodService::withoutAttachmentData()->with([
+                    'service' => function ($q) {
+                        $q->select(
+                            'id',
+                            'service_name',
+                            'category',
+                            'level',
+                            'icon',
+                            'service_url',
+                            'deskripsi_layanan',
+                            'tester_instruction',
+                            'is_active'
+                        );
+                    },
+                    'serviceIssue.admin',
+                    'checkLogs.tester',
+                    'tester',
+                ])
+                    ->where('period_id', $period->id);
+
+                if ($user->role !== 'admin') {
+                    $servicesQuery->where('tester_id', $user->id);
+                }
+
+                if (!empty($search)) {
+                    $servicesQuery->whereHas('service', function ($q) use ($search) {
+                        $q->where('service_name', 'like', "%{$search}%")
+                            ->orWhere('category', 'like', "%{$search}%")
+                            ->orWhere('service_url', 'like', "%{$search}%");
+                    });
+                }
+
+                if (!empty($statusFilter)) {
+                    $servicesQuery->where('status', $statusFilter);
+                }
+
+                if (!empty($levelFilter)) {
+                    $servicesQuery->whereHas('service', function ($q) use ($levelFilter) {
+                        $q->where('level', $levelFilter);
+                    });
+                }
+
+                if (!empty($categoryFilter)) {
+                    $servicesQuery->whereHas('service', function ($q) use ($categoryFilter) {
+                        $q->where('category', $categoryFilter);
+                    });
+                }
+
+                return $servicesQuery
+                    ->orderBy('id', 'asc')
+                    ->paginate($request->input('per_page', 5))
+                    ->withQueryString()
+                    ->through(function ($ps) {
+                        $issue = $ps->serviceIssue;
+                        $handlingStatus = $issue?->handling_status ?? 'belum_ditindaklanjuti';
+                        $adminNote = $issue?->admin_note ?? $ps->admin_note;
+                        $isRecheckNeeded = ($ps->status === 'gangguan' && $handlingStatus === 'perlu_pengecekan_ulang');
+
+                        $timeline = $this->buildTimeline($ps);
+
+                        $pendingStage = null;
+                        if ($ps->status === 'gangguan' && $handlingStatus === 'belum_ditindaklanjuti') {
+                            $pendingStage = [
+                                'type' => 'waiting_admin',
+                                'title' => 'Menunggu Tindak Lanjut oleh Admin',
+                                'description' => 'Kendala telah dilaporkan oleh Tester. Menunggu tindakan perbaikan dari Administrator.',
+                                'badge' => 'Belum Ditindaklanjuti',
+                                'badge_class' => 'bg-rose-100 text-rose-800 border-rose-200',
+                            ];
+                        } elseif ($isRecheckNeeded) {
+                            $pendingStage = [
+                                'type' => 'waiting_recheck',
+                                'title' => 'Menunggu Pengecekan Ulang oleh Tester',
+                                'description' => 'Administrator telah menandai kendala sudah ditangani. Silakan lakukan pengujian kembali melalui tombol Cek Ulang Layanan.',
+                                'badge' => 'Perlu Pengecekan Ulang',
+                                'badge_class' => 'bg-amber-100 text-amber-800 border-amber-200',
+                            ];
+                        } elseif ($ps->status === 'normal' && $handlingStatus === 'selesai' && count($timeline) > 1) {
+                            $pendingStage = [
+                                'type' => 'solved',
+                                'title' => 'Kendala Berhasil Diselesaikan',
+                                'description' => 'Layanan telah ditangani oleh Administrator dan berhasil diverifikasi berstatus Normal pada pengecekan ulang.',
+                                'badge' => 'Selesai Teratasi',
+                                'badge_class' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                            ];
+                        }
+
+                        return [
+                            'id' => $ps->id,
+                            'service_id' => $ps->service?->id,
+                            'name' => $ps->service?->service_name ?? '-',
+                            'category' => $ps->service?->category ?? 'Umum',
+                            'level' => $ps->service?->level ?? '-',
+                            'icon' => $ps->service?->icon,
+                            'url' => $ps->service?->service_url,
+                            'status' => $ps->status,
+                            'deskripsi_layanan' => $ps->service?->deskripsi_layanan,
+                            'tester_instruction' => $ps->service?->tester_instruction,
+                            'last_description' => $ps->description,
+                            'admin_note' => $adminNote,
+                            'handling_status' => $handlingStatus,
+                            'is_recheck_needed' => $isRecheckNeeded,
+                            'admin_handled_at' => $issue?->admin_handled_at
+                                ? Carbon::parse($issue->admin_handled_at)->format('d M Y, H:i')
+                                : null,
+                            'attachment' => $ps->attachment,
+                            'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
+                            'attachment_url' => $ps->attachment ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
+                            'checked_at' => $ps->checked_at
+                                ? Carbon::parse($ps->checked_at)->format('d M Y, H:i')
+                                : null,
+                            'checked_at_human' => $ps->checked_at
+                                ? Carbon::parse($ps->checked_at)->diffForHumans()
+                                : null,
+                            'timeline' => $timeline,
+                            'pending_stage' => $pendingStage,
+                            'check_logs' => $timeline,
+                        ];
+                    });
+            },
         ]);
     }
 

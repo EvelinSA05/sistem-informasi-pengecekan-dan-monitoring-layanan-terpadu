@@ -9,8 +9,8 @@ const props = defineProps({
 });
 
 // ─── Realtime Polling (Sinkronisasi Status Periode Otomatis) ──────
-// Memperbarui daftar periode secara otomatis setiap 2 detik tanpa reload halaman
-usePoll(2000, {
+// Memperbarui daftar periode secara otomatis setiap 15 detik tanpa membebani server/database
+usePoll(15000, {
  only: ['periods'],
 });
 

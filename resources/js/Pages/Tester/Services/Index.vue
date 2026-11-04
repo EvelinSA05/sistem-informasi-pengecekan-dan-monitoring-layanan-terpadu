@@ -58,8 +58,8 @@ const hasActiveFilters = computed(() => {
  return !!(searchQuery.value || filterStatus.value || filterLevel.value || filterCategory.value);
 });
 
-// ─── Realtime Polling (Status Periode) ───────────────────────────
-usePoll(2500, {
+// ─── Realtime Polling (Status Periode & Statistik Ringkas) ────────
+usePoll(15000, {
  only: ['periodInfo', 'stats'],
 });
 

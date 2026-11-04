@@ -50,24 +50,38 @@ class DashboardController extends Controller
         // ─── ADMIN DASHBOARD ──────────────────────────────────────────────
         if ($user->role === 'admin') {
 
-            // --- Tester Stats ---
-            $testerTotal = User::where('role', 'tester')->count();
-            $testerAktif = User::where('role', 'tester')
-                ->where('status', 'aktif')
-                ->count();
+            // --- Tester Stats (1 query agregat) ---
+            $testerAgg = User::where('role', 'tester')
+                ->selectRaw("
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = 'aktif' THEN 1 ELSE 0 END) as aktif
+                ")->first();
+            $testerTotal = (int) ($testerAgg->total ?? 0);
+            $testerAktif = (int) ($testerAgg->aktif ?? 0);
             $testerNonaktif = $testerTotal - $testerAktif;
 
-            // --- Period Stats ---
-            $periodTotal = CheckingPeriod::count();
-            $periodProses = CheckingPeriod::where('status', 'proses')->count();
-            $periodSelesai = CheckingPeriod::where('status', 'selesai')->count();
+            // --- Period Stats (1 query agregat) ---
+            $periodAgg = CheckingPeriod::selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'proses' THEN 1 ELSE 0 END) as proses,
+                SUM(CASE WHEN status = 'selesai' THEN 1 ELSE 0 END) as selesai
+            ")->first();
+            $periodTotal = (int) ($periodAgg->total ?? 0);
+            $periodProses = (int) ($periodAgg->proses ?? 0);
+            $periodSelesai = (int) ($periodAgg->selesai ?? 0);
 
-            // --- Service Stats (Layanan Tersinkronisasi dari Majadigi) ---
-            $baseServiceQuery     = Service::whereNotNull('synced_at');
-            $serviceTotal         = (clone $baseServiceQuery)->count();
-            $serviceAktif         = (clone $baseServiceQuery)->where('status', 'aktif')->count();
-            $serviceNonaktif      = (clone $baseServiceQuery)->where('status', 'tidak_aktif')->count();
-            $serviceBtuhKonfirmasi = (clone $baseServiceQuery)->where('status', 'butuh_konfirmasi')->count();
+            // --- Service Stats (1 query agregat untuk layanan tersinkronisasi dari Majadigi) ---
+            $baseServiceQuery = Service::whereNotNull('synced_at');
+            $serviceAgg = (clone $baseServiceQuery)->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'aktif' THEN 1 ELSE 0 END) as aktif,
+                SUM(CASE WHEN status = 'tidak_aktif' THEN 1 ELSE 0 END) as nonaktif,
+                SUM(CASE WHEN status = 'butuh_konfirmasi' THEN 1 ELSE 0 END) as butuh_konfirmasi
+            ")->first();
+            $serviceTotal          = (int) ($serviceAgg->total ?? 0);
+            $serviceAktif          = (int) ($serviceAgg->aktif ?? 0);
+            $serviceNonaktif       = (int) ($serviceAgg->nonaktif ?? 0);
+            $serviceBtuhKonfirmasi = (int) ($serviceAgg->butuh_konfirmasi ?? 0);
 
             // --- Distribusi Kategori Layanan ---
             $categoryRows = (clone $baseServiceQuery)->selectRaw('category, count(*) as total')
@@ -235,32 +249,22 @@ class DashboardController extends Controller
                 'is_overdue' => false, // We filtered out overdue periods, so it is never overdue on the dashboard
             ];
 
-            // Base query for tester assignments in active period
-            $baseTesterQuery = PeriodService::where(
-                'period_id',
-                $activePeriod->id
-            )->where(
-                'tester_id',
-                $user->id
-            );
+            // Base query for tester assignments in active period (1 query agregat tunggal)
+            $agg = PeriodService::where('period_id', $activePeriod->id)
+                ->where('tester_id', $user->id)
+                ->selectRaw("
+                    COUNT(*) as total_assigned,
+                    SUM(CASE WHEN status = 'normal' THEN 1 ELSE 0 END) as normal_count,
+                    SUM(CASE WHEN status = 'gangguan' THEN 1 ELSE 0 END) as issues_count,
+                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_count,
+                    SUM(CASE WHEN status = 'need_confirmation' THEN 1 ELSE 0 END) as need_confirm_count
+                ")->first();
 
-            $totalAssigned = (clone $baseTesterQuery)->count();
-
-            $normalCount = (clone $baseTesterQuery)
-                ->where('status', 'normal')
-                ->count();
-
-            $issuesCount = (clone $baseTesterQuery)
-                ->where('status', 'gangguan')
-                ->count();
-
-            $pendingCount = (clone $baseTesterQuery)
-                ->where('status', 'pending')
-                ->count();
-
-            $needConfirm = (clone $baseTesterQuery)
-                ->where('status', 'need_confirmation')
-                ->count();
+            $totalAssigned = (int) ($agg->total_assigned ?? 0);
+            $normalCount   = (int) ($agg->normal_count ?? 0);
+            $issuesCount   = (int) ($agg->issues_count ?? 0);
+            $pendingCount  = (int) ($agg->pending_count ?? 0);
+            $needConfirm   = (int) ($agg->need_confirm_count ?? 0);
 
             $checkedCount = $normalCount + $issuesCount;
 
