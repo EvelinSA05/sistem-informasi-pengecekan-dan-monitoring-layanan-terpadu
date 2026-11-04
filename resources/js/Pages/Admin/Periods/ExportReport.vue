@@ -199,7 +199,6 @@ onMounted(() => {
 			<div class="mb-8">
 				<div class="flex items-center justify-between mb-3">
 					<h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-						<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
 						A. Layanan Berjalan
 						<span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full normal-case">
 							{{ runningServicesList.length }} Layanan
@@ -253,7 +252,6 @@ onMounted(() => {
 			<div class="mb-4">
 				<div class="flex items-center justify-between mb-3">
 					<h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-						<span class="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></span>
 						B. Layanan Terkendala
 						<span class="text-[11px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full normal-case">
 							{{ issueServicesList.length }} Layanan
