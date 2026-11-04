@@ -55,6 +55,21 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+Route::get('/debug-login', function(\Illuminate\Http\Request $request) {
+    try {
+        $controller = app(\App\Http\Controllers\Auth\AuthenticatedSessionController::class);
+        $res = $controller->create($request);
+        return $res->toResponse($request);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'file' => $e->getFile() . ':' . $e->getLine(),
+            'trace' => explode("\n", $e->getTraceAsString())
+        ], 500);
+    }
+});
+
 Route::get('/run-migrations', function (\App\Services\MajadigiApiService $apiService) {
     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
     $syncMsg = '';
