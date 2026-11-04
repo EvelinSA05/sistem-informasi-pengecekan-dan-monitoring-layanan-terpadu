@@ -779,23 +779,20 @@ function submitCheck() {
 										<div>
 											<span
 												v-if="service.is_recheck_needed"
-												class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 shadow-2xs"
+												class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 shadow-2xs"
 											>
-												<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
 												Perlu Cek Ulang
 											</span>
 											<span
 												v-else-if="service.handling_status === 'selesai'"
-												class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs"
+												class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs"
 											>
-												<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
 												Selesai
 											</span>
 											<span
 												v-else
-												class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200 shadow-2xs"
+												class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200 shadow-2xs"
 											>
-												<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
 												Belum Ditindaklanjuti
 											</span>
 										</div>
@@ -1359,23 +1356,20 @@ function submitCheck() {
 									<!-- Handling status badge -->
 									<span
 										v-if="historyService.is_recheck_needed"
-										class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 shadow-2xs"
+										class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 shadow-2xs"
 									>
-										<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
 										Perlu Pengecekan Ulang
 									</span>
 									<span
 										v-else-if="historyService.handling_status === 'selesai'"
-										class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs"
+										class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs"
 									>
-										<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
 										Selesai Ditindaklanjuti
 									</span>
 									<span
 										v-else-if="historyService.status === 'gangguan'"
-										class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200 shadow-2xs"
+										class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200 shadow-2xs"
 									>
-										<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
 										Belum Ditindaklanjuti
 									</span>
 								</div>
