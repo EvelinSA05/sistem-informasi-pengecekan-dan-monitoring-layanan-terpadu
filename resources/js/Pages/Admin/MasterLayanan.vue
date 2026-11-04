@@ -1017,7 +1017,7 @@ function confirmDelete() {
  <div>
  <div class="flex items-center gap-2 mb-1">
  <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">{{ log.period_date }}</span>
- <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+ <span class="text-xs text-slate-400">|</span>
  <span class="text-xs text-slate-500">{{ log.checked_at }}</span>
  </div>
  <p class="text-sm font-bold text-slate-800 mb-0.5">Tester: {{ log.tester }}</p>
