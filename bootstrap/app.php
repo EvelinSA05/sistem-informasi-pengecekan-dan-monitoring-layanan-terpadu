@@ -28,41 +28,25 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (\Illuminate\Database\QueryException $e, Request $request) {
-            \Illuminate\Support\Facades\Log::error('Database QueryException intercepted: ' . $e->getMessage(), [
-                'url' => $request->fullUrl(),
+        $exceptions->render(function (\Throwable $e, Request $request) {
+            \Illuminate\Support\Facades\Log::error('Exception intercepted: ' . $e->getMessage(), [
+                'file' => $e->getFile() . ':' . $e->getLine(),
+                'url'  => $request->fullUrl(),
             ]);
+
+            $errMsg = $e->getMessage() . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')';
 
             if ($request->expectsJson() || $request->header('X-Inertia')) {
                 if ($request->header('X-Inertia')) {
-                    return back()->with('error', 'Terjadi kesalahan saat memproses data. Silakan periksa kembali input Anda.');
+                    return back()->with('error', $errMsg);
                 }
                 return response()->json([
-                    'message' => 'Terjadi kesalahan saat memproses data. Silakan periksa kembali input Anda.'
+                    'message' => $errMsg
                 ], 500);
             }
 
             return response()->view('errors.500', [
-                'message' => 'Terjadi kesalahan saat memproses data. Silakan periksa kembali input Anda.'
-            ], 500);
-        });
-
-        $exceptions->render(function (\PDOException $e, Request $request) {
-            \Illuminate\Support\Facades\Log::error('Database PDOException intercepted: ' . $e->getMessage(), [
-                'url' => $request->fullUrl(),
-            ]);
-
-            if ($request->expectsJson() || $request->header('X-Inertia')) {
-                if ($request->header('X-Inertia')) {
-                    return back()->with('error', 'Terjadi kesalahan saat memproses data. Silakan periksa kembali input Anda.');
-                }
-                return response()->json([
-                    'message' => 'Terjadi kesalahan saat memproses data. Silakan periksa kembali input Anda.'
-                ], 500);
-            }
-
-            return response()->view('errors.500', [
-                'message' => 'Terjadi kesalahan saat memproses data. Silakan periksa kembali input Anda.'
+                'message' => $errMsg
             ], 500);
         });
     })->create();
