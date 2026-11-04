@@ -56,8 +56,7 @@ const submit = () => {
  class="h-6 sm:h-7 w-auto object-contain"
  />
  </div>
- <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary border border-primary shadow-xs shrink-0">
- <span class="w-2 h-2 rounded-full bg-white animate-pulse shadow-sm shadow-white/50"></span>
+ <div class="inline-flex items-center px-3 py-1.5 rounded-xl bg-primary border border-primary shadow-xs shrink-0">
  <span class="text-[10px] font-bold tracking-wider text-white uppercase">CHECKER SYSTEM</span>
  </div>
  </div>
