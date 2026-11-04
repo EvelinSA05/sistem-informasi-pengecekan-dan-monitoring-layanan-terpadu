@@ -93,6 +93,11 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): RedirectResponse
     {
+        if ($user->role === 'admin') {
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Akun admin tidak dapat diubah melalui menu manajemen tester.');
+        }
+
         $validated = $request->validate([
             'name'   => 'required|string|max:100',
             'email'  => [

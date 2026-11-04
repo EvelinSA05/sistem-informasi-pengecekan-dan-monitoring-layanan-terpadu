@@ -913,8 +913,23 @@ class PeriodController extends Controller
     /**
      * Unduh attachment bukti kendala pengecekan layanan.
      */
-    public function downloadAttachment(PeriodService $periodService)
+    public function downloadAttachment(Request $request, PeriodService $periodService)
     {
+        $user = $request->user();
+
+        // Proteksi Otorisasi (Anti-IDOR):
+        // Admin diizinkan mengakses seluruh lampiran; Tester hanya diizinkan mengakses lampiran
+        // pada layanan/periode yang ditugaskan kepadanya.
+        if (!$user || ($user->role !== 'admin' && $periodService->tester_id !== $user->id)) {
+            $isAssignedToPeriod = $user && $periodService->period()
+                ->whereHas('periodTesters', fn($q) => $q->where('tester_id', $user->id))
+                ->exists();
+
+            if (!$isAssignedToPeriod) {
+                abort(403, 'Akses ditolak. Anda tidak memiliki izin untuk mengakses lampiran ini.');
+            }
+        }
+
         if (!$periodService->attachment && !$periodService->attachment_data) {
             abort(404, 'File lampiran tidak ditemukan.');
         }

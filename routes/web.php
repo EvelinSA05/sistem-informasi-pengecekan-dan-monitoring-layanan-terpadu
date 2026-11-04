@@ -53,43 +53,22 @@ Route::middleware('auth')->group(function () {
         Route::get('/periods/{period}/export/pdf', [AdminPeriodController::class, 'exportPdf'])->name('periods.export.pdf');
         Route::post('/periods/{period}/sync-services', [AdminPeriodController::class, 'syncPeriodServices'])->name('periods.sync_services');
         Route::get('/periods/attachment/{periodService}/download', [AdminPeriodController::class, 'downloadAttachment'])->name('periods.attachment.download');
+
+        // Utilitas Migrasi & Sinkronisasi (Hanya Admin)
+        Route::get('/run-migrations', function (\App\Services\MajadigiApiService $apiService) {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            $syncMsg = '';
+            try {
+                $result = $apiService->syncServices();
+                $syncMsg = " Sinkronisasi Majadigi otomatis: {$result['total']} layanan diproses ({$result['deleted']} data non-sinkronisasi dibersihkan).";
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Run-migrations syncMajadigi: ' . $e->getMessage());
+                $syncMsg = " (Catatan sinkronisasi otomatis: " . $e->getMessage() . ")";
+            }
+            $total = \App\Models\Service::whereNotNull('synced_at')->count();
+            return "Migrations and cleanup ran successfully! Total layanan aktif tersinkronisasi dari Majadigi: {$total}.{$syncMsg}";
+        })->name('run_migrations');
     });
-});
-
-Route::get('/run-migrations', function (\App\Services\MajadigiApiService $apiService) {
-    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-    $syncMsg = '';
-    try {
-        $result = $apiService->syncServices();
-        $syncMsg = " Sinkronisasi Majadigi otomatis: {$result['total']} layanan diproses ({$result['deleted']} data non-sinkronisasi dibersihkan).";
-    } catch (\Throwable $e) {
-        \Illuminate\Support\Facades\Log::warning('Run-migrations syncMajadigi: ' . $e->getMessage());
-        $syncMsg = " (Catatan sinkronisasi otomatis: " . $e->getMessage() . ")";
-    }
-    $total = \App\Models\Service::whereNotNull('synced_at')->count();
-    return "Migrations and cleanup ran successfully! Total layanan aktif tersinkronisasi dari Majadigi: {$total}.{$syncMsg}";
-});
-
-Route::get('/test-session', function (\Illuminate\Http\Request $request) {
-    $request->session()->put('test_key', 'This is a test session value!');
-    setcookie('raw_test', 'Works!', time() + 3600, '/', '', true, true);
-    return 'Session set! Now go to /check-session';
-});
-
-Route::get('/check-session', function (\Illuminate\Http\Request $request) {
-    $count = \Illuminate\Support\Facades\DB::table('sessions')->count();
-    $rawCookie = $_COOKIE['raw_test'] ?? 'MISSING';
-    
-    $cookieName = config('session.cookie');
-    $laravelCookie = $_COOKIE[$cookieName] ?? 'MISSING';
-    
-    $appKey = config('app.key');
-    
-    return "Session: " . $request->session()->get('test_key', 'NOT FOUND') . 
-           " | RawCookie: " . $rawCookie . 
-           " | LaravelCookie: " . substr($laravelCookie, 0, 15) . "... " .
-           " | APP_KEY: " . $appKey .
-           " | DB: " . $count;
 });
 
 require __DIR__.'/auth.php';

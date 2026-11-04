@@ -19,13 +19,28 @@ class CheckSessionTimeout
     {
         // Hanya periksa jika user sedang terautentikasi (Admin maupun Tester)
         if (Auth::check()) {
+            $user = Auth::user();
+
+            // Jika akun dinonaktifkan saat sesi sedang aktif, segera keluarkan user
+            if ($user && $user->status === 'tidak aktif') {
+                Auth::guard('web')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                $request->session()->flash('session_expired', 'Akun Anda telah dinonaktifkan oleh Administrator.');
+
+                if ($request->header('X-Inertia')) {
+                    return Inertia::location('/');
+                }
+
+                return redirect('/');
+            }
+
             // Jika user memilih "Ingat Saya" (punya cookie remember_web), kita lewati fitur auto-logout 1 jam ini
             $recallerName = Auth::guard('web')->getRecallerName();
             if ($request->hasCookie($recallerName)) {
                 return $next($request);
             }
 
-            $user = Auth::user();
             $role = $user?->role;
 
             // Session timeout 1 jam (60 menit = 3600 detik) untuk masing-masing role (Admin maupun Tester)
