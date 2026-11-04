@@ -352,8 +352,7 @@ function submitForm() {
  </span>
  </div>
  <div v-else-if="tester.is_available === false">
- <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-200/80 bg-amber-50 text-[11px] font-semibold text-amber-700 shadow-2xs">
- <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+ <span class="inline-flex items-center px-2.5 py-1 rounded-lg border border-amber-200/80 bg-amber-50 text-[11px] font-semibold text-amber-700 shadow-2xs">
  {{ tester.pending_tasks_count }} pending
  </span>
  </div>
