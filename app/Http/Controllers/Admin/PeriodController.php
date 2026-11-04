@@ -464,36 +464,6 @@ class PeriodController extends Controller
                     ];
                 })
                 ->values();
-            } else {
-                // Fallback jika migrasi belum berjalan: tetap tampilkan layanan gangguan dari period_services
-                $troubledServices = PeriodService::with(['service', 'tester'])
-                    ->where('period_id', $period->id)
-                    ->where('status', 'gangguan')
-                    ->orderByDesc('checked_at')
-                    ->get()
-                    ->map(function ($ps) {
-                        return [
-                            'id'               => $ps->id,
-                            'issue_id'         => null,
-                            'service_id'       => $ps->service_id,
-                            'service_name'     => $ps->service?->service_name ?? 'Layanan',
-                            'service_url'      => $ps->service?->service_url,
-                            'category'         => $ps->service?->category ?? 'Umum',
-                            'level'            => $ps->service?->level ?? '-',
-                            'icon'             => $ps->service?->icon ?? 'globe',
-                            'tester_name'      => $ps->tester?->name ?? 'Tester',
-                            'tester_bidang'    => $ps->tester?->bidang ?? '-',
-                            'description'      => $ps->description ?: 'Kendala dilaporkan oleh tester',
-                            'attachment'       => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
-                            'attachment_name'  => $ps->attachment ? basename($ps->attachment) : null,
-                            'checked_at'       => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : '-',
-                            'has_solved'       => false,
-                            'has_solved_label' => 'belum tindak lanjuti',
-                            'has_notif'        => false,
-                        ];
-                    })
-                    ->values();
-            }
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Gagal memuat troubled services di period show: ' . $e->getMessage());
             $troubledServices = [];

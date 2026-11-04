@@ -57,23 +57,16 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/run-migrations', function (\App\Services\MajadigiApiService $apiService) {
     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-    $dashTest = [];
+    $syncMsg = '';
     try {
-        $users = \App\Models\User::all();
-        foreach ($users as $user) {
-            try {
-                $req = request();
-                $req->setUserResolver(fn() => $user);
-                $res = (new \App\Http\Controllers\DashboardController)->index($req);
-                $dashTest[$user->email . ' (' . $user->role . ')'] = 'OK';
-            } catch (\Throwable $e) {
-                $dashTest[$user->email . ' (' . $user->role . ')'] = 'ERROR: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine();
-            }
-        }
+        $result = $apiService->syncServices();
+        $syncMsg = " Sinkronisasi Majadigi otomatis: {$result['total']} layanan diproses ({$result['deleted']} data non-sinkronisasi dibersihkan).";
     } catch (\Throwable $e) {
-        $dashTest['general'] = $e->getMessage();
+        \Illuminate\Support\Facades\Log::warning('Run-migrations syncMajadigi: ' . $e->getMessage());
+        $syncMsg = " (Catatan sinkronisasi otomatis: " . $e->getMessage() . ")";
     }
-    return response()->json($dashTest);
+    $total = \App\Models\Service::whereNotNull('synced_at')->count();
+    return "Migrations and cleanup ran successfully! Total layanan aktif tersinkronisasi dari Majadigi: {$total}.{$syncMsg}";
 });
 
 Route::get('/test-session', function (\Illuminate\Http\Request $request) {
