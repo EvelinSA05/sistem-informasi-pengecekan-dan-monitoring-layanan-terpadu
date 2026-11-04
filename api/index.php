@@ -89,7 +89,9 @@ $tmpDirs = [
     '/tmp/framework/testing',
     '/tmp/framework/views',
     '/tmp/logs',
-    '/tmp/views'
+    '/tmp/views',
+    '/tmp/app/public',
+    '/tmp/app/public/attachments'
 ];
 foreach ($tmpDirs as $dir) {
     if (!is_dir($dir)) {
