@@ -627,8 +627,7 @@ function submitCheck() {
 
  <div class="relative z-10 flex flex-col lg:flex-row lg:items-start justify-between gap-6">
  <div class="max-w-xl">
- <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-3 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
- <span class="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
+ <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-3 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
  Admin Panel
  </div>
  <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight leading-tight">
@@ -1125,8 +1124,7 @@ function submitCheck() {
 
  <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
  <div class="max-w-2xl">
- <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-3 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
- <span class="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
+ <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-3 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
  Monitoring Center Tester
  </div>
  <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight leading-tight">
@@ -1140,8 +1138,7 @@ function submitCheck() {
  <!-- Period Info Card -->
  <div class="shrink-0 flex items-center">
  <div class="w-full sm:w-auto px-6 py-4 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-lg text-left sm:text-right flex flex-col items-center sm:items-end">
- <div class="flex items-center sm:justify-end gap-2 mb-1">
- <span class="w-2 h-2 rounded-full" :class="periodInfo ? (periodInfo.status === 'selesai' ? 'bg-emerald-400' : 'bg-amber-300 animate-pulse') : 'bg-slate-400'"></span>
+ <div class="flex items-center sm:justify-end mb-1">
  <p class="text-[11px] font-bold text-cyan-200 tracking-widest uppercase">
  {{ periodInfo ? (periodInfo.status === 'selesai' ? 'Periode Selesai' : 'Periode Berjalan') : 'Status Saat Ini' }}
  </p>
@@ -1303,8 +1300,7 @@ function submitCheck() {
  <h3 class="text-lg font-extrabold text-slate-800">Progress Pengujian Saya</h3>
  <p class="text-sm text-slate-500 mt-0.5">Persentase penyelesaian layanan yang ditugaskan pada periode aktif</p>
  </div>
- <span class="inline-flex items-center gap-1.5 self-start sm:self-auto px-3.5 py-1.5 rounded-full text-xs font-black shadow-sm transition-all" :class="props.stats.progress_percent >= 100 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-primary/5 text-primary border border-primary/20'">
- <span class="w-2 h-2 rounded-full" :class="props.stats.progress_percent >= 100 ? 'bg-emerald-500 animate-pulse' : 'bg-primary'"></span>
+ <span class="inline-flex items-center self-start sm:self-auto px-3.5 py-1.5 rounded-full text-xs font-black shadow-sm transition-all" :class="props.stats.progress_percent >= 100 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-primary/5 text-primary border border-primary/20'">
  {{ props.stats.progress_percent }}% Selesai
  </span>
  </div>
