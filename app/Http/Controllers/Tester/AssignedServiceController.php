@@ -458,22 +458,42 @@ class AssignedServiceController extends Controller
 
         try {
             $attachmentPath = $periodService->attachment;
+            $attachmentData = $periodService->attachment_data;
+            $attachmentMime = $periodService->attachment_mime;
 
             if ($validated['status'] === 'normal') {
                 $attachmentPath = null;
+                $attachmentData = null;
+                $attachmentMime = null;
             } else {
                 if ($request->hasFile('attachment')) {
                     try {
-                        $tmpPublic = storage_path('app/public/attachments');
-                        if (!is_dir($tmpPublic)) {
-                            @mkdir($tmpPublic, 0777, true);
+                        $file = $request->file('attachment');
+                        $attachmentMime = $file->getMimeType();
+                        // Store base64 encoded content in DB for Vercel compatibility
+                        $attachmentData = base64_encode(file_get_contents($file->getRealPath()));
+                        // Keep a filename path for reference
+                        $originalName = $file->getClientOriginalName();
+                        $safeFilename = 'attachments/' . time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalName);
+                        $attachmentPath = $safeFilename;
+                        // Also try to store to disk (may fail on Vercel, but that's OK)
+                        try {
+                            $tmpPublic = storage_path('app/public/attachments');
+                            if (!is_dir($tmpPublic)) {
+                                @mkdir($tmpPublic, 0777, true);
+                            }
+                            $storedPath = $file->store('attachments', 'public');
+                            if ($storedPath) $attachmentPath = $storedPath;
+                        } catch (\Throwable $storeErr) {
+                            \Illuminate\Support\Facades\Log::warning('Attachment disk store failed (using DB): ' . $storeErr->getMessage());
                         }
-                        $attachmentPath = $request->file('attachment')->store('attachments', 'public');
                     } catch (\Throwable $storeErr) {
                         \Illuminate\Support\Facades\Log::warning('Attachment store failed: ' . $storeErr->getMessage());
                     }
                 } elseif ($request->boolean('remove_attachment')) {
                     $attachmentPath = null;
+                    $attachmentData = null;
+                    $attachmentMime = null;
                 }
             }
 
@@ -482,6 +502,8 @@ class AssignedServiceController extends Controller
                     'status' => $validated['status'],
                     'description' => $validated['description'] ?? null,
                     'attachment' => $attachmentPath,
+                    'attachment_data' => $attachmentData,
+                    'attachment_mime' => $attachmentMime,
                     'checked_at' => now(),
                 ]);
             } catch (\Throwable $updateErr) {
@@ -499,6 +521,8 @@ class AssignedServiceController extends Controller
                     'status' => $validated['status'],
                     'description' => $validated['description'] ?? null,
                     'attachment' => $attachmentPath,
+                    'attachment_data' => $attachmentData,
+                    'attachment_mime' => $attachmentMime,
                 ]);
             } catch (\Throwable $logErr) {
                 ServiceCheckLog::create([

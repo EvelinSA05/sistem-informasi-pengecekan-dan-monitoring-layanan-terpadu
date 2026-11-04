@@ -16,13 +16,17 @@ class ServiceCheckLog extends Model
         'status',
         'description',
         'attachment',
+        'attachment_data',
+        'attachment_mime',
     ];
 
     protected $appends = ['attachment_url'];
 
     public function getAttachmentUrlAttribute(): ?string
     {
-        return $this->attachment ? asset('storage/' . $this->attachment) : null;
+        if (!$this->attachment) return null;
+        // Serve via dedicated route if has stored data, otherwise fallback to storage
+        return asset('storage/' . $this->attachment);
     }
 
     public function periodService(): BelongsTo

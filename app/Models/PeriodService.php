@@ -16,6 +16,8 @@ class PeriodService extends Model
         'description',
         'admin_note',
         'attachment',
+        'attachment_data',
+        'attachment_mime',
         'checked_at',
     ];
 
@@ -23,9 +25,14 @@ class PeriodService extends Model
 
     public function getAttachmentUrlAttribute(): ?string
     {
-        return $this->attachment ? asset('storage/' . $this->attachment) : null;
+        if (!$this->attachment) return null;
+        // Use the serve route instead of storage URL for Vercel compatibility
+        try {
+            return route('admin.periods.attachment.download', ['periodService' => $this->id, 'inline' => 1]);
+        } catch (\Throwable $e) {
+            return asset('storage/' . $this->attachment);
+        }
     }
-
     public function period()
     {
         return $this->belongsTo(CheckingPeriod::class, 'period_id');

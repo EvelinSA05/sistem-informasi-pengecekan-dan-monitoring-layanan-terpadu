@@ -383,7 +383,7 @@ class PeriodController extends Controller
                     'handling_status' => $ps->serviceIssue?->handling_status ?? 'belum_ditindaklanjuti',
                     'attachment' => $ps->attachment,
                     'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
-                    'attachment_url' => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                    'attachment_url' => $ps->attachment ? route('admin.periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                     'checked_at' => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : null,
                     'tester_name' => $ps->tester?->name ?? ($tester->name ?? 'Tester'),
                     'tester_bidang' => $ps->tester?->bidang ?? ($tester->bidang ?? '-'),
@@ -451,7 +451,7 @@ class PeriodController extends Controller
                         'admin_handled_at' => $issue?->admin_handled_at ? Carbon::parse($issue->admin_handled_at)->format('d M Y, H:i') : null,
                         'attachment'       => $ps->attachment,
                         'attachment_name'  => $ps->attachment ? basename($ps->attachment) : null,
-                        'attachment_url'   => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                        'attachment_url'   => $ps->attachment ? route('admin.periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                         'checked_at'       => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : '-',
                         'has_solved'       => (bool) ($issue?->has_solved ?? false),
                         'has_solved_label' => match($issue?->handling_status) {
@@ -915,22 +915,88 @@ class PeriodController extends Controller
      */
     public function downloadAttachment(PeriodService $periodService)
     {
-        if (!$periodService->attachment) {
+        if (!$periodService->attachment && !$periodService->attachment_data) {
             abort(404, 'File lampiran tidak ditemukan.');
         }
 
-        $disk = Storage::disk('public');
-        if (!$disk->exists($periodService->attachment)) {
-            abort(404, 'File lampiran tidak tersedia di server storage.');
-        }
-
-        $extension = pathinfo($periodService->attachment, PATHINFO_EXTENSION);
+        $extension = pathinfo($periodService->attachment ?? 'file.jpg', PATHINFO_EXTENSION);
         $serviceName = $periodService->service?->service_name ?? 'Kendala';
         $serviceSlug = Str::slug($serviceName);
         $dateSuffix = $periodService->checked_at ? Carbon::parse($periodService->checked_at)->format('Ymd_His') : date('Ymd');
         $downloadName = 'Bukti_Kendala_' . ($serviceSlug ?: 'layanan') . '_' . $dateSuffix . ($extension ? ('.' . $extension) : '');
 
-        return $disk->download($periodService->attachment, $downloadName);
+        $isInline = request()->boolean('inline') || request()->has('inline');
+
+        // 1. Try serving from database (base64 data) — works permanently on Vercel
+        if ($periodService->attachment_data) {
+            $mimeType = $periodService->attachment_mime ?: 'image/jpeg';
+            $binaryData = base64_decode($periodService->attachment_data);
+            $disposition = $isInline ? 'inline' : 'attachment';
+
+            return response($binaryData, 200, [
+                'Content-Type'        => $mimeType,
+                'Content-Disposition' => "{$disposition}; filename=\"{$downloadName}\"",
+                'Content-Length'      => strlen($binaryData),
+                'Cache-Control'       => 'public, max-age=86400',
+            ]);
+        }
+
+        // 2. Fallback: try serving from storage disk (works in local / traditional hosting)
+        if ($periodService->attachment) {
+            try {
+                $disk = Storage::disk('public');
+                if ($disk->exists($periodService->attachment)) {
+                    if ($isInline) {
+                        $mimeType = $disk->mimeType($periodService->attachment) ?: 'image/jpeg';
+                        return response()->file($disk->path($periodService->attachment), [
+                            'Content-Type'        => $mimeType,
+                            'Content-Disposition' => 'inline; filename="' . $downloadName . '"',
+                        ]);
+                    }
+                    return $disk->download($periodService->attachment, $downloadName);
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Disk download error: ' . $e->getMessage());
+            }
+        }
+
+        // 3. Fallback for older records where file was in ephemeral /tmp before migration:
+        // Return crisp SVG representation so images in modals don't appear as broken icons
+        if ($isInline) {
+            $fileName = htmlspecialchars(basename($periodService->attachment ?: 'attachment.jpg'));
+            $cleanServiceName = htmlspecialchars($serviceName);
+            $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="260" viewBox="0 0 600 260">
+                <rect width="600" height="260" fill="#f8fafc" rx="16"/>
+                <rect x="2" y="2" width="596" height="256" fill="none" stroke="#e2e8f0" stroke-width="2" rx="14"/>
+                <g transform="translate(268, 45)">
+                    <rect width="64" height="64" rx="16" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+                    <path d="M18 46l11-13 9 11 15-19 13 21H18z" fill="#3b82f6"/>
+                    <circle cx="28" cy="23" r="5" fill="#60a5fa"/>
+                </g>
+                <text x="300" y="145" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">Bukti Kendala: ' . $cleanServiceName . '</text>
+                <text x="300" y="170" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="12" font-weight="500" fill="#64748b" text-anchor="middle">' . $fileName . '</text>
+                <text x="300" y="195" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">File tercatat di database Majadigi Checker</text>
+            </svg>';
+            return response($svg, 200, [
+                'Content-Type' => 'image/svg+xml; charset=utf-8',
+                'Cache-Control' => 'no-cache, private',
+            ]);
+        }
+
+        // For download fallback
+        $infoText = "MAJADIGI CHECKING SYSTEM - BUKTI KENDALA\n"
+                  . "========================================\n"
+                  . "Layanan   : " . ($periodService->service?->service_name ?? '-') . "\n"
+                  . "Periode   : " . ($periodService->period?->date ?? '-') . "\n"
+                  . "Tester    : " . ($periodService->tester?->name ?? '-') . "\n"
+                  . "Waktu Cek : " . ($periodService->checked_at ?? '-') . "\n"
+                  . "File      : " . basename($periodService->attachment ?? 'bukti') . "\n"
+                  . "Catatan   : " . ($periodService->description ?: '-') . "\n";
+
+        return response($infoText, 200, [
+            'Content-Type' => 'text/plain; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"{$downloadName}.txt\"",
+        ]);
     }
 
     /**
@@ -994,7 +1060,7 @@ class PeriodController extends Controller
                 'description' => $log->description,
                 'attachment' => $log->attachment,
                 'attachment_name' => $log->attachment ? basename($log->attachment) : null,
-                'attachment_url' => $log->attachment ? asset('storage/' . $log->attachment) : null,
+                'attachment_url' => $log->attachment ? route('admin.periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                 'created_at' => $createdAt ? $createdAt->format('d M Y, H:i') : '-',
                 'created_at_human' => $createdAt ? $createdAt->diffForHumans() : null,
                 'timestamp' => $createdAt ? $createdAt->timestamp : ($idx * 10),

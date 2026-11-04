@@ -422,7 +422,7 @@ class DashboardController extends Controller
                         'last_description' => $ps->description,
                         'attachment' => $ps->attachment,
                         'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
-                        'attachment_url' => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                        'attachment_url' => $ps->attachment ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                         'checked_at' => $ps->checked_at
                             ? Carbon::parse($ps->checked_at)->format('d M Y, H:i')
                             : null,
@@ -453,7 +453,7 @@ class DashboardController extends Controller
                     'description' => $ps->description,
                     'attachment' => $ps->attachment,
                     'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
-                    'attachment_url' => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
+                    'attachment_url' => $ps->attachment ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                     'checked_at' => $ps->checked_at
                         ? Carbon::parse($ps->checked_at)->format('d M Y, H:i')
                         : null,
