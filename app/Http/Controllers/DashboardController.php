@@ -578,7 +578,7 @@ class DashboardController extends Controller
                 'period_service_id' => $periodService->id,
             ]);
 
-            return back()->with('error', 'Terjadi kesalahan saat menyimpan hasil pengecekan.');
+            return back()->with('error', 'Terjadi kesalahan saat menyimpan hasil pengecekan: ' . $e->getMessage());
         }
     }
 }
