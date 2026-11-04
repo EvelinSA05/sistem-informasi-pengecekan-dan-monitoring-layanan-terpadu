@@ -46,6 +46,22 @@ class CheckingPeriod extends Model
     }
 
     /**
+     * Mutator untuk memastikan kolom date disimpan dalam format Y-m-d murni (kompatibel PostgreSQL & SQLite)
+     */
+    public function setDateAttribute($value): void
+    {
+        $this->attributes['date'] = $value ? \Carbon\Carbon::parse($value)->format('Y-m-d') : null;
+    }
+
+    /**
+     * Mutator untuk memastikan kolom deadline_date disimpan dalam format Y-m-d murni (kompatibel PostgreSQL & SQLite)
+     */
+    public function setDeadlineDateAttribute($value): void
+    {
+        $this->attributes['deadline_date'] = $value ? \Carbon\Carbon::parse($value)->format('Y-m-d') : null;
+    }
+
+    /**
      * Alias accessor untuk tanggal_periode
      */
     public function getTanggalPeriodeAttribute()
@@ -58,7 +74,7 @@ class CheckingPeriod extends Model
      */
     public function setTanggalPeriodeAttribute($value)
     {
-        $this->attributes['date'] = $value;
+        $this->setDateAttribute($value);
     }
 
     /**
@@ -74,7 +90,7 @@ class CheckingPeriod extends Model
      */
     public function setDeadlineAttribute($value)
     {
-        $this->attributes['deadline_date'] = $value;
+        $this->setDeadlineDateAttribute($value);
     }
 
     /**

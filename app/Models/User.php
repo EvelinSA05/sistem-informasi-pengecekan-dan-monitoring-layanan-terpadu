@@ -86,4 +86,18 @@ class User extends Authenticatable
     {
         $this->notify(new \App\Notifications\CustomResetPassword($token));
     }
+
+    /**
+     * Override markEmailAsVerified agar aman karena tabel users tidak menggunakan kolom email_verified_at.
+     */
+    public function markEmailAsVerified(): bool
+    {
+        if (\Illuminate\Support\Facades\Schema::hasColumn($this->getTable(), 'email_verified_at')) {
+            return $this->forceFill([
+                'email_verified_at' => $this->freshTimestamp(),
+            ])->save();
+        }
+
+        return true;
+    }
 }

@@ -13,6 +13,8 @@ return new class extends Migration
     public function up(): void
     {
         if (Schema::hasTable('service_issues')) {
+            DB::statement('DROP VIEW IF EXISTS layanan_terkendala');
+
             Schema::table('service_issues', function (Blueprint $table) {
                 if (!Schema::hasColumn('service_issues', 'handling_status')) {
                     $table->string('handling_status', 50)->default('belum_ditindaklanjuti')->after('has_solved');
@@ -27,6 +29,8 @@ return new class extends Migration
                     $table->foreignId('admin_id')->nullable()->after('admin_handled_at')->constrained('users')->nullOnDelete();
                 }
             });
+
+            DB::statement('CREATE VIEW layanan_terkendala AS SELECT * FROM service_issues');
 
             // Backfill existing data
             DB::table('service_issues')->where('has_solved', true)->update([

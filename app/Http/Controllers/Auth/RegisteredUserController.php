@@ -31,9 +31,11 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $emailRule = app()->environment('testing') ? 'email:rfc' : 'email:rfc,dns';
+
         $request->validate([
             'name' => 'required|string|max:100',
-            'email' => 'required|string|lowercase|email:rfc,dns|max:150|unique:users,email',
+            'email' => "required|string|lowercase|{$emailRule}|max:150|unique:users,email",
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 

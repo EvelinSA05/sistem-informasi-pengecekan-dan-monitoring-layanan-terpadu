@@ -554,12 +554,12 @@ class AssignedServiceController extends Controller
                 \Illuminate\Support\Facades\Log::warning('Failed updating service_issues in tester submit: ' . $issueErr->getMessage());
             }
 
-            // Auto-complete: jika seluruh layanan pada periode ini sudah selesai diperiksa (0 pending), ubah status periode menjadi 'selesai'
-            $hasPending = PeriodService::where('period_id', $periodService->period_id)
-                ->where('status', 'pending')
+            // Auto-complete: jika seluruh layanan pada periode ini sudah berstatus normal (0 pending & 0 gangguan), ubah status periode menjadi 'selesai'
+            $hasPendingOrIssue = PeriodService::where('period_id', $periodService->period_id)
+                ->whereIn('status', ['pending', 'gangguan'])
                 ->exists();
 
-            if (!$hasPending) {
+            if (!$hasPendingOrIssue) {
                 $periodService->period()->update([
                     'status' => 'selesai',
                 ]);

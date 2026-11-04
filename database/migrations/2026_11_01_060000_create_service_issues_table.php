@@ -29,7 +29,8 @@ return new class extends Migration
         }
 
         // Buat view layanan_terkendala untuk kompatibilitas nama tabel Bahasa Indonesia & Inggris
-        DB::statement('CREATE OR REPLACE VIEW layanan_terkendala AS SELECT * FROM service_issues');
+        DB::statement('DROP VIEW IF EXISTS layanan_terkendala');
+        DB::statement('CREATE VIEW layanan_terkendala AS SELECT * FROM service_issues');
 
         // Backfill data kendala dari period_services yang sudah berstatus gangguan sebelumnya
         $existingIssues = DB::table('period_services')

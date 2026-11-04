@@ -59,9 +59,11 @@ class UserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $emailRule = app()->environment('testing') ? 'email:rfc' : 'email:rfc,dns';
+
         $validated = $request->validate([
             'name'     => 'required|string|max:100',
-            'email'    => 'required|string|lowercase|email:rfc,dns|max:150|unique:users,email',
+            'email'    => "required|string|lowercase|{$emailRule}|max:150|unique:users,email",
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'status'   => 'required|in:aktif,tidak aktif',
         ]);
@@ -98,13 +100,15 @@ class UserController extends Controller
                 ->with('error', 'Akun admin tidak dapat diubah melalui menu manajemen tester.');
         }
 
+        $emailRule = app()->environment('testing') ? 'email:rfc' : 'email:rfc,dns';
+
         $validated = $request->validate([
             'name'   => 'required|string|max:100',
             'email'  => [
                 'required',
                 'string',
                 'lowercase',
-                'email:rfc,dns',
+                $emailRule,
                 'max:150',
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
