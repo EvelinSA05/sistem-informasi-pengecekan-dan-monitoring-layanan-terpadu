@@ -220,8 +220,7 @@ function togglePeriodStatus(period) {
       <div class="absolute inset-0 opacity-70 bg-cover bg-center" style="background-image: url('/images/banner_1.jpg');"></div>
       <div class="absolute inset-0 bg-gradient-to-r from-[#1e3a8a]/85 via-[#1e3a8a]/45 to-transparent pointer-events-none"></div>
       <div class="relative z-10">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
-          <span class="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
+        <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
           Manajemen Periode
         </div>
         <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Daftar Periode & Distribusi</h2>
@@ -296,12 +295,8 @@ function togglePeriodStatus(period) {
  <!-- Status Badge -->
  <td class="px-5 py-3.5 text-center">
  <span
- :class="[ 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider', period.status === 'proses' ? 'bg-primary text-white shadow-sm' : 'bg-slate-100 text-slate-500 border border-slate-200/80' ]"
+ :class="[ 'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider', period.status === 'proses' ? 'bg-primary text-white shadow-sm' : 'bg-slate-100 text-slate-500 border border-slate-200/80' ]"
  >
- <span
- class="w-1.5 h-1.5 rounded-full"
- :class="period.status === 'proses' ? 'bg-cyan-300 animate-pulse' : 'bg-slate-400'"
- ></span>
  {{ period.status === 'proses' ? 'Aktif' : 'Nonaktif' }}
  </span>
  </td>
