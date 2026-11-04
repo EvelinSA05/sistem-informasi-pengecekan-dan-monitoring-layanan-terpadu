@@ -421,7 +421,7 @@ class AssignedServiceController extends Controller
 
         $validated = $request->validate([
             'status' => 'required|in:normal,gangguan',
-            'description' => 'required_if:status,gangguan|nullable|string|max:5000',
+            'description' => 'required|string|max:5000',
             'attachment' => [
                 \Illuminate\Validation\Rule::requiredIf(function () use ($request, $periodService, $isRecheck) {
                     if ($request->input('status') !== 'gangguan') {

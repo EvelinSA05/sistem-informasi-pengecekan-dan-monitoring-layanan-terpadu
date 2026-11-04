@@ -652,7 +652,6 @@ function submitCheck() {
  <tr class="bg-slate-50/90 border-b border-slate-200">
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-14 text-center">No</th>
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider min-w-[260px]">Nama Layanan</th>
- <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-36">Kategori & Level</th>
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider min-w-[200px]">Status & Hasil</th>
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center w-28">Aksi</th>
  </tr>
@@ -660,7 +659,7 @@ function submitCheck() {
  <tbody class="divide-y divide-slate-100 text-xs sm:text-sm">
  <!-- Empty State: No Data -->
  <tr v-if="!services.data || services.data.length === 0">
- <td colspan="5" class="py-14 px-5 text-center">
+ <td colspan="4" class="py-14 px-5 text-center">
  <div class="flex flex-col items-center justify-center max-w-md mx-auto text-slate-400">
  <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm mb-3">
  <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
@@ -715,12 +714,10 @@ function submitCheck() {
  </a>
  <span v-else class="text-xs text-slate-300">-</span>
  </div>
- </td>
-
- <!-- Kategori & Level -->
- <td class="py-4 px-5 align-top">
- <div class="flex flex-col items-start gap-1.5">
- <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/70">
+ 
+									<!-- Kategori & Level di bawah URL -->
+									<div class="flex items-center gap-2 mt-2 flex-wrap">
+										<span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/70">
  {{ service.category || 'Umum' }}
  </span>
  <span
@@ -730,8 +727,10 @@ function submitCheck() {
  >
  {{ service.level }}
  </span>
- </div>
- </td>
+									</div>
+								</td>
+
+ 
 
  <!-- Status & Hasil Pengujian (Simpel & Rapi + Histori Icon Jam) -->
 								<td class="py-4 px-5 align-top">
@@ -1115,7 +1114,7 @@ function submitCheck() {
  rows="3"
  maxlength="5000"
  class="w-full rounded-xl bg-slate-50/70 border border-slate-200 text-xs focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary p-3 leading-relaxed placeholder:text-slate-400 outline-none transition-all"
- :placeholder="checkForm.status === 'gangguan' ? (selectedService?.is_recheck_needed ? 'Tuliskan catatan kendala terbaru yang masih terjadi pada layanan ini...' : 'Jelaskan secara spesifik kendala yang dialami (misal: halaman 404, lambat diakses, SSL expired, gagal login, dsb.)...') : (selectedService?.is_recheck_needed ? 'Catatan pengujian hasil verifikasi (opsional, layanan sudah kembali normal)...' : 'Tambahkan catatan pengujian bila ada (opsional)...')"
+ :placeholder="checkForm.status === 'gangguan' ? (selectedService?.is_recheck_needed ? 'Tuliskan catatan kendala terbaru yang masih terjadi pada layanan ini...' : 'Jelaskan secara spesifik kendala yang dialami (misal: halaman 404, lambat diakses, SSL expired, gagal login, dsb.)...') : (selectedService?.is_recheck_needed ? 'Catatan pengujian hasil verifikasi (wajib)...' : 'Tambahkan catatan pengujian (wajib)...')"
  ></textarea>
  <p v-if="checkForm.errors.description" class="mt-1 text-xs text-rose-500">{{ checkForm.errors.description }}</p>
  </div>
@@ -1645,15 +1644,7 @@ function submitCheck() {
 								<span>Cek Ulang Layanan</span>
 							</button>
 
-							<button
-								v-else-if="historyService.status !== 'pending' && !(periodInfo.status !== 'proses' || periodInfo.is_overdue)"
-								type="button"
-								@click="handleRecheckFromHistory(historyService)"
-								class="px-4.5 py-2 rounded-xl font-bold text-xs text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-							>
-								<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-								<span>Ubah Hasil</span>
-							</button>
+							
 						</div>
 					</div>
 				</div>

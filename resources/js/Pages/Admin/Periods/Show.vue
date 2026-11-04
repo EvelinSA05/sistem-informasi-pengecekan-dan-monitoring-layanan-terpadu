@@ -1106,15 +1106,14 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
 							<div>
 								<label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
 									{{ checkForm.status === 'gangguan' ? 'Catatan / Keterangan Kendala' : 'Catatan Pengujian' }}
-									<span v-if="checkForm.status === 'gangguan'" class="text-rose-600 font-bold lowercase">(wajib)</span>
-									<span v-else class="text-slate-400 font-normal lowercase">(opsional)</span>
+									<span class="text-rose-600 font-bold lowercase">(wajib)</span>
 								</label>
 								<textarea
 									v-model="checkForm.description"
 									rows="3"
 									maxlength="5000"
 									class="w-full rounded-xl bg-slate-50/70 border border-slate-200 text-xs focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary p-3 leading-relaxed placeholder:text-slate-400 outline-none transition-all"
-									:placeholder="checkForm.status === 'gangguan' ? 'Jelaskan secara spesifik kendala yang dialami (misal: halaman 404, lambat diakses, SSL expired, gagal login, dsb.)...' : 'Tambahkan catatan pengujian bila ada (opsional)...'"
+									:placeholder="checkForm.status === 'gangguan' ? 'Jelaskan secara spesifik kendala yang dialami (misal: halaman 404, lambat diakses, SSL expired, gagal login, dsb.)...' : 'Tambahkan catatan pengujian (wajib)...'"
 								></textarea>
 								<p v-if="checkForm.errors.description" class="mt-1 text-xs text-rose-500">{{ checkForm.errors.description }}</p>
 							</div>
