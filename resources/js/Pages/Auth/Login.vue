@@ -138,8 +138,7 @@ const submit = () => {
  class="h-6 w-auto object-contain"
  />
  </div>
- <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 shadow-sm">
- <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+ <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 shadow-sm">
  <span class="text-[10px] font-bold tracking-wider text-white uppercase">CHECKER SYSTEM</span>
  </div>
  </div>
@@ -153,8 +152,7 @@ const submit = () => {
  class="h-7 w-auto object-contain"
  />
  </div>
- <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 shadow-sm w-fit">
- <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+ <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 shadow-sm w-fit">
  <span class="text-[10.5px] font-bold tracking-wider text-white uppercase">CHECKER SYSTEM</span>
  </div>
  </div>
