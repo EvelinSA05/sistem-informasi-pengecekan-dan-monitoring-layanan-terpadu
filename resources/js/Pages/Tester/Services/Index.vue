@@ -363,9 +363,8 @@ function submitCheck() {
  <div v-if="periodInfo" class="flex items-center gap-2">
  <span
  v-if="periodInfo.status === 'proses' && !periodInfo.is_overdue"
- class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold uppercase bg-[#1e3a8a] text-white shadow-xs"
+ class="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold uppercase bg-[#1e3a8a] text-white shadow-xs"
  >
- <span class="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
  Status: Proses
  </span>
  <span
@@ -396,8 +395,7 @@ function submitCheck() {
       <div class="absolute inset-0 bg-gradient-to-r from-[#1e3a8a]/85 via-[#1e3a8a]/45 to-transparent pointer-events-none"></div>
       <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
-            <span class="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
+          <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
             Pengujian Layanan
           </div>
           <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Pengecekan: {{ periodInfo.month_name || 'Periode Pengujian' }}</h2>
