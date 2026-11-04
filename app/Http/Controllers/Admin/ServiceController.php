@@ -234,9 +234,13 @@ class ServiceController extends Controller
         try {
             $logs = collect();
 
-            // 1. Ambil dari ServiceCheckLog jika ada
+            // 1. Ambil dari ServiceCheckLog jika ada (tanpa blob attachment_data)
             try {
-                $checkLogs = \App\Models\ServiceCheckLog::with(['periodService.period', 'tester'])
+                $checkLogs = \App\Models\ServiceCheckLog::withoutAttachmentData()
+                    ->with([
+                        'periodService' => fn($q) => $q->withoutAttachmentData()->with('period'),
+                        'tester'
+                    ])
                     ->whereHas('periodService', function ($query) use ($service) {
                         $query->where('service_id', $service->id);
                     })
@@ -266,7 +270,8 @@ class ServiceController extends Controller
 
             // 2. Ambil dari PeriodService yang telah diperiksa (checked_at tidak null)
             try {
-                $periodServices = \App\Models\PeriodService::with(['period', 'tester'])
+                $periodServices = \App\Models\PeriodService::withoutAttachmentData()
+                    ->with(['period', 'tester'])
                     ->where('service_id', $service->id)
                     ->whereNotNull('checked_at')
                     ->where('status', '!=', 'pending')
@@ -383,7 +388,8 @@ class ServiceController extends Controller
             }
 
             // 3. Cari seluruh riwayat penugasan berstatus kendala/gangguan untuk seluruh ID layanan yang cocok
-            $troubledPeriodServices = PeriodService::with(['period', 'tester', 'service'])
+            $troubledPeriodServices = PeriodService::withoutAttachmentData()
+                ->with(['period', 'tester', 'service'])
                 ->where(function($q) use ($serviceIds, $serviceName) {
                     $q->whereIn('service_id', $serviceIds)
                       ->orWhereHas('service', function($sq) use ($serviceName) {
@@ -420,7 +426,7 @@ class ServiceController extends Controller
             if (\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
                 $rawIssues = ServiceIssue::with([
                     'period',
-                    'periodService.tester',
+                    'periodService' => fn($q) => $q->withoutAttachmentData()->with('tester'),
                     'service'
                 ])
                 ->where(function($q) use ($serviceIds, $serviceName) {

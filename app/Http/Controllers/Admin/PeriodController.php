@@ -340,6 +340,7 @@ class PeriodController extends Controller
         $period->load([
             'creator:id,name,email',
             'periodTesters.tester:id,name,email,bidang,nip',
+            'periodServices' => fn($q) => $q->withoutAttachmentData(),
             'periodServices.service:id,source_service_id,service_name,category,level,icon,service_url,deskripsi_layanan,tester_instruction',
             'periodServices.tester:id,name,email,bidang',
             'periodServices.serviceIssue',
@@ -659,6 +660,7 @@ class PeriodController extends Controller
     {
         $period->load([
             'creator:id,name',
+            'periodServices' => fn($q) => $q->withoutAttachmentData(),
             'periodServices.service',
         ]);
 
@@ -818,6 +820,7 @@ class PeriodController extends Controller
     {
         $period->load([
             'creator:id,name,email',
+            'periodServices' => fn($q) => $q->withoutAttachmentData(),
             'periodServices.service:id,source_service_id,service_name,category,level,icon,service_url',
         ]);
 
@@ -943,9 +946,23 @@ class PeriodController extends Controller
         $isInline = request()->boolean('inline') || request()->has('inline');
 
         // 1. Try serving from database (base64 data) — works permanently on Vercel
-        if ($periodService->attachment_data) {
-            $mimeType = $periodService->attachment_mime ?: 'image/jpeg';
-            $binaryData = base64_decode($periodService->attachment_data);
+        $attachmentBase64 = $periodService->attachment_data;
+        $attachmentMime = $periodService->attachment_mime;
+
+        if (!$attachmentBase64) {
+            $latestLogWithData = \App\Models\ServiceCheckLog::where('period_service_id', $periodService->id)
+                ->whereNotNull('attachment_data')
+                ->latest()
+                ->first(['attachment_data', 'attachment_mime']);
+            if ($latestLogWithData) {
+                $attachmentBase64 = $latestLogWithData->attachment_data;
+                $attachmentMime = $latestLogWithData->attachment_mime;
+            }
+        }
+
+        if ($attachmentBase64) {
+            $mimeType = $attachmentMime ?: 'image/jpeg';
+            $binaryData = base64_decode($attachmentBase64);
             $disposition = $isInline ? 'inline' : 'attachment';
 
             return response($binaryData, 200, [

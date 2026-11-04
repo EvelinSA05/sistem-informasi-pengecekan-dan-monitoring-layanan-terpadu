@@ -21,14 +21,41 @@ class PeriodService extends Model
         'checked_at',
     ];
 
+    public const LIST_COLUMNS = [
+        'id',
+        'period_id',
+        'service_id',
+        'tester_id',
+        'status',
+        'description',
+        'admin_note',
+        'attachment',
+        'attachment_mime',
+        'checked_at',
+        'created_at',
+        'updated_at',
+    ];
+
+    protected $hidden = [
+        'attachment_data',
+    ];
+
     protected $appends = ['attachment_url'];
+
+    /**
+     * Scope untuk mengambil kolom tanpa blob attachment_data (mempercepat query daftar/tabel).
+     */
+    public function scopeWithoutAttachmentData($query)
+    {
+        return $query->select(self::LIST_COLUMNS);
+    }
 
     public function getAttachmentUrlAttribute(): ?string
     {
         if (!$this->attachment) return null;
         // Use the serve route instead of storage URL for Vercel compatibility
         try {
-            return route('admin.periods.attachment.download', ['periodService' => $this->id, 'inline' => 1]);
+            return route('periods.attachment.download', ['periodService' => $this->id, 'inline' => 1]);
         } catch (\Throwable $e) {
             return asset('storage/' . $this->attachment);
         }
@@ -55,6 +82,8 @@ class PeriodService extends Model
 
     public function checkLogs()
     {
-        return $this->hasMany(ServiceCheckLog::class, 'period_service_id')->latest();
+        return $this->hasMany(ServiceCheckLog::class, 'period_service_id')
+            ->select(ServiceCheckLog::LIST_COLUMNS)
+            ->latest();
     }
 }

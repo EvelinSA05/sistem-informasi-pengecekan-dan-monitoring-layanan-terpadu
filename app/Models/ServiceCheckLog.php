@@ -20,12 +20,42 @@ class ServiceCheckLog extends Model
         'attachment_mime',
     ];
 
+    public const LIST_COLUMNS = [
+        'id',
+        'period_service_id',
+        'tester_id',
+        'status',
+        'description',
+        'attachment',
+        'attachment_mime',
+        'created_at',
+        'updated_at',
+    ];
+
+    protected $hidden = [
+        'attachment_data',
+    ];
+
     protected $appends = ['attachment_url'];
+
+    /**
+     * Scope untuk mengambil kolom tanpa blob attachment_data.
+     */
+    public function scopeWithoutAttachmentData($query)
+    {
+        return $query->select(self::LIST_COLUMNS);
+    }
 
     public function getAttachmentUrlAttribute(): ?string
     {
         if (!$this->attachment) return null;
-        // Serve via dedicated route if has stored data, otherwise fallback to storage
+        try {
+            if ($this->period_service_id) {
+                return route('periods.attachment.download', ['periodService' => $this->period_service_id, 'inline' => 1]);
+            }
+        } catch (\Throwable $e) {
+            // fallback
+        }
         return asset('storage/' . $this->attachment);
     }
 

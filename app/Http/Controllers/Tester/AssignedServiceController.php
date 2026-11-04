@@ -55,6 +55,7 @@ class AssignedServiceController extends Controller
         $periods = CheckingPeriod::with([
             'periodTesters.tester:id,name,bidang,email',
             'periodServices' => function ($q) use ($user) {
+                $q->withoutAttachmentData();
                 if ($user->role !== 'admin') {
                     $q->where('tester_id', $user->id);
                 }
@@ -246,8 +247,8 @@ class AssignedServiceController extends Controller
             ->values()
             ->all();
 
-        // Filtered and paginated assigned services
-        $servicesQuery = PeriodService::with([
+        // Filtered and paginated assigned services (tanpa kolom blob attachment_data)
+        $servicesQuery = PeriodService::withoutAttachmentData()->with([
             'service' => function ($q) {
                 $q->select(
                     'id',

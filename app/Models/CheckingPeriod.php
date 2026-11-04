@@ -134,22 +134,24 @@ class CheckingPeriod extends Model
         $activeMasterServiceIds = $activeMasterServices->pluck('id')->all();
 
         // 2. Hapus seluruh period_services pada periode ini yang BUKAN merupakan layanan tersinkronisasi Majadigi
-        $invalidPs = PeriodService::where('period_id', $this->id)
+        $invalidPsIds = PeriodService::where('period_id', $this->id)
             ->where(function ($q) use ($activeMasterServiceIds) {
                 $q->whereNull('service_id')
                   ->orWhereNotIn('service_id', $activeMasterServiceIds);
             })
-            ->get();
+            ->pluck('id')
+            ->all();
 
-        if ($invalidPs->isNotEmpty()) {
-            $invalidPsIds = $invalidPs->pluck('id')->all();
+        if (!empty($invalidPsIds)) {
             ServiceIssue::whereIn('period_service_id', $invalidPsIds)->delete();
             ServiceCheckLog::whereIn('period_service_id', $invalidPsIds)->delete();
             PeriodService::whereIn('id', $invalidPsIds)->delete();
         }
 
-        // 3. Pastikan seluruh layanan aktif Majadigi ada di periode ini
-        $existingPs = PeriodService::where('period_id', $this->id)->get()->keyBy('service_id');
+        // 3. Pastikan seluruh layanan aktif Majadigi ada di periode ini (hanya ambil kolom service_id tanpa blob attachment_data)
+        $existingServiceIds = PeriodService::where('period_id', $this->id)
+            ->pluck('service_id')
+            ->flip();
 
         $testerIds = $this->periodTesters()->pluck('tester_id')->all();
         if (empty($testerIds)) {
@@ -159,7 +161,7 @@ class CheckingPeriod extends Model
         if (!empty($testerIds) && $activeMasterServices->isNotEmpty()) {
             $testerCount = count($testerIds);
             foreach ($activeMasterServices as $index => $service) {
-                if (!$existingPs->has($service->id)) {
+                if (!$existingServiceIds->has($service->id)) {
                     $assignedTesterId = $testerIds[$index % $testerCount];
                     PeriodService::create([
                         'period_id'   => $this->id,
