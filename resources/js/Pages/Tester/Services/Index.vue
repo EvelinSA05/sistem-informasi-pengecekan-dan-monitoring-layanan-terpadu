@@ -652,6 +652,7 @@ function submitCheck() {
  <tr class="bg-slate-50/90 border-b border-slate-200">
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-14 text-center">No</th>
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider min-w-[260px]">Nama Layanan</th>
+ <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-28 text-center">Level</th>
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider min-w-[200px]">Status & Hasil</th>
  <th class="py-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center w-28">Aksi</th>
  </tr>
@@ -659,7 +660,7 @@ function submitCheck() {
  <tbody class="divide-y divide-slate-100 text-xs sm:text-sm">
  <!-- Empty State: No Data -->
  <tr v-if="!services.data || services.data.length === 0">
- <td colspan="4" class="py-14 px-5 text-center">
+ <td colspan="5" class="py-14 px-5 text-center">
  <div class="flex flex-col items-center justify-center max-w-md mx-auto text-slate-400">
  <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm mb-3">
  <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
@@ -715,19 +716,24 @@ function submitCheck() {
  <span v-else class="text-xs text-slate-300">-</span>
  </div>
  
-									<!-- Kategori & Level di bawah URL -->
-									<div class="flex items-center gap-2 mt-2 flex-wrap">
+									<!-- Kategori OPD di bawah URL -->
+									<div class="flex items-center gap-2 mt-2">
 										<span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/70">
- {{ service.category || 'Umum' }}
- </span>
- <span
- v-if="service.level && service.level !== '-'"
- class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
- :class="service.level === 'Level 1' ? 'bg-primary text-white border border-primary' : (service.level === 'Level 2' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/80' : (service.level === 'Level 3' ? 'bg-purple-50 text-purple-700 border border-purple-200/80' : 'bg-slate-100 text-slate-600 border border-slate-200/60'))"
- >
- {{ service.level }}
- </span>
+											{{ service.category || 'Umum' }}
+										</span>
 									</div>
+								</td>
+
+								<!-- Level -->
+								<td class="py-4 px-5 align-top text-center">
+									<span
+										v-if="service.level && service.level !== '-'"
+										class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold"
+										:class="service.level === 'Level 1' ? 'bg-primary text-white border border-primary' : (service.level === 'Level 2' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/80' : (service.level === 'Level 3' ? 'bg-purple-50 text-purple-700 border border-purple-200/80' : 'bg-slate-100 text-slate-600 border border-slate-200/60'))"
+									>
+										{{ service.level }}
+									</span>
+									<span v-else class="text-xs text-slate-300 font-medium">-</span>
 								</td>
 
  
