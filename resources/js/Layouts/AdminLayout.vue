@@ -235,11 +235,6 @@ onUnmounted(() => {
  ? 'text-white/70 hover:bg-white/10 hover:text-white'
  : 'text-white/70 hover:bg-white/10 hover:text-white'"
  >
- <!-- Active indicator pill / dot -->
- <span
- v-if="(item.activeRoute && route().current(item.activeRoute)) || (item.route && route().current(item.route))"
- class="absolute right-3.5 w-2 h-2 rounded-full bg-primary shadow-sm"
- ></span>
  <!-- Icon -->
  <span
  class="shrink-0 w-5 h-5 transition-transform group-hover:scale-105"
@@ -308,8 +303,7 @@ onUnmounted(() => {
  </div>
  </div>
 
- <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary border border-primary/80 text-xs font-semibold text-white shadow-xs shrink-0">
- <span class="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
+ <div class="flex items-center justify-center px-3.5 py-1.5 rounded-full bg-primary border border-primary/80 text-xs font-semibold text-white shadow-xs shrink-0">
  <span class="hidden sm:inline">Sistem Aktif</span>
  <span class="sm:hidden text-[10px]">Aktif</span>
  </div>
