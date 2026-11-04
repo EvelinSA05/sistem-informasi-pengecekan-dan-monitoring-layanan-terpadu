@@ -404,35 +404,15 @@ class PeriodController extends Controller
         // Ambil daftar layanan yang terkendala pada periode ini dengan fallback aman
         $troubledServices = [];
         try {
-            if (!\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
-                try {
-                    \Illuminate\Support\Facades\DB::statement("
-                        CREATE TABLE IF NOT EXISTS service_issues (
-                            id BIGSERIAL PRIMARY KEY,
-                            layanan_id BIGINT NOT NULL,
-                            periode_id BIGINT NOT NULL,
-                            period_service_id BIGINT NOT NULL,
-                            has_notif BOOLEAN DEFAULT FALSE,
-                            has_solved BOOLEAN DEFAULT FALSE,
-                            created_at TIMESTAMP NULL,
-                            updated_at TIMESTAMP NULL
-                        )
-                    ");
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Direct table creation failed on period show: ' . $e->getMessage());
-                }
-            }
-
-            if (\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
-                $troubledServices = PeriodService::with([
-                    'service',
-                    'tester',
-                    'serviceIssue.admin',
-                    'checkLogs.tester',
-                ])
-                ->where('period_id', $period->id)
-                ->whereIn('status', ['gangguan', 'kendala', 'tidak_aktif', 'error'])
-                ->orderByDesc('checked_at')
+            $troubledServices = PeriodService::with([
+                'service',
+                'tester',
+                'serviceIssue.admin',
+                'checkLogs.tester',
+            ])
+            ->where('period_id', $period->id)
+            ->whereIn('status', ['gangguan', 'kendala', 'tidak_aktif', 'error'])
+            ->orderByDesc('checked_at')
                 ->get()
                 ->map(function ($ps) use ($period) {
                     $issue = $ps->serviceIssue;

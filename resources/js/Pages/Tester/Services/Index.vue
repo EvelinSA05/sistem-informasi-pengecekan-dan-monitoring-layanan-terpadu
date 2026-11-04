@@ -278,16 +278,23 @@ function submitCheck() {
   preserveScroll: true,
   forceFormData: true,
   onSuccess: (pageObj) => {
-   if (pageObj.props.flash && pageObj.props.flash.error) {
+   showCheckModal.value = false;
+   if (pageObj.props?.flash && pageObj.props.flash.error) {
     showToast(pageObj.props.flash.error, 'error');
    } else {
-    showCheckModal.value = false;
     if (isRecheck) {
      showToast('Hasil pengecekan ulang berhasil disimpan.');
     } else {
      showToast(isEditMode.value ? 'Hasil pengujian berhasil diperbarui.' : 'Hasil pengecekan berhasil disimpan.');
     }
    }
+  },
+  onError: (errs) => {
+   const err = Object.values(errs)[0] || 'Gagal menyimpan hasil pengecekan.';
+   showToast(err, 'error');
+  },
+  onFinish: () => {
+   checkForm.processing = false;
   },
  });
 }

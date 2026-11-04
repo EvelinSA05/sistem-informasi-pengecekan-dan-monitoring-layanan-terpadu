@@ -315,27 +315,7 @@ class ServiceController extends Controller
     public function fetchServiceIssues(Service $service): array
     {
         try {
-            // 1. Pastikan tabel service_issues ada di PostgreSQL
-            if (!\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
-                try {
-                    \Illuminate\Support\Facades\DB::statement("
-                        CREATE TABLE IF NOT EXISTS service_issues (
-                            id BIGSERIAL PRIMARY KEY,
-                            layanan_id BIGINT NOT NULL,
-                            periode_id BIGINT NOT NULL,
-                            period_service_id BIGINT NOT NULL,
-                            has_notif BOOLEAN DEFAULT FALSE,
-                            has_solved BOOLEAN DEFAULT FALSE,
-                            created_at TIMESTAMP NULL,
-                            updated_at TIMESTAMP NULL
-                        )
-                    ");
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Direct table creation failed: ' . $e->getMessage());
-                }
-            }
-
-            // 2. Kumpulkan semua ID yang merujuk ke layanan ini (mengatasi variasi ID akibat duplikasi seeder / sinkronisasi Majadigi)
+            // Kumpulkan semua ID yang merujuk ke layanan ini (mengatasi variasi ID akibat duplikasi seeder / sinkronisasi Majadigi)
             $serviceName = trim($service->service_name);
             $serviceIds = Service::where(function($q) use ($service, $serviceName) {
                 $q->where('id', $service->id)

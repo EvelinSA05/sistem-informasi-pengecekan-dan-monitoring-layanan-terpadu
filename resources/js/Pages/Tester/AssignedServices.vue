@@ -74,6 +74,9 @@ const submitCheck = () => {
  onSuccess: () => {
  showCheckModal.value = false;
  },
+ onFinish: () => {
+ checkForm.processing = false;
+ },
  });
 };
 

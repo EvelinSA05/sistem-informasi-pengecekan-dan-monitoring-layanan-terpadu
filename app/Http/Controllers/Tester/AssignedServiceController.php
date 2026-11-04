@@ -457,25 +457,6 @@ class AssignedServiceController extends Controller
         ]);
 
         try {
-            // Pastikan kolom dan tabel yang dibutuhkan ada di database produksi
-            try {
-                if (\Illuminate\Support\Facades\Schema::hasTable('period_services')) {
-                    if (!\Illuminate\Support\Facades\Schema::hasColumn('period_services', 'attachment')) {
-                        \Illuminate\Support\Facades\DB::statement('ALTER TABLE period_services ADD COLUMN IF NOT EXISTS attachment VARCHAR(500) NULL');
-                    }
-                    if (!\Illuminate\Support\Facades\Schema::hasColumn('period_services', 'admin_note')) {
-                        \Illuminate\Support\Facades\DB::statement('ALTER TABLE period_services ADD COLUMN IF NOT EXISTS admin_note TEXT NULL');
-                    }
-                }
-                if (\Illuminate\Support\Facades\Schema::hasTable('service_check_logs')) {
-                    if (!\Illuminate\Support\Facades\Schema::hasColumn('service_check_logs', 'attachment')) {
-                        \Illuminate\Support\Facades\DB::statement('ALTER TABLE service_check_logs ADD COLUMN IF NOT EXISTS attachment VARCHAR(500) NULL');
-                    }
-                }
-            } catch (\Throwable $colErr) {
-                \Illuminate\Support\Facades\Log::warning('Auto add columns notice: ' . $colErr->getMessage());
-            }
-
             $attachmentPath = $periodService->attachment;
 
             if ($validated['status'] === 'normal') {
@@ -496,61 +477,40 @@ class AssignedServiceController extends Controller
                 }
             }
 
-            $updateData = [
-                'status' => $validated['status'],
-                'description' => $validated['description'] ?? null,
-                'checked_at' => now(),
-            ];
-            if (\Illuminate\Support\Facades\Schema::hasColumn('period_services', 'attachment')) {
-                $updateData['attachment'] = $attachmentPath;
+            try {
+                $periodService->update([
+                    'status' => $validated['status'],
+                    'description' => $validated['description'] ?? null,
+                    'attachment' => $attachmentPath,
+                    'checked_at' => now(),
+                ]);
+            } catch (\Throwable $updateErr) {
+                $periodService->update([
+                    'status' => $validated['status'],
+                    'description' => $validated['description'] ?? null,
+                    'checked_at' => now(),
+                ]);
             }
-            $periodService->update($updateData);
 
-            $logData = [
-                'period_service_id' => $periodService->id,
-                'tester_id' => $user->id,
-                'status' => $validated['status'],
-                'description' => $validated['description'] ?? null,
-            ];
-            if (\Illuminate\Support\Facades\Schema::hasColumn('service_check_logs', 'attachment')) {
-                $logData['attachment'] = $attachmentPath;
+            try {
+                ServiceCheckLog::create([
+                    'period_service_id' => $periodService->id,
+                    'tester_id' => $user->id,
+                    'status' => $validated['status'],
+                    'description' => $validated['description'] ?? null,
+                    'attachment' => $attachmentPath,
+                ]);
+            } catch (\Throwable $logErr) {
+                ServiceCheckLog::create([
+                    'period_service_id' => $periodService->id,
+                    'tester_id' => $user->id,
+                    'status' => $validated['status'],
+                    'description' => $validated['description'] ?? null,
+                ]);
             }
-            ServiceCheckLog::create($logData);
 
             // Catat atau perbarui di tabel service_issues (layanan_terkendala)
             try {
-                if (!\Illuminate\Support\Facades\Schema::hasTable('service_issues')) {
-                    \Illuminate\Support\Facades\DB::statement("
-                        CREATE TABLE IF NOT EXISTS service_issues (
-                            id BIGSERIAL PRIMARY KEY,
-                            layanan_id BIGINT NOT NULL,
-                            periode_id BIGINT NOT NULL,
-                            period_service_id BIGINT NOT NULL,
-                            has_notif BOOLEAN DEFAULT FALSE,
-                            has_solved BOOLEAN DEFAULT FALSE,
-                            handling_status VARCHAR(50) DEFAULT 'belum_ditindaklanjuti',
-                            admin_note TEXT NULL,
-                            admin_handled_at TIMESTAMP NULL,
-                            admin_id BIGINT NULL,
-                            created_at TIMESTAMP NULL,
-                            updated_at TIMESTAMP NULL
-                        )
-                    ");
-                } else {
-                    if (!\Illuminate\Support\Facades\Schema::hasColumn('service_issues', 'handling_status')) {
-                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE service_issues ADD COLUMN IF NOT EXISTS handling_status VARCHAR(50) DEFAULT 'belum_ditindaklanjuti'");
-                    }
-                    if (!\Illuminate\Support\Facades\Schema::hasColumn('service_issues', 'admin_note')) {
-                        \Illuminate\Support\Facades\DB::statement('ALTER TABLE service_issues ADD COLUMN IF NOT EXISTS admin_note TEXT NULL');
-                    }
-                    if (!\Illuminate\Support\Facades\Schema::hasColumn('service_issues', 'admin_handled_at')) {
-                        \Illuminate\Support\Facades\DB::statement('ALTER TABLE service_issues ADD COLUMN IF NOT EXISTS admin_handled_at TIMESTAMP NULL');
-                    }
-                    if (!\Illuminate\Support\Facades\Schema::hasColumn('service_issues', 'admin_id')) {
-                        \Illuminate\Support\Facades\DB::statement('ALTER TABLE service_issues ADD COLUMN IF NOT EXISTS admin_id BIGINT NULL');
-                    }
-                }
-
                 if ($validated['status'] === 'gangguan') {
                     ServiceIssue::updateOrCreate(
                         ['period_service_id' => $periodService->id],

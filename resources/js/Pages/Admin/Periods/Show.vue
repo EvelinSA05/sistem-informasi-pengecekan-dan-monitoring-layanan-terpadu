@@ -222,6 +222,7 @@ const checkForm = useForm({
 	status: '',
 	description: '',
 	attachment: null,
+	existing_attachment: '',
 	remove_attachment: false,
 });
 
@@ -234,6 +235,7 @@ function openCheckModal(service) {
 	checkForm.status = service.status === 'pending' ? 'normal' : service.status;
 	checkForm.description = service.description || service.last_description || '';
 	checkForm.attachment = null;
+	checkForm.existing_attachment = service.attachment || '';
 	checkForm.remove_attachment = false;
 	existingAttachment.value = service.attachment || null;
 	existingAttachmentName.value = service.attachment_name || null;
@@ -264,6 +266,7 @@ function handleFileChange(e) {
 
 function removeAttachment() {
 	checkForm.attachment = null;
+	checkForm.existing_attachment = '';
 	attachmentFile.value = null;
 	attachmentPreview.value = null;
 	existingAttachment.value = null;
@@ -279,17 +282,19 @@ function submitCheck() {
 		preserveScroll: true,
 		forceFormData: true,
 		onSuccess: (pageObj) => {
+			showCheckModal.value = false;
 			if (pageObj.props?.flash?.error) {
 				showToast(pageObj.props.flash.error, 'error');
 			} else {
-				showCheckModal.value = false;
 				showToast(isEditMode.value ? 'Hasil pengujian berhasil diperbarui.' : 'Hasil pengecekan berhasil disimpan.', 'success');
-				router.reload({ preserveScroll: true });
 			}
 		},
 		onError: (errs) => {
 			const err = Object.values(errs)[0] || 'Gagal menyimpan hasil pengecekan.';
 			showToast(err, 'error');
+		},
+		onFinish: () => {
+			checkForm.processing = false;
 		}
 	});
 }
