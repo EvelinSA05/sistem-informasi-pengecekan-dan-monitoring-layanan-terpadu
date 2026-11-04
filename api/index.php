@@ -98,6 +98,7 @@ foreach ($tmpDirs as $dir) {
         @mkdir($dir, 0777, true);
     }
 }
+@unlink('/tmp/bootstrap/cache/routes.php');
 
 try {
     require __DIR__ . '/../vendor/autoload.php';

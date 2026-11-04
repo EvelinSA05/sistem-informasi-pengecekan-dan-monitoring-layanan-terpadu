@@ -55,8 +55,9 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-Route::get('/debug-dashboard', function () {
-    $results = [];
+Route::get('/run-migrations', function (\App\Services\MajadigiApiService $apiService) {
+    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+    $dashTest = [];
     try {
         $users = \App\Models\User::all();
         foreach ($users as $user) {
@@ -64,33 +65,15 @@ Route::get('/debug-dashboard', function () {
                 $req = request();
                 $req->setUserResolver(fn() => $user);
                 $res = (new \App\Http\Controllers\DashboardController)->index($req);
-                $results[$user->email . ' (' . $user->role . ')'] = 'OK';
+                $dashTest[$user->email . ' (' . $user->role . ')'] = 'OK';
             } catch (\Throwable $e) {
-                $results[$user->email . ' (' . $user->role . ')'] = [
-                    'error' => $e->getMessage(),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                ];
+                $dashTest[$user->email . ' (' . $user->role . ')'] = 'ERROR: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine();
             }
         }
-    } catch (\Throwable $fatal) {
-        $results['fatal'] = $fatal->getMessage();
-    }
-    return response()->json($results);
-});
-
-Route::get('/run-migrations', function (\App\Services\MajadigiApiService $apiService) {
-    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-    $syncMsg = '';
-    try {
-        $result = $apiService->syncServices();
-        $syncMsg = " Sinkronisasi Majadigi otomatis: {$result['total']} layanan diproses ({$result['deleted']} data non-sinkronisasi dibersihkan).";
     } catch (\Throwable $e) {
-        \Illuminate\Support\Facades\Log::warning('Run-migrations syncMajadigi: ' . $e->getMessage());
-        $syncMsg = " (Catatan sinkronisasi otomatis: " . $e->getMessage() . ")";
+        $dashTest['general'] = $e->getMessage();
     }
-    $total = \App\Models\Service::whereNotNull('synced_at')->count();
-    return "Migrations and cleanup ran successfully! Total layanan aktif tersinkronisasi dari Majadigi: {$total}.{$syncMsg}";
+    return response()->json($dashTest);
 });
 
 Route::get('/test-session', function (\Illuminate\Http\Request $request) {
