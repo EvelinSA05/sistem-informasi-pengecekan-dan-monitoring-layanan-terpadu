@@ -188,7 +188,7 @@ async function toggleIssueFollowUp(issue) {
 
 								<!-- Status Badge -->
 								<span
-									class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-sm shadow-2xs border"
+									class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-sm shadow-2xs border"
 									:class="{
 										'bg-emerald-500/20 text-emerald-200 border-emerald-400/40': service.status === 'aktif',
 										'bg-rose-500/20 text-rose-200 border-rose-400/40': service.status === 'tidak_aktif',
@@ -196,15 +196,6 @@ async function toggleIssueFollowUp(issue) {
 										'bg-white/10 text-white/80 border-white/20': !service.status,
 									}"
 								>
-									<span
-										class="w-2 h-2 rounded-full"
-										:class="{
-											'bg-emerald-400 animate-pulse': service.status === 'aktif',
-											'bg-rose-400': service.status === 'tidak_aktif',
-											'bg-amber-400': service.status === 'butuh_konfirmasi',
-											'bg-slate-300': !service.status,
-										}"
-									></span>
 									<span v-if="service.status === 'aktif'">Aktif</span>
 									<span v-else-if="service.status === 'tidak_aktif'">Tidak Aktif</span>
 									<span v-else-if="service.status === 'butuh_konfirmasi'">Butuh Konfirmasi</span>
@@ -214,12 +205,12 @@ async function toggleIssueFollowUp(issue) {
 
 							<p class="text-xs sm:text-sm text-white/80 mt-2 flex items-center gap-2 flex-wrap font-medium">
 								<span>{{ service.category || 'Tanpa Kategori' }}</span>
-								<span class="text-white/40">&bull;</span>
+								<span class="text-white/30">|</span>
 								<span class="px-2 py-0.5 rounded-md bg-white/15 text-white text-[11px] font-bold border border-white/20">
 									{{ service.level || 'Level Tidak Ditentukan' }}
 								</span>
 								<template v-if="service.synced_at">
-									<span class="text-white/40">&bull;</span>
+									<span class="text-white/30">|</span>
 									<span class="text-white/70 text-xs">Sinkronisasi: {{ service.synced_at }}</span>
 								</template>
 							</p>
@@ -428,7 +419,7 @@ async function toggleIssueFollowUp(issue) {
 									Periode: <strong class="text-slate-900">tgl {{ issue.period_date }}</strong>
 								</span>
 
-								<span class="text-slate-300 hidden sm:inline">&bull;</span>
+								<span class="text-slate-300 hidden sm:inline">|</span>
 
 								<!-- Status -->
 								<span class="text-slate-700">
@@ -438,32 +429,24 @@ async function toggleIssueFollowUp(issue) {
 									</span>
 								</span>
 
-								<span class="text-slate-300 hidden sm:inline">&bull;</span>
+								<span class="text-slate-300 hidden sm:inline">|</span>
 
 								<!-- Tester -->
 								<span class="text-slate-500">
 									Tester: <strong class="text-slate-700">{{ issue.tester_name || 'Tester' }}</strong>
 								</span>
 
-								<span class="text-slate-300 hidden sm:inline">&bull;</span>
+								<span class="text-slate-300 hidden sm:inline">|</span>
 
 								<!-- Status Tindak Lanjut Badge -->
 								<span
-									class="px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase inline-flex items-center gap-1 shadow-2xs"
+									class="px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase inline-flex items-center shadow-2xs"
 									:class="{
 										'bg-amber-100 text-amber-800 border border-amber-200': issue.handling_status === 'perlu_pengecekan_ulang',
 										'bg-emerald-100 text-emerald-800 border border-emerald-200': issue.has_solved || issue.handling_status === 'selesai',
 										'bg-rose-100 text-rose-800 border border-rose-200': !issue.has_solved && issue.handling_status !== 'perlu_pengecekan_ulang',
 									}"
 								>
-									<span
-										class="w-1.5 h-1.5 rounded-full"
-										:class="{
-											'bg-amber-500 animate-pulse': issue.handling_status === 'perlu_pengecekan_ulang',
-											'bg-emerald-500': issue.has_solved || issue.handling_status === 'selesai',
-											'bg-rose-500': !issue.has_solved && issue.handling_status !== 'perlu_pengecekan_ulang',
-										}"
-									></span>
 									{{ issue.has_solved_label }}
 								</span>
 							</div>
