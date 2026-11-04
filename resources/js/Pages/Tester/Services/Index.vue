@@ -1463,9 +1463,8 @@ function submitCheck() {
 												<!-- Badge Hasil Terkini jika is_latest -->
 												<span
 													v-if="item.is_latest"
-													class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-primary text-white shadow-2xs"
+													class="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-primary text-white shadow-2xs"
 												>
-													<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
 													Log Terbaru
 												</span>
 											</div>
