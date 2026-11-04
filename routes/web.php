@@ -55,6 +55,30 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+Route::get('/debug-dashboard', function () {
+    $results = [];
+    try {
+        $users = \App\Models\User::all();
+        foreach ($users as $user) {
+            try {
+                $req = request();
+                $req->setUserResolver(fn() => $user);
+                $res = (new \App\Http\Controllers\DashboardController)->index($req);
+                $results[$user->email . ' (' . $user->role . ')'] = 'OK';
+            } catch (\Throwable $e) {
+                $results[$user->email . ' (' . $user->role . ')'] = [
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ];
+            }
+        }
+    } catch (\Throwable $fatal) {
+        $results['fatal'] = $fatal->getMessage();
+    }
+    return response()->json($results);
+});
+
 Route::get('/run-migrations', function (\App\Services\MajadigiApiService $apiService) {
     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
     $syncMsg = '';
