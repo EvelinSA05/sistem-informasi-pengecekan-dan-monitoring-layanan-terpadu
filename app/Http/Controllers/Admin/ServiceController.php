@@ -626,4 +626,93 @@ class ServiceController extends Controller
             return response()->json(['success' => false, 'message' => 'Terjadi kesalahan sistem.'], 500);
         }
     }
+
+    /**
+     * Bulk Action: Tindak lanjuti beberapa layanan terkendala sekaligus dengan satu catatan Admin.
+     */
+    public function bulkToggleIssueSolved(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'period_service_ids'   => 'required|array|min:1',
+                'period_service_ids.*' => 'required|integer',
+                'description'          => 'nullable|string|max:5000',
+                'admin_note'           => 'nullable|string|max:5000',
+            ], [
+                'period_service_ids.required' => 'Pilih minimal 1 layanan terkendala untuk ditindaklanjuti.',
+                'period_service_ids.min'      => 'Pilih minimal 1 layanan terkendala untuk ditindaklanjuti.',
+                'description.max'             => 'Catatan kendala maksimal 5000 karakter.',
+                'admin_note.max'              => 'Catatan admin maksimal 5000 karakter.',
+            ]);
+
+            $adminNote = trim((string) ($validated['description'] ?? $validated['admin_note'] ?? ''));
+            if ($adminNote === '') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Catatan keterangan tindak lanjut admin wajib diisi.',
+                ], 422);
+            }
+
+            $ids = array_values(array_unique(array_map('intval', $validated['period_service_ids'])));
+            $now = now();
+            $adminId = auth()->id();
+            $updatedIds = [];
+
+            $periodServices = PeriodService::withoutAttachmentData()
+                ->whereIn('id', $ids)
+                ->get();
+
+            foreach ($periodServices as $ps) {
+                $ps->update([
+                    'admin_note' => $adminNote,
+                ]);
+
+                $issue = ServiceIssue::firstOrCreate(
+                    ['period_service_id' => $ps->id],
+                    [
+                        'layanan_id' => $ps->service_id,
+                        'periode_id' => $ps->period_id,
+                        'has_notif'  => false,
+                        'has_solved' => false,
+                    ]
+                );
+
+                $issue->update([
+                    'has_solved'       => true,
+                    'handling_status'  => 'perlu_pengecekan_ulang',
+                    'admin_note'       => $adminNote,
+                    'admin_handled_at' => $now,
+                    'admin_id'         => $adminId,
+                ]);
+
+                $updatedIds[] = $ps->id;
+            }
+
+            $count = count($updatedIds);
+
+            return response()->json([
+                'success'          => true,
+                'updated_count'    => $count,
+                'updated_ids'      => $updatedIds,
+                'has_solved'       => true,
+                'handling_status'  => 'perlu_pengecekan_ulang',
+                'has_solved_label' => 'perlu pengecekan ulang',
+                'admin_note'       => $adminNote,
+                'admin_handled_at' => $now->format('d M Y, H:i'),
+                'message'          => "{$count} layanan terkendala berhasil ditindaklanjuti secara massal. Status: Perlu Pengecekan Ulang.",
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            return response()->json([
+                'success' => false,
+                'message' => $ve->validator->errors()->first(),
+                'errors'  => $ve->errors(),
+            ], 422);
+        } catch (\Throwable $e) {
+            Log::error('Gagal bulk tindak lanjut kendala: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem saat memproses tindak lanjut massal.',
+            ], 500);
+        }
+    }
 }

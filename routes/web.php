@@ -47,6 +47,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/services/{service}', [\App\Http\Controllers\Admin\ServiceController::class, 'show'])->name('services.show');
         Route::get('/services/{service}/history', [\App\Http\Controllers\Admin\ServiceController::class, 'history'])->name('services.history');
         Route::get('/services/{service}/issues', [\App\Http\Controllers\Admin\ServiceController::class, 'issues'])->name('services.issues');
+        Route::post('/services/issues/bulk-toggle-solved', [\App\Http\Controllers\Admin\ServiceController::class, 'bulkToggleIssueSolved'])->name('services.issues.bulk_toggle_solved');
         Route::post('/services/issues/{issue}/toggle-solved', [\App\Http\Controllers\Admin\ServiceController::class, 'toggleIssueSolved'])->name('services.issues.toggle_solved');
         Route::put('/services/{service}', [\App\Http\Controllers\Admin\ServiceController::class, 'update'])->name('services.update');
         Route::delete('/services/{service}', [\App\Http\Controllers\Admin\ServiceController::class, 'destroy'])->name('services.destroy');

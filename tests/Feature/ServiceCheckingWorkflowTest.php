@@ -363,4 +363,141 @@ class ServiceCheckingWorkflowTest extends TestCase
         $this->assertEquals($this->service->id, $props['topTroubledServices'][0]['id']);
         $this->assertEquals(1, $props['topTroubledServices'][0]['total_issues']);
     }
+
+    public function test_admin_can_bulk_solve_multiple_troubled_services_at_once(): void
+    {
+        $secondService = Service::create([
+            'source_service_id' => 'SRV-WORKFLOW-02',
+            'service_name'      => 'Layanan Kesehatan Jatim',
+            'category'          => 'Dinas Kesehatan',
+            'level'             => 'Level 2',
+            'service_url'       => 'https://dinkes.jatimprov.go.id',
+            'status'            => 'aktif',
+            'is_active'         => true,
+            'synced_at'         => now(),
+        ]);
+
+        $secondPs = PeriodService::create([
+            'period_id'  => $this->period->id,
+            'service_id' => $secondService->id,
+            'tester_id'  => $this->tester1->id,
+            'status'     => 'pending',
+        ]);
+
+        // Tester melaporkan kendala pada kedua layanan
+        $this->actingAs($this->tester1)->post(
+            route('tester.submit_check', $this->periodService->id),
+            [
+                'status'      => 'gangguan',
+                'description' => 'Gangguan jaringan terpusat pada layanan 1.',
+                'attachment'  => $this->createFakePng('bulk1.png'),
+            ]
+        );
+        $this->actingAs($this->tester1)->post(
+            route('tester.submit_check', $secondPs->id),
+            [
+                'status'      => 'gangguan',
+                'description' => 'Gangguan jaringan terpusat pada layanan 2.',
+                'attachment'  => $this->createFakePng('bulk2.png'),
+            ]
+        );
+
+        // Admin menindaklanjuti kedua layanan sekaligus menggunakan Bulk Action
+        $bulkNote = 'Server pusat Pemprov Jatim telah selesai maintenance, silakan cek ulang.';
+        $response = $this->actingAs($this->admin)->postJson(
+            route('admin.services.issues.bulk_toggle_solved'),
+            [
+                'period_service_ids' => [$this->periodService->id, $secondPs->id],
+                'description'        => $bulkNote,
+            ]
+        );
+
+        $response->assertOk()->assertJson([
+            'success'         => true,
+            'updated_count'   => 2,
+            'handling_status' => 'perlu_pengecekan_ulang',
+            'admin_note'      => $bulkNote,
+        ]);
+
+        $this->assertDatabaseHas('service_issues', [
+            'period_service_id' => $this->periodService->id,
+            'has_solved'        => true,
+            'handling_status'   => 'perlu_pengecekan_ulang',
+            'admin_note'        => $bulkNote,
+        ]);
+        $this->assertDatabaseHas('service_issues', [
+            'period_service_id' => $secondPs->id,
+            'has_solved'        => true,
+            'handling_status'   => 'perlu_pengecekan_ulang',
+            'admin_note'        => $bulkNote,
+        ]);
+    }
+
+    public function test_admin_can_export_filtered_excel_and_pdf_reports(): void
+    {
+        $secondService = Service::create([
+            'source_service_id' => 'SRV-WORKFLOW-03',
+            'service_name'      => 'Portal Rumah Sakit Umum',
+            'category'          => 'Dinas Kesehatan',
+            'level'             => 'Level 2',
+            'service_url'       => 'https://rsu.jatimprov.go.id',
+            'status'            => 'aktif',
+            'is_active'         => true,
+            'synced_at'         => now(),
+        ]);
+
+        $secondPs = PeriodService::create([
+            'period_id'  => $this->period->id,
+            'service_id' => $secondService->id,
+            'tester_id'  => $this->tester1->id,
+            'status'     => 'pending',
+        ]);
+
+        // Layanan 1 -> Terkendala (Dinas Komunikasi dan Informatika, Level 1)
+        $this->actingAs($this->tester1)->post(
+            route('tester.submit_check', $this->periodService->id),
+            [
+                'status'      => 'gangguan',
+                'description' => 'Kendala pada layanan Diskominfo.',
+                'attachment'  => $this->createFakePng('exp1.png'),
+            ]
+        );
+
+        // Layanan 2 -> Normal (Dinas Kesehatan, Level 2)
+        $this->actingAs($this->tester1)->post(
+            route('tester.submit_check', $secondPs->id),
+            [
+                'status'      => 'normal',
+                'description' => 'Layanan Dinkes berjalan normal.',
+                'attachment'  => $this->createFakePng('exp2.png'),
+            ]
+        );
+
+        // 1. Uji Export Excel dengan filter category=Dinas Kesehatan
+        $excelResponse = $this->actingAs($this->admin)->get(
+            route('admin.periods.export.excel', [
+                'period'   => $this->period->id,
+                'category' => 'Dinas Kesehatan',
+            ])
+        );
+        $excelResponse->assertOk();
+        $csvContent = $excelResponse->streamedContent();
+        $this->assertStringContainsString('Filter Aktif', $csvContent);
+        $this->assertStringContainsString('Portal Rumah Sakit Umum', $csvContent);
+        $this->assertStringNotContainsString('Sistem Informasi Pengujian Jatim', $csvContent);
+
+        // 2. Uji Export PDF dengan filter status=gangguan
+        $pdfResponse = $this->actingAs($this->admin)->get(
+            route('admin.periods.export.pdf', [
+                'period' => $this->period->id,
+                'status' => 'gangguan',
+            ])
+        );
+        $pdfResponse->assertOk();
+        $pdfProps = $pdfResponse->viewData('page')['props'];
+        $this->assertEquals(1, $pdfProps['report']['total_services']);
+        $this->assertEquals('Terkendala', $pdfProps['report']['active_filters']['Status']);
+        $this->assertCount(1, $pdfProps['issue_services']);
+        $this->assertCount(0, $pdfProps['running_services']);
+    }
 }

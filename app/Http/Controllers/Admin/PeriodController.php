@@ -654,15 +654,102 @@ class PeriodController extends Controller
     }
 
     /**
+     * Helper untuk memfilter daftar PeriodService saat Export Excel / PDF berdasarkan query parameter.
+     */
+    private function filterPeriodServicesForExport($periodServices, Request $request): array
+    {
+        $category = trim((string) $request->query('category', ''));
+        $level    = trim((string) $request->query('level', ''));
+        $status   = trim((string) $request->query('status', ''));
+        $testerId = trim((string) $request->query('tester_id', ''));
+        $search   = trim((string) $request->query('search', ''));
+
+        $activeFilters = [];
+
+        $filtered = $periodServices->filter(function ($ps) use ($category, $level, $status, $testerId, $search) {
+            if ($category !== '' && $category !== 'all') {
+                if (strcasecmp(trim((string) ($ps->service?->category ?? '')), $category) !== 0) {
+                    return false;
+                }
+            }
+
+            if ($level !== '' && $level !== 'all') {
+                $svcLevel = trim((string) ($ps->service?->level ?? ''));
+                $normalizedFilterLevel = preg_replace('/^level\s*/i', '', $level);
+                $normalizedSvcLevel    = preg_replace('/^level\s*/i', '', $svcLevel);
+                if (strcasecmp($svcLevel, $level) !== 0 && strcasecmp($normalizedSvcLevel, $normalizedFilterLevel) !== 0) {
+                    return false;
+                }
+            }
+
+            if ($status !== '' && $status !== 'all') {
+                if ($ps->status !== $status) {
+                    return false;
+                }
+            }
+
+            if ($testerId !== '' && $testerId !== 'all') {
+                if ((int) $ps->tester_id !== (int) $testerId) {
+                    return false;
+                }
+            }
+
+            if ($search !== '') {
+                $q = mb_strtolower($search);
+                $svcName = mb_strtolower((string) ($ps->service?->service_name ?? ''));
+                $svcCat  = mb_strtolower((string) ($ps->service?->category ?? ''));
+                $tName   = mb_strtolower((string) ($ps->tester?->name ?? ''));
+                if (!str_contains($svcName, $q) && !str_contains($svcCat, $q) && !str_contains($tName, $q)) {
+                    return false;
+                }
+            }
+
+            return true;
+        })->values();
+
+        if ($category !== '' && $category !== 'all') {
+            $activeFilters['OPD / Kategori'] = $category;
+        }
+        if ($level !== '' && $level !== 'all') {
+            $activeFilters['Level Layanan'] = str_starts_with(strtolower($level), 'level') ? $level : "Level {$level}";
+        }
+        if ($status !== '' && $status !== 'all') {
+            $activeFilters['Status'] = match ($status) {
+                'normal'   => 'Normal',
+                'gangguan' => 'Terkendala',
+                'pending'  => 'Belum Dicek',
+                default    => strtoupper($status),
+            };
+        }
+        if ($testerId !== '' && $testerId !== 'all') {
+            $testerName = User::find((int) $testerId)?->name ?? "ID #{$testerId}";
+            $activeFilters['Tester'] = $testerName;
+        }
+        if ($search !== '') {
+            $activeFilters['Kata Kunci'] = $search;
+        }
+
+        return [
+            'services'       => $filtered,
+            'active_filters' => $activeFilters,
+        ];
+    }
+
+    /**
      * Export Laporan Periode ke Format Excel (CSV kompatibel Excel dengan UTF-8 BOM).
      */
-    public function exportExcel(CheckingPeriod $period): StreamedResponse
+    public function exportExcel(Request $request, CheckingPeriod $period): StreamedResponse
     {
         $period->load([
             'creator:id,name',
             'periodServices' => fn($q) => $q->withoutAttachmentData(),
             'periodServices.service',
+            'periodServices.tester:id,name',
         ]);
+
+        $filterResult   = $this->filterPeriodServicesForExport($period->periodServices, $request);
+        $targetServices = $filterResult['services'];
+        $activeFilters  = $filterResult['active_filters'];
 
         $carbonDate = Carbon::parse($period->date);
         $periodTitle = $this->formatIndonesianDate($carbonDate);
@@ -678,7 +765,7 @@ class PeriodController extends Controller
             'Expires' => '0',
         ];
 
-        $callback = function () use ($period, $periodTitle) {
+        $callback = function () use ($period, $periodTitle, $targetServices, $activeFilters) {
             $file = fopen('php://output', 'w');
 
             // UTF-8 BOM for Microsoft Excel compatibility
@@ -696,17 +783,21 @@ class PeriodController extends Controller
             fputcsv($file, ['Status Periode', strtoupper($period->status)]);
             fputcsv($file, ['Dibuat Oleh', $period->creator?->name ?? 'Admin']);
             fputcsv($file, ['Tanggal Laporan', date('d/m/Y H:i:s')]);
+            if (!empty($activeFilters)) {
+                $filterSummary = collect($activeFilters)->map(fn($v, $k) => "{$k}: {$v}")->implode(' | ');
+                fputcsv($file, ['Filter Aktif', $filterSummary]);
+            }
             fputcsv($file, []);
 
-            // Perhitungan metrik aktual
-            $totalServices = $period->periodServices->count();
-            $normalCount   = $period->periodServices->where('status', 'normal')->count();
-            $issuesCount   = $period->periodServices->where('status', 'gangguan')->count();
-            $pendingCount  = $period->periodServices->where('status', 'pending')->count();
+            // Perhitungan metrik aktual (mengikuti filter jika ada)
+            $totalServices = $targetServices->count();
+            $normalCount   = $targetServices->where('status', 'normal')->count();
+            $issuesCount   = $targetServices->where('status', 'gangguan')->count();
+            $pendingCount  = $targetServices->where('status', 'pending')->count();
             $checkedCount  = $totalServices - $pendingCount;
             $readinessPct  = $totalServices > 0 ? round(($checkedCount / $totalServices) * 100) : 0;
 
-            $opdCount = $period->periodServices
+            $opdCount = $targetServices
                 ->map(fn($ps) => $ps->service?->category ?: '-')
                 ->unique()
                 ->count();
@@ -736,7 +827,7 @@ class PeriodController extends Controller
             // ==========================================
             // SECTION 4 — REKAP OPD/KAB/KOTA
             // ==========================================
-            $opdSummary = $period->periodServices
+            $opdSummary = $targetServices
                 ->groupBy(fn($ps) => $ps->service?->category ?: '-')
                 ->map(fn($group) => $group->count())
                 ->sortDesc();
@@ -749,8 +840,8 @@ class PeriodController extends Controller
             fputcsv($file, []);
 
             // Pemisahan Layanan Berjalan & Terkendala (Konsisten dengan Report PDF)
-            $runningServices = $period->periodServices->filter(fn($ps) => $ps->status === 'normal')->values();
-            $issueServices = $period->periodServices->filter(fn($ps) => $ps->status !== 'normal')->values();
+            $runningServices = $targetServices->filter(fn($ps) => $ps->status === 'normal')->values();
+            $issueServices = $targetServices->filter(fn($ps) => $ps->status !== 'normal')->values();
 
             // ==========================================
             // SECTION 5 — A. LAYANAN BERJALAN
@@ -816,13 +907,18 @@ class PeriodController extends Controller
     /**
      * Export Laporan Periode ke Tampilan Infografis / Siap Cetak PDF.
      */
-    public function exportPdf(CheckingPeriod $period)
+    public function exportPdf(Request $request, CheckingPeriod $period)
     {
         $period->load([
             'creator:id,name,email',
             'periodServices' => fn($q) => $q->withoutAttachmentData(),
             'periodServices.service:id,source_service_id,service_name,category,level,icon,service_url',
+            'periodServices.tester:id,name',
         ]);
+
+        $filterResult   = $this->filterPeriodServicesForExport($period->periodServices, $request);
+        $targetServices = $filterResult['services'];
+        $activeFilters  = $filterResult['active_filters'];
 
         $carbonDate = Carbon::parse($period->date);
         $periodTitle = $this->formatIndonesianDate($carbonDate);
@@ -833,14 +929,14 @@ class PeriodController extends Controller
         // Format nama file PDF sesuai ketentuan: Laporan_Pengecekan_[Tanggal]_[Bulan]_[Tahun]
         $pdfFileName = "Laporan_Pengecekan_{$dayNumber}_{$monthName}_{$year}";
 
-        $totalServices = $period->periodServices->count();
-        $checkedServices = $period->periodServices->filter(fn($ps) => $ps->status !== 'pending' && !empty($ps->checked_at))->count();
-        $normalServices = $period->periodServices->where('status', 'normal')->count();
-        $issuesServices = $period->periodServices->where('status', 'gangguan')->count();
+        $totalServices = $targetServices->count();
+        $checkedServices = $targetServices->filter(fn($ps) => $ps->status !== 'pending' && !empty($ps->checked_at))->count();
+        $normalServices = $targetServices->where('status', 'normal')->count();
+        $issuesServices = $targetServices->where('status', 'gangguan')->count();
         $pendingServices = $totalServices - $checkedServices;
         $progressPercent = $totalServices > 0 ? round(($checkedServices / $totalServices) * 100) : 0;
 
-        $runningServices = $period->periodServices
+        $runningServices = $targetServices
             ->filter(fn($ps) => $ps->status === 'normal')
             ->values()
             ->map(function ($ps, $idx) {
@@ -857,7 +953,7 @@ class PeriodController extends Controller
             })
             ->all();
 
-        $issueServices = $period->periodServices
+        $issueServices = $targetServices
             ->filter(fn($ps) => $ps->status !== 'normal')
             ->values()
             ->map(function ($ps, $idx) {
@@ -874,7 +970,7 @@ class PeriodController extends Controller
             })
             ->all();
 
-        $servicesList = $period->periodServices->values()->map(function ($ps, $idx) {
+        $servicesList = $targetServices->values()->map(function ($ps, $idx) {
             return [
                 'no' => $idx + 1,
                 'id' => $ps->id,
@@ -906,6 +1002,7 @@ class PeriodController extends Controller
                 'issues_services' => $issuesServices,
                 'pending_services' => $pendingServices,
                 'progress_percent' => $progressPercent,
+                'active_filters' => $activeFilters,
             ],
             'running_services' => $runningServices,
             'issue_services' => $issueServices,

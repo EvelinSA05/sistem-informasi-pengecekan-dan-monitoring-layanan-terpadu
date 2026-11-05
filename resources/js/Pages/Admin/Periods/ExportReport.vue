@@ -158,6 +158,22 @@ onMounted(() => {
 					<p>Tanggal Pembuatan: <strong class="text-slate-800">{{ report.created_at_label }}</strong></p>
 					<p>Waktu Cetak: <strong class="text-slate-800">{{ report.generated_at }}</strong></p>
 				</div>
+
+				<!-- Indikator Filter Aktif (Jika Laporan Difilter) -->
+				<div
+					v-if="report.active_filters && Object.keys(report.active_filters).length > 0"
+					class="mt-3 p-3 rounded-xl bg-blue-50/70 border border-blue-200 flex flex-wrap items-center gap-2 text-xs"
+				>
+					<span class="font-extrabold text-blue-900 uppercase tracking-wider text-[10px] mr-1">Filter Laporan Aktif:</span>
+					<span
+						v-for="(val, label) in report.active_filters"
+						:key="label"
+						class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-white border border-blue-200 text-blue-800 font-semibold text-[11px]"
+					>
+						<span class="text-slate-500 font-medium">{{ label }}:</span>
+						<strong>{{ val }}</strong>
+					</span>
+				</div>
 			</div>
 
 			<!-- ── Infographic KPI Cards ──────────────────────── -->

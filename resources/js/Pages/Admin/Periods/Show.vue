@@ -154,8 +154,124 @@ async function toggleTroubledSolved(item) {
  }
 }
 
+// ─── Bulk Tindak Lanjut Kendala (Aksi Massal) ─────────────────────────────
+const selectedTroubledIds = ref([]);
+const showBulkSolveModal = ref(false);
+const bulkSolveForm = ref({
+ description: '',
+ errors: '',
+ processing: false,
+});
+
+const selectedTroubledItems = computed(() => {
+ const idSet = new Set(selectedTroubledIds.value);
+ return troubledList.value.filter(item => idSet.has(item.id));
+});
+
+const unhandledTroubledCount = computed(() => {
+ return troubledList.value.filter(item => !item.has_solved && item.handling_status !== 'perlu_pengecekan_ulang').length;
+});
+
+const isAllTroubledSelected = computed(() => {
+ return troubledList.value.length > 0 && selectedTroubledIds.value.length === troubledList.value.length;
+});
+
+function toggleSelectAllTroubled() {
+ if (isAllTroubledSelected.value) {
+  selectedTroubledIds.value = [];
+ } else {
+  selectedTroubledIds.value = troubledList.value.map(item => item.id);
+ }
+}
+
+function selectUnhandledTroubled() {
+ selectedTroubledIds.value = troubledList.value
+  .filter(item => !item.has_solved && item.handling_status !== 'perlu_pengecekan_ulang')
+  .map(item => item.id);
+}
+
+function openBulkSolveModal() {
+ if (selectedTroubledIds.value.length === 0) {
+  showToast('Pilih minimal 1 layanan terkendala terlebih dahulu.', 'error');
+  return;
+ }
+ bulkSolveForm.value = {
+  description: '',
+  errors: '',
+  processing: false,
+ };
+ showBulkSolveModal.value = true;
+}
+
+function closeBulkSolveModal() {
+ showBulkSolveModal.value = false;
+ bulkSolveForm.value = {
+  description: '',
+  errors: '',
+  processing: false,
+ };
+}
+
+async function submitBulkSolveKendala() {
+ if (selectedTroubledIds.value.length === 0) return;
+
+ const trimmed = (bulkSolveForm.value.description || '').trim();
+ if (!trimmed) {
+  bulkSolveForm.value.errors = 'Catatan tindak lanjut admin wajib diisi.';
+  return;
+ }
+
+ bulkSolveForm.value.processing = true;
+ bulkSolveForm.value.errors = '';
+
+ try {
+  const response = await axios.post(route('admin.services.issues.bulk_toggle_solved'), {
+   period_service_ids: selectedTroubledIds.value,
+   description: trimmed,
+  });
+
+  if (response.data?.success) {
+   const updatedSet = new Set(response.data.updated_ids || selectedTroubledIds.value);
+   const note = response.data.admin_note || trimmed;
+   const handledAt = response.data.admin_handled_at || null;
+
+   troubledList.value.forEach(item => {
+    if (updatedSet.has(item.id)) {
+     item.has_solved = true;
+     item.handling_status = 'perlu_pengecekan_ulang';
+     item.has_solved_label = 'perlu pengecekan ulang';
+     item.admin_note = note;
+     if (handledAt) item.admin_handled_at = handledAt;
+    }
+   });
+
+   allServices.value.forEach(s => {
+    if (updatedSet.has(s.id)) {
+     s.admin_note = note;
+     s.handling_status = 'perlu_pengecekan_ulang';
+    }
+   });
+
+   selectedTroubledIds.value = [];
+   showToast(response.data.message || 'Tindak lanjut massal berhasil disimpan.', 'success');
+   closeBulkSolveModal();
+  } else {
+   bulkSolveForm.value.errors = response.data?.message || 'Gagal memproses tindak lanjut massal.';
+  }
+ } catch (err) {
+  const errMsg = err.response?.data?.message || 'Terjadi kesalahan saat menyimpan tindak lanjut massal.';
+  bulkSolveForm.value.errors = errMsg;
+  showToast(errMsg, 'error');
+ } finally {
+  bulkSolveForm.value.processing = false;
+ }
+}
+
 const page = usePage();
 const statusFilter = ref('all');
+const categoryFilter = ref('all');
+const levelFilter = ref('all');
+const testerFilter = ref('all');
 const searchQuery = ref('');
 const isTableVisible = ref(true);
 const currentPage = ref(1);
@@ -311,26 +427,101 @@ function submitCheck() {
 	});
 }
 
-// Filtered Services
+// Filtered Services & Dynamic Export Query Params
 const allServices = computed(() => {
  const list = [];
  props.distribution.forEach(g => {
- g.services.forEach(s => {
- list.push({ ...s, tester_name: g.name, tester_bidang: g.bidang, tester_initials: g.initials });
- });
+  g.services.forEach(s => {
+   list.push({
+    ...s,
+    tester_id: g.tester_id,
+    tester_name: g.name,
+    tester_bidang: g.bidang,
+    tester_initials: g.initials,
+   });
+  });
  });
  return list;
 });
-watch([searchQuery, statusFilter], () => { currentPage.value = 1; });
+
+const availableCategories = computed(() => {
+ const cats = new Set();
+ allServices.value.forEach(s => {
+  if (s.category && s.category !== '-') {
+   cats.add(s.category);
+  }
+ });
+ return Array.from(cats).sort((a, b) => a.localeCompare(b, 'id'));
+});
+
+watch([searchQuery, statusFilter, categoryFilter, levelFilter, testerFilter], () => {
+ currentPage.value = 1;
+});
 
 const filteredServices = computed(() => {
  return allServices.value.filter(s => {
- const matchStatus = statusFilter.value === 'all' || s.status === statusFilter.value;
- const q = searchQuery.value.toLowerCase().trim();
- const matchSearch = !q || s.service_name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q) || s.tester_name.toLowerCase().includes(q);
- return matchStatus && matchSearch;
+  const matchStatus = statusFilter.value === 'all' || s.status === statusFilter.value;
+  const matchCategory = categoryFilter.value === 'all' || s.category === categoryFilter.value;
+
+  let matchLevel = true;
+  if (levelFilter.value !== 'all') {
+   const normFilter = String(levelFilter.value).replace(/^level\s*/i, '').trim().toLowerCase();
+   const normSvc = String(s.level || '').replace(/^level\s*/i, '').trim().toLowerCase();
+   matchLevel = normFilter === normSvc;
+  }
+
+  const matchTester = testerFilter.value === 'all' || Number(s.tester_id) === Number(testerFilter.value);
+
+  const q = searchQuery.value.toLowerCase().trim();
+  const matchSearch = !q
+   || (s.service_name || '').toLowerCase().includes(q)
+   || (s.category || '').toLowerCase().includes(q)
+   || (s.tester_name || '').toLowerCase().includes(q);
+
+  return matchStatus && matchCategory && matchLevel && matchTester && matchSearch;
  });
 });
+
+const hasActiveFilters = computed(() => {
+ return statusFilter.value !== 'all'
+  || categoryFilter.value !== 'all'
+  || levelFilter.value !== 'all'
+  || testerFilter.value !== 'all'
+  || searchQuery.value.trim() !== '';
+});
+
+const exportQueryParams = computed(() => {
+ const params = {};
+ if (categoryFilter.value !== 'all') params.category = categoryFilter.value;
+ if (levelFilter.value !== 'all') params.level = levelFilter.value;
+ if (statusFilter.value !== 'all') params.status = statusFilter.value;
+ if (testerFilter.value !== 'all') params.tester_id = testerFilter.value;
+ if (searchQuery.value.trim() !== '') params.search = searchQuery.value.trim();
+ return params;
+});
+
+const exportExcelUrl = computed(() => {
+ return route('admin.periods.export.excel', {
+  period: props.period.id,
+  ...exportQueryParams.value,
+ });
+});
+
+const exportPdfUrl = computed(() => {
+ return route('admin.periods.export.pdf', {
+  period: props.period.id,
+  ...exportQueryParams.value,
+ });
+});
+
+function resetAllFilters() {
+ statusFilter.value = 'all';
+ categoryFilter.value = 'all';
+ levelFilter.value = 'all';
+ testerFilter.value = 'all';
+ searchQuery.value = '';
+ currentPage.value = 1;
+}
 
 const paginatedServices = computed(() => {
  const start = (currentPage.value - 1) * perPage.value;
@@ -464,13 +655,13 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
   <svg class="w-3.5 h-3.5" :class="{'animate-spin': isSyncingServices}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
   {{ isSyncingServices ? 'Menyinkronkan...' : 'Sinkron Layanan' }}
  </button>
- <a :href="route('admin.periods.export.excel', period.id)" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/15 border border-white/20 rounded-lg hover:bg-white/25 transition-colors cursor-pointer backdrop-blur-sm">
+ <a :href="exportExcelUrl" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/15 border border-white/20 rounded-lg hover:bg-white/25 transition-colors cursor-pointer backdrop-blur-sm">
  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
- Export Excel
+ <span>{{ hasActiveFilters ? `Export Excel (${filteredServices.length})` : 'Export Excel' }}</span>
  </a>
- <a :href="route('admin.periods.export.pdf', period.id)" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/15 border border-white/20 rounded-lg hover:bg-white/25 transition-colors cursor-pointer backdrop-blur-sm">
+ <a :href="exportPdfUrl" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/15 border border-white/20 rounded-lg hover:bg-white/25 transition-colors cursor-pointer backdrop-blur-sm">
  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
- Export PDF
+ <span>{{ hasActiveFilters ? `Export PDF (${filteredServices.length})` : 'Export PDF' }}</span>
  </a>
  <button type="button" @click="togglePeriodStatus" :disabled="isUpdatingStatus" class="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-primary bg-white hover:bg-primary hover:text-white border border-transparent hover:border-white/30 rounded-lg transition-all duration-150 cursor-pointer disabled:opacity-50 shadow-sm">
  <svg v-if="period.status === 'proses'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -569,11 +760,79 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
     </div>
    </div>
 
-   <div v-if="troubledList.length > 0" class="flex items-center gap-2 text-xs text-slate-500 font-medium">
-    Ditindaklanjuti: 
-    <strong class="text-emerald-600 font-bold">{{ troubledList.filter(t => t.has_solved).length }}</strong> / {{ troubledList.length }}
+   <div v-if="troubledList.length > 0" class="flex flex-wrap items-center gap-2.5 text-xs text-slate-500 font-medium">
+    <span>
+     Ditindaklanjuti:
+     <strong class="text-emerald-600 font-bold">{{ troubledList.filter(t => t.has_solved).length }}</strong> / {{ troubledList.length }}
+    </span>
+
+    <span class="text-slate-200 hidden sm:inline">|</span>
+
+    <!-- Checkbox Pilih Semua Kendala -->
+    <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold cursor-pointer select-none transition-colors">
+     <input
+      type="checkbox"
+      :checked="isAllTroubledSelected"
+      @change="toggleSelectAllTroubled"
+      class="w-3.5 h-3.5 rounded border-slate-300 text-primary focus:ring-primary/30 cursor-pointer"
+     />
+     <span>Pilih Semua ({{ troubledList.length }})</span>
+    </label>
+
+    <button
+     v-if="unhandledTroubledCount > 0 && selectedTroubledIds.length !== unhandledTroubledCount"
+     type="button"
+     @click="selectUnhandledTroubled"
+     class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold transition-colors cursor-pointer"
+    >
+     Pilih Belum Ditindaklanjuti ({{ unhandledTroubledCount }})
+    </button>
    </div>
   </div>
+
+  <!-- Bulk Action Bar (Muncul saat ada layanan terkendala yang dicentang) -->
+  <Transition
+   enter-active-class="transition duration-200 ease-out"
+   enter-from-class="opacity-0 -translate-y-1"
+   enter-to-class="opacity-100 translate-y-0"
+   leave-active-class="transition duration-150 ease-in"
+   leave-from-class="opacity-100 translate-y-0"
+   leave-to-class="opacity-0 -translate-y-1"
+  >
+   <div
+    v-if="selectedTroubledIds.length > 0"
+    class="mb-4 p-3.5 rounded-2xl bg-primary/5 border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+   >
+    <div class="flex items-center gap-2.5 text-xs">
+     <span class="px-2.5 py-1 rounded-full bg-primary text-white font-extrabold text-[11px]">
+      {{ selectedTroubledIds.length }} Layanan Dipilih
+     </span>
+     <span class="text-slate-600 font-medium">
+      Siap ditindaklanjuti secara serentak dengan 1 catatan Admin.
+     </span>
+    </div>
+
+    <div class="flex items-center gap-2 shrink-0">
+     <button
+      type="button"
+      @click="selectedTroubledIds = []"
+      class="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-xs font-semibold transition-all cursor-pointer"
+     >
+      Batal Pilih
+     </button>
+     <button
+      type="button"
+      @click="openBulkSolveModal"
+      class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+     >
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+      <span>Tindak Lanjuti Massal ({{ selectedTroubledIds.length }} Layanan)</span>
+     </button>
+    </div>
+   </div>
+  </Transition>
 
   <!-- Empty State jika tidak ada kendala -->
   <div v-if="troubledList.length === 0" class="p-8 rounded-xl bg-slate-50 border border-slate-200/80 text-center">
@@ -591,11 +850,22 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
      v-for="(item, idx) in paginatedTroubledList"
      :key="item.id"
      class="p-4 sm:p-5 rounded-2xl border transition-all text-xs"
-     :class="item.has_solved ? 'bg-slate-50/70 border-slate-200 text-slate-700' : 'bg-rose-50/40 border-rose-200/90 text-slate-800 shadow-2xs'"
+     :class="[
+      selectedTroubledIds.includes(item.id)
+       ? 'ring-2 ring-primary/30 border-primary/50 bg-blue-50/20'
+       : (item.has_solved ? 'bg-slate-50/70 border-slate-200 text-slate-700' : 'bg-rose-50/40 border-rose-200/90 text-slate-800 shadow-2xs')
+     ]"
     >
      <!-- Baris Atas: Header Informasi Layanan & Tombol Tindak Lanjut -->
      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div class="flex items-center gap-2 flex-wrap font-medium">
+       <input
+        type="checkbox"
+        v-model="selectedTroubledIds"
+        :value="item.id"
+        class="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/30 cursor-pointer shrink-0 mr-0.5"
+        :aria-label="`Pilih ${item.service_name}`"
+       />
        <span class="font-bold text-slate-900 w-5">{{ (troubledCurrentPage - 1) * troubledPerPage + idx + 1 }}.</span>
        <h4 class="text-sm font-bold text-slate-800">{{ item.service_name }}</h4>
        <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">{{ item.category }}</span>
@@ -775,25 +1045,107 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  <!-- ═══════════════════════════════════════════════════ -->
  <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
  <!-- Toolbar -->
- <div class="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
- <button type="button" @click="isTableVisible = !isTableVisible" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-800 hover:text-primary transition-colors cursor-pointer">
- Daftar Layanan
- <span class="text-xs font-normal text-slate-400">({{ filteredServices.length }} dari {{ allServices.length }})</span>
- <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" :class="isTableVisible ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
- </button>
+ <div class="px-6 py-4 border-b border-slate-100 space-y-3">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+   <button type="button" @click="isTableVisible = !isTableVisible" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-800 hover:text-primary transition-colors cursor-pointer">
+    Daftar Layanan
+    <span class="text-xs font-normal text-slate-400">({{ filteredServices.length }} dari {{ allServices.length }})</span>
+    <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" :class="isTableVisible ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+   </button>
 
- <div v-if="isTableVisible" class="flex items-center gap-2 flex-wrap">
- <div class="inline-flex p-0.5 bg-slate-100 rounded-lg text-xs text-slate-600">
- <button type="button" @click="statusFilter = 'all'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'all' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Semua</button>
- <button type="button" @click="statusFilter = 'normal'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'normal' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Normal</button>
- <button type="button" @click="statusFilter = 'gangguan'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'gangguan' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Kendala</button>
- <button type="button" @click="statusFilter = 'pending'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'pending' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Belum Dicek</button>
- </div>
- <div class="relative">
- <input v-model="searchQuery" type="text" placeholder="Cari layanan..." class="pl-7 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 placeholder-slate-400 focus:outline-none focus:border-primary w-44 sm:w-52 transition-colors"/>
- <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
- </div>
- </div>
+   <div v-if="isTableVisible" class="flex items-center gap-2 flex-wrap">
+    <div class="inline-flex p-0.5 bg-slate-100 rounded-lg text-xs text-slate-600">
+     <button type="button" @click="statusFilter = 'all'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'all' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Semua</button>
+     <button type="button" @click="statusFilter = 'normal'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'normal' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Normal</button>
+     <button type="button" @click="statusFilter = 'gangguan'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'gangguan' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Kendala</button>
+     <button type="button" @click="statusFilter = 'pending'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'pending' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Belum Dicek</button>
+    </div>
+    <div class="relative">
+     <input v-model="searchQuery" type="text" placeholder="Cari layanan, OPD, tester..." class="pl-7 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 placeholder-slate-400 focus:outline-none focus:border-primary w-48 sm:w-56 transition-colors"/>
+     <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    </div>
+   </div>
+  </div>
+
+  <!-- Baris Filter Lanjutan (OPD/Kategori, Level, Tester) & Tombol Ekspor Terfilter -->
+  <div v-if="isTableVisible" class="pt-2 border-t border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+   <div class="flex flex-wrap items-center gap-2">
+    <!-- Filter Kategori / OPD -->
+    <select
+     v-model="categoryFilter"
+     class="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium focus:outline-none focus:border-primary max-w-[240px] truncate cursor-pointer"
+    >
+     <option value="all">Semua OPD / Kategori ({{ availableCategories.length }})</option>
+     <option v-for="cat in availableCategories" :key="cat" :value="cat">
+      {{ cat }}
+     </option>
+    </select>
+
+    <!-- Filter Level -->
+    <select
+     v-model="levelFilter"
+     class="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium focus:outline-none focus:border-primary cursor-pointer"
+    >
+     <option value="all">Semua Level</option>
+     <option value="Level 1">Level 1</option>
+     <option value="Level 2">Level 2</option>
+     <option value="Level 3">Level 3</option>
+    </select>
+
+    <!-- Filter Tester -->
+    <select
+     v-model="testerFilter"
+     class="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium focus:outline-none focus:border-primary max-w-[200px] truncate cursor-pointer"
+    >
+     <option value="all">Semua Tester ({{ distribution.length }})</option>
+     <option v-for="g in distribution" :key="g.tester_id" :value="g.tester_id">
+      {{ g.name }}
+     </option>
+    </select>
+
+    <!-- Tombol Reset Filter -->
+    <button
+     v-if="hasActiveFilters"
+     type="button"
+     @click="resetAllFilters"
+     class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition-colors cursor-pointer"
+    >
+     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+     </svg>
+     <span>Reset Filter</span>
+    </button>
+   </div>
+
+   <!-- Pintasan Ekspor Laporan Sesuai Filter -->
+   <div class="flex items-center gap-2 shrink-0">
+    <span v-if="hasActiveFilters" class="text-[11px] font-semibold text-primary bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg">
+     Filter Aktif: {{ filteredServices.length }} Layanan
+    </span>
+    <a
+     :href="exportExcelUrl"
+     target="_blank"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
+     title="Unduh laporan Excel/CSV sesuai filter yang dipilih"
+    >
+     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+     </svg>
+     <span>{{ hasActiveFilters ? `Unduh Excel Terfilter (${filteredServices.length})` : 'Unduh Excel' }}</span>
+    </a>
+    <a
+     :href="exportPdfUrl"
+     target="_blank"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold transition-colors cursor-pointer"
+     title="Cetak laporan PDF sesuai filter yang dipilih"
+    >
+     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+     </svg>
+     <span>{{ hasActiveFilters ? `Cetak PDF Terfilter (${filteredServices.length})` : 'Cetak PDF' }}</span>
+    </a>
+   </div>
+  </div>
  </div>
 
  <!-- Table -->
@@ -1231,6 +1583,117 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
 			@close="closeSolveModal"
 			@submit="submitSolveKendala"
 		/>
+
+		<!-- Modal Bulk Tindak Lanjut Kendala (Tandai Selesai / Cek Ulang Sekaligus) -->
+		<Teleport to="body">
+			<Transition
+				enter-active-class="transition duration-200 ease-out"
+				enter-from-class="opacity-0 scale-95"
+				enter-to-class="opacity-100 scale-100"
+				leave-active-class="transition duration-150 ease-in"
+				leave-from-class="opacity-100 scale-100"
+				leave-to-class="opacity-0 scale-95"
+			>
+				<div
+					v-if="showBulkSolveModal"
+					class="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+				>
+					<div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg z-10 overflow-hidden flex flex-col max-h-[90vh]">
+						<!-- Header Modal -->
+						<div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+							<div class="flex items-center gap-3">
+								<div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shrink-0">
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+									</svg>
+								</div>
+								<div>
+									<h3 class="text-sm font-bold text-slate-800">
+										Tindak Lanjut Massal ({{ selectedTroubledIds.length }} Layanan)
+									</h3>
+									<p class="text-[11px] text-slate-400">
+										Tandai selesai & minta pengecekan ulang secara serentak
+									</p>
+								</div>
+							</div>
+							<button
+								type="button"
+								@click="closeBulkSolveModal"
+								class="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+							>
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+								</svg>
+							</button>
+						</div>
+
+						<!-- Body Modal -->
+						<div class="p-6 space-y-4 overflow-y-auto">
+							<!-- Daftar Layanan yang Dipilih -->
+							<div>
+								<label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+									Layanan Terkendala yang Dipilih ({{ selectedTroubledItems.length }})
+								</label>
+								<div class="max-h-32 overflow-y-auto p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-wrap gap-1.5">
+									<span
+										v-for="svc in selectedTroubledItems"
+										:key="svc.id"
+										class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs"
+									>
+										<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+										<span>{{ svc.service_name }}</span>
+									</span>
+								</div>
+							</div>
+
+							<!-- Input Catatan Tindak Lanjut Admin -->
+							<div>
+								<label class="block text-xs font-bold text-slate-700 mb-1.5">
+									Catatan Tindak Lanjut Admin <span class="text-rose-500">(wajib)</span>
+								</label>
+								<textarea
+									v-model="bulkSolveForm.description"
+									rows="4"
+									placeholder="Contoh: Server pusat Pemprov Jatim telah selesai maintenance, silakan lakukan pengecekan ulang pada layanan yang ditugaskan..."
+									class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+								></textarea>
+								<p v-if="bulkSolveForm.errors" class="mt-1.5 text-xs font-semibold text-rose-600">
+									{{ bulkSolveForm.errors }}
+								</p>
+								<p class="mt-1.5 text-[11px] text-slate-400 leading-relaxed">
+									Seluruh layanan terpilih akan otomatis berubah menjadi <strong>Perlu Pengecekan Ulang</strong> dan Tester terkait akan menerima notifikasi.
+								</p>
+							</div>
+						</div>
+
+						<!-- Footer Modal -->
+						<div class="px-6 py-4 bg-slate-50/70 border-t border-slate-100 flex items-center justify-end gap-2.5">
+							<button
+								type="button"
+								@click="closeBulkSolveModal"
+								class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-600 transition-all cursor-pointer"
+							>
+								Batal
+							</button>
+							<button
+								type="button"
+								@click="submitBulkSolveKendala"
+								:disabled="bulkSolveForm.processing"
+								class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all disabled:opacity-60 flex items-center gap-1.5 cursor-pointer active:scale-95"
+							>
+								<svg v-if="bulkSolveForm.processing" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+								</svg>
+								<span>
+									{{ bulkSolveForm.processing ? 'Memproses...' : `Simpan & Tandai Selesai (${selectedTroubledIds.length} Layanan)` }}
+								</span>
+							</button>
+						</div>
+					</div>
+				</div>
+			</Transition>
+		</Teleport>
 
 	</AdminLayout>
 </template>
