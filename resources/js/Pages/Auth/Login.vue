@@ -63,6 +63,18 @@ onMounted(() => {
         sessionExpiredMessage.value = propMessage || sessionExpiredMessage.value || 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 1 jam. Silakan login kembali.';
     }
 
+    // 4. Fitur Ingat Saya: pulihkan email tersimpan jika opsi Ingat Saya pernah dicentang
+    try {
+        if (typeof window !== 'undefined') {
+            const savedRemember = localStorage.getItem('remember_me');
+            const savedEmail = localStorage.getItem('remembered_email');
+            if (savedRemember === '1' && savedEmail) {
+                form.email = savedEmail;
+                form.remember = true;
+            }
+        }
+    } catch (e) {}
+
     if (!siteKey) return;
 
     const renderRecaptcha = () => {
@@ -99,6 +111,20 @@ const submit = () => {
     if (window.grecaptcha) {
         form['g-recaptcha-response'] = window.grecaptcha.getResponse();
     }
+
+    // Kelola penyimpanan lokal untuk fitur Ingat Saya
+    try {
+        if (typeof window !== 'undefined') {
+            if (form.remember && form.email) {
+                localStorage.setItem('remembered_email', form.email);
+                localStorage.setItem('remember_me', '1');
+            } else {
+                localStorage.removeItem('remembered_email');
+                localStorage.removeItem('remember_me');
+            }
+        }
+    } catch (e) {}
+
     form.post(route('login'), {
         onFinish: () => {
             form.reset('password');

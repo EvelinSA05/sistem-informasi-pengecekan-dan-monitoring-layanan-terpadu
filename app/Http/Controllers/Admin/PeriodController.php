@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Shuchkin\SimpleXLSXGen;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PeriodController extends Controller
@@ -738,7 +739,7 @@ class PeriodController extends Controller
     }
 
     /**
-     * Export Laporan Periode ke Format Excel (CSV kompatibel Excel dengan UTF-8 BOM).
+     * Export Laporan Periode ke Format Excel (XLSX dengan styling profesional / CSV fallback).
      */
     public function exportExcel(Request $request, CheckingPeriod $period): StreamedResponse
     {
@@ -758,195 +759,363 @@ class PeriodController extends Controller
         $periodTitle = $this->formatIndonesianDate($carbonDate);
         $fileSafeTitle = str_replace(' ', '_', $periodTitle);
 
-        $filename = "Laporan_Pengecekan_{$fileSafeTitle}.csv";
+        // Perhitungan metrik statistik aktual (sesuai filter yang aktif jika ada)
+        $totalServices = $targetServices->count();
+        $normalCount   = $targetServices->where('status', 'normal')->count();
+        $issuesCount   = $targetServices->where('status', 'gangguan')->count();
+        $pendingCount  = $targetServices->where('status', 'pending')->count();
+        $checkedCount  = $totalServices - $pendingCount;
+        $readinessPct  = $totalServices > 0 ? round(($checkedCount / $totalServices) * 100) : 0;
 
-        $headers = [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-            'Pragma' => 'no-cache',
-            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires' => '0',
-        ];
+        $opdCount = $targetServices
+            ->map(fn($ps) => $ps->service?->category ?: '-')
+            ->unique()
+            ->count();
 
-        $callback = function () use ($period, $periodTitle, $targetServices, $activeFilters) {
-            $file = fopen('php://output', 'w');
+        // Pemisahan Layanan Berdasarkan Status
+        $issueServices   = $targetServices->filter(fn($ps) => $ps->status === 'gangguan')->values();
+        $normalServices  = $targetServices->filter(fn($ps) => $ps->status === 'normal')->values();
+        $pendingServices = $targetServices->filter(fn($ps) => $ps->status === 'pending')->values();
 
-            // UTF-8 BOM for Microsoft Excel compatibility
-            fputs($file, "\xEF\xBB\xBF");
-            // Instruct Microsoft Excel to parse comma-delimited columns cleanly
-            fputs($file, "sep=,\r\n");
+        // JIKA REQUEST MEMINTA FORMAT CSV
+        if ($request->query('format') === 'csv') {
+            $filename = "Laporan_Pengecekan_{$fileSafeTitle}.csv";
+            $headers = [
+                'Content-Type'        => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+                'Pragma'              => 'no-cache',
+                'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+                'Expires'             => '0',
+            ];
 
-            // ==========================================
-            // SECTION 1 — HEADER & IDENTITAS DOKUMEN
-            // ==========================================
-            fputcsv($file, ['MAJADIGI CHECKER - PEMERINTAH PROVINSI JAWA TIMUR']);
-            fputcsv($file, ['LAPORAN HASIL PENGECEKAN KUALITAS & KETERSEDIAAN LAYANAN DIGITAL']);
-            fputcsv($file, []);
+            $callback = function () use ($period, $periodTitle, $targetServices, $activeFilters, $totalServices, $normalCount, $issuesCount, $pendingCount, $readinessPct, $opdCount, $issueServices, $normalServices, $pendingServices) {
+                $file = fopen('php://output', 'w');
+                fputs($file, "\xEF\xBB\xBF");
+                fputs($file, "sep=,\r\n");
 
-            // ==========================================
-            // SECTION 2 — INFORMASI LAPORAN & PERIODE
-            // ==========================================
-            fputcsv($file, ['INFORMASI LAPORAN', '']);
-            fputcsv($file, ['Periode Pengecekan', $periodTitle]);
-            fputcsv($file, ['Status Periode', $period->status === 'proses' ? 'AKTIF (Proses Berjalan)' : 'SELESAI (Nonaktif)']);
-            fputcsv($file, ['Dibuat Oleh', $period->creator?->name ?? 'Admin Majadigi']);
-            fputcsv($file, ['Tanggal Unduh Laporan', date('d/m/Y H:i:s') . ' WIB']);
-            if (!empty($activeFilters)) {
-                $filterSummary = collect($activeFilters)->map(fn($v, $k) => "{$k}: {$v}")->implode(' | ');
-                fputcsv($file, ['Filter Aktif', $filterSummary]);
-            }
-            fputcsv($file, []);
+                fputcsv($file, ['MAJADIGI CHECKER - PEMERINTAH PROVINSI JAWA TIMUR']);
+                fputcsv($file, ['LAPORAN HASIL PENGECEKAN KUALITAS & KETERSEDIAAN LAYANAN DIGITAL']);
+                fputcsv($file, []);
 
-            // Perhitungan metrik statistik aktual (sesuai filter yang aktif jika ada)
-            $totalServices = $targetServices->count();
-            $normalCount   = $targetServices->where('status', 'normal')->count();
-            $issuesCount   = $targetServices->where('status', 'gangguan')->count();
-            $pendingCount  = $targetServices->where('status', 'pending')->count();
-            $checkedCount  = $totalServices - $pendingCount;
-            $readinessPct  = $totalServices > 0 ? round(($checkedCount / $totalServices) * 100) : 0;
-
-            $opdCount = $targetServices
-                ->map(fn($ps) => $ps->service?->category ?: '-')
-                ->unique()
-                ->count();
-
-            // ==========================================
-            // SECTION 3 — RINGKASAN HASIL PENGECEKAN
-            // ==========================================
-            fputcsv($file, ['RINGKASAN STATISTIK PENGECEKAN', '']);
-            fputcsv($file, ['Total Layanan', $totalServices]);
-            fputcsv($file, ['Layanan Normal (Berjalan)', $normalCount]);
-            fputcsv($file, ['Layanan Terkendala (Ada Masalah)', $issuesCount]);
-            fputcsv($file, ['Layanan Belum Diperiksa', $pendingCount]);
-            fputcsv($file, ['Tingkat Kesiapan (Selesai Pengecekan)', "{$readinessPct}%"]);
-            fputcsv($file, ['Jumlah OPD / Kategori', $opdCount]);
-            fputcsv($file, []);
-
-            // Pemisahan Layanan Berdasarkan Status
-            $issueServices = $targetServices->filter(fn($ps) => $ps->status === 'gangguan')->values();
-            $normalServices = $targetServices->filter(fn($ps) => $ps->status === 'normal')->values();
-            $pendingServices = $targetServices->filter(fn($ps) => $ps->status === 'pending')->values();
-
-            // ==========================================
-            // SECTION 4 — TABEL A. LAYANAN TERKENDALA (PRIORITAS PENANGANAN)
-            // ==========================================
-            fputcsv($file, ['A. DAFTAR LAYANAN TERKENDALA (' . $issueServices->count() . ' Layanan)']);
-            fputcsv($file, [
-                'No.',
-                'Nama Layanan',
-                'OPD / Kategori',
-                'Level',
-                'Status Pengecekan',
-                'Status Tindak Lanjut',
-                'Tester Pengecek',
-                'Waktu Diperiksa',
-                'Catatan Kendala (Tester)',
-                'Catatan Tindak Lanjut (Admin)',
-                'URL Layanan',
-            ]);
-
-            $noIssue = 1;
-            foreach ($issueServices as $ps) {
-                $levelDisplay = !empty($ps->service?->level) ? $ps->service->level : '-';
-                $handlingStatusLabel = match($ps->serviceIssue?->handling_status) {
-                    'perlu_pengecekan_ulang' => 'Perlu Pengecekan Ulang',
-                    'selesai'                => 'Sudah Ditindaklanjuti',
-                    default                  => ($ps->serviceIssue && $ps->serviceIssue->has_solved) ? 'Sudah Ditindaklanjuti' : 'Belum Ditindaklanjuti',
-                };
-                $checkedAt = $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d/m/Y H:i') : '-';
-
-                fputcsv($file, [
-                    $noIssue++,
-                    $ps->service?->service_name ?? '-',
-                    $ps->service?->category ?: '-',
-                    $levelDisplay,
-                    'TERKENDALA',
-                    $handlingStatusLabel,
-                    $ps->tester?->name ?? '-',
-                    $checkedAt,
-                    $ps->description ?: '-',
-                    $ps->serviceIssue?->admin_note ?? $ps->admin_note ?? '-',
-                    $ps->service?->service_url ?: '-',
-                ]);
-            }
-            if ($issueServices->isEmpty()) {
-                fputcsv($file, ['-', 'Tidak ada layanan terkendala pada periode ini', '-', '-', '-', '-', '-', '-', '-', '-', '-']);
-            }
-            fputcsv($file, []);
-
-            // ==========================================
-            // SECTION 5 — TABEL B. LAYANAN NORMAL / BERJALAN
-            // ==========================================
-            fputcsv($file, ['B. DAFTAR LAYANAN NORMAL / BERJALAN (' . $normalServices->count() . ' Layanan)']);
-            fputcsv($file, [
-                'No.',
-                'Nama Layanan',
-                'OPD / Kategori',
-                'Level',
-                'Status Pengecekan',
-                'Tester Pengecek',
-                'Waktu Diperiksa',
-                'Catatan Pengecekan',
-                'URL Layanan',
-            ]);
-
-            $noNormal = 1;
-            foreach ($normalServices as $ps) {
-                $levelDisplay = !empty($ps->service?->level) ? $ps->service->level : '-';
-                $checkedAt = $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d/m/Y H:i') : '-';
-
-                fputcsv($file, [
-                    $noNormal++,
-                    $ps->service?->service_name ?? '-',
-                    $ps->service?->category ?: '-',
-                    $levelDisplay,
-                    'NORMAL',
-                    $ps->tester?->name ?? '-',
-                    $checkedAt,
-                    $ps->description ?: '-',
-                    $ps->service?->service_url ?: '-',
-                ]);
-            }
-            if ($normalServices->isEmpty()) {
-                fputcsv($file, ['-', 'Tidak ada data layanan normal pada periode ini', '-', '-', '-', '-', '-', '-', '-']);
-            }
-            fputcsv($file, []);
-
-            // ==========================================
-            // SECTION 6 — TABEL C. LAYANAN BELUM DIPERIKSA (JIKA ADA)
-            // ==========================================
-            if ($pendingServices->isNotEmpty()) {
-                fputcsv($file, ['C. DAFTAR LAYANAN BELUM DIPERIKSA (' . $pendingServices->count() . ' Layanan)']);
-                fputcsv($file, [
-                    'No.',
-                    'Nama Layanan',
-                    'OPD / Kategori',
-                    'Level',
-                    'Status Pengecekan',
-                    'Tester Ditugaskan',
-                    'URL Layanan',
-                ]);
-
-                $noPending = 1;
-                foreach ($pendingServices as $ps) {
-                    $levelDisplay = !empty($ps->service?->level) ? $ps->service->level : '-';
-                    fputcsv($file, [
-                        $noPending++,
-                        $ps->service?->service_name ?? '-',
-                        $ps->service?->category ?: '-',
-                        $levelDisplay,
-                        'BELUM DIPERIKSA',
-                        $ps->tester?->name ?? 'Belum Ditugaskan',
-                        $ps->service?->service_url ?: '-',
-                    ]);
+                fputcsv($file, ['INFORMASI LAPORAN', '']);
+                fputcsv($file, ['Periode Pengecekan', $periodTitle]);
+                fputcsv($file, ['Status Periode', $period->status === 'proses' ? 'AKTIF (Proses Berjalan)' : 'SELESAI (Nonaktif)']);
+                fputcsv($file, ['Dibuat Oleh', $period->creator?->name ?? 'Admin Majadigi']);
+                fputcsv($file, ['Tanggal Unduh Laporan', date('d/m/Y H:i:s') . ' WIB']);
+                if (!empty($activeFilters)) {
+                    $filterSummary = collect($activeFilters)->map(fn($v, $k) => "{$k}: {$v}")->implode(' | ');
+                    fputcsv($file, ['Filter Aktif', $filterSummary]);
                 }
                 fputcsv($file, []);
+
+                fputcsv($file, ['RINGKASAN STATISTIK PENGECEKAN', '']);
+                fputcsv($file, ['Total Layanan', $totalServices]);
+                fputcsv($file, ['Layanan Normal (Berjalan)', $normalCount]);
+                fputcsv($file, ['Layanan Terkendala (Ada Masalah)', $issuesCount]);
+                fputcsv($file, ['Layanan Belum Diperiksa', $pendingCount]);
+                fputcsv($file, ['Tingkat Kesiapan (Selesai Pengecekan)', "{$readinessPct}%"]);
+                fputcsv($file, ['Jumlah OPD / Kategori', $opdCount]);
+                fputcsv($file, []);
+
+                fputcsv($file, ['A. DAFTAR LAYANAN TERKENDALA (' . $issueServices->count() . ' Layanan)']);
+                fputcsv($file, ['No.', 'Nama Layanan', 'OPD / Kategori', 'Level', 'Status Pengecekan', 'Status Tindak Lanjut', 'Tester Pengecek', 'Waktu Diperiksa', 'Catatan Kendala (Tester)', 'Catatan Tindak Lanjut (Admin)', 'URL Layanan']);
+                $no = 1;
+                foreach ($issueServices as $ps) {
+                    $checkedAt = $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d/m/Y H:i') : '-';
+                    fputcsv($file, [$no++, $ps->service?->service_name ?? '-', $ps->service?->category ?: '-', $ps->service?->level ?: '-', 'TERKENDALA', $ps->serviceIssue?->handling_status ?: 'Belum Ditindaklanjuti', $ps->tester?->name ?? '-', $checkedAt, $ps->description ?: '-', $ps->serviceIssue?->admin_note ?? $ps->admin_note ?? '-', $ps->service?->service_url ?: '-']);
+                }
+                fputcsv($file, []);
+
+                fputcsv($file, ['B. DAFTAR LAYANAN NORMAL / BERJALAN (' . $normalServices->count() . ' Layanan)']);
+                fputcsv($file, ['No.', 'Nama Layanan', 'OPD / Kategori', 'Level', 'Status Pengecekan', 'Tester Pengecek', 'Waktu Diperiksa', 'Catatan Pengecekan', 'URL Layanan']);
+                $no = 1;
+                foreach ($normalServices as $ps) {
+                    $checkedAt = $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d/m/Y H:i') : '-';
+                    fputcsv($file, [$no++, $ps->service?->service_name ?? '-', $ps->service?->category ?: '-', $ps->service?->level ?: '-', 'NORMAL', $ps->tester?->name ?? '-', $checkedAt, $ps->description ?: '-', $ps->service?->service_url ?: '-']);
+                }
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        }
+
+        // ==========================================
+        // DEFAULT: GENERATE PROFESSIONAL STYLED XLSX
+        // ==========================================
+        $filename = "Laporan_Pengecekan_{$fileSafeTitle}.xlsx";
+
+        // SHEET 1: RINGKASAN & LAYANAN TERKENDALA
+        $sheet1 = [];
+        $sheet1[] = ['<style bgcolor="#1E3A8A" color="#FFFFFF" font-size="14"><b>   MAJADIGI CHECKER - PEMERINTAH PROVINSI JAWA TIMUR   </b></style>'];
+        $sheet1[] = ['<style color="#1E3A8A" font-size="11"><b>LAPORAN HASIL PENGECEKAN KUALITAS & KETERSEDIAAN LAYANAN DIGITAL</b></style>'];
+        $sheet1[] = [''];
+
+        $sheet1[] = ['<style bgcolor="#F1F5F9" color="#0F172A"><b>INFORMASI LAPORAN</b></style>', ''];
+        $sheet1[] = ['Periode Pengecekan', '<b>' . $periodTitle . '</b>'];
+        $sheet1[] = ['Status Periode', $period->status === 'proses' ? '<style bgcolor="#DCFCE7" color="#166534"><b>AKTIF (Sedang Berjalan)</b></style>' : '<style bgcolor="#F1F5F9" color="#475569"><b>SELESAI (Nonaktif)</b></style>'];
+        $sheet1[] = ['Dibuat Oleh', '<b>' . ($period->creator?->name ?? 'Admin Majadigi') . '</b>'];
+        $sheet1[] = ['Tanggal Unduh Laporan', '<b>' . date('d/m/Y H:i:s') . ' WIB</b>'];
+        if (!empty($activeFilters)) {
+            $filterSummary = collect($activeFilters)->map(fn($v, $k) => "{$k}: {$v}")->implode(' | ');
+            $sheet1[] = ['Filter Aktif', '<style bgcolor="#EFF6FF" color="#1D4ED8"><b>' . $filterSummary . '</b></style>'];
+        }
+        $sheet1[] = [''];
+
+        $sheet1[] = ['<style bgcolor="#1E3A8A" color="#FFFFFF"><b>RINGKASAN STATISTIK PENGECEKAN</b></style>', ''];
+        $sheet1[] = ['Total Layanan', '<b>' . $totalServices . ' Layanan</b>'];
+        $sheet1[] = ['Layanan Normal (Berjalan)', '<style bgcolor="#DCFCE7" color="#166534"><b>' . $normalCount . ' Layanan</b></style>'];
+        $sheet1[] = ['Layanan Terkendala (Ada Gangguan)', '<style bgcolor="#FEE2E2" color="#991B1B"><b>' . $issuesCount . ' Layanan</b></style>'];
+        $sheet1[] = ['Layanan Belum Diperiksa', '<style bgcolor="#FEF3C7" color="#92400E"><b>' . $pendingCount . ' Layanan</b></style>'];
+        $sheet1[] = ['Tingkat Kesiapan (Pengecekan Selesai)', '<b>' . $readinessPct . '%</b>'];
+        $sheet1[] = ['Jumlah OPD / Kategori', '<b>' . $opdCount . ' OPD / Instansi</b>'];
+        $sheet1[] = [''];
+
+        // SECTION A: LAYANAN TERKENDALA (HIGHLIGHT MERAH)
+        $sheet1[] = ['<style bgcolor="#DC2626" color="#FFFFFF" font-size="11"><b>   A. DAFTAR LAYANAN TERKENDALA (' . $issueServices->count() . ' Layanan)   </b></style>'];
+        $sheet1[] = [
+            '<center><style bgcolor="#991B1B" color="#FFFFFF"><b>No.</b></style></center>',
+            '<style bgcolor="#991B1B" color="#FFFFFF"><b>Nama Layanan</b></style>',
+            '<style bgcolor="#991B1B" color="#FFFFFF"><b>OPD / Kategori</b></style>',
+            '<center><style bgcolor="#991B1B" color="#FFFFFF"><b>Level</b></style></center>',
+            '<center><style bgcolor="#991B1B" color="#FFFFFF"><b>Status Pengecekan</b></style></center>',
+            '<center><style bgcolor="#991B1B" color="#FFFFFF"><b>Status Tindak Lanjut</b></style></center>',
+            '<style bgcolor="#991B1B" color="#FFFFFF"><b>Tester Pengecek</b></style>',
+            '<center><style bgcolor="#991B1B" color="#FFFFFF"><b>Waktu Diperiksa</b></style></center>',
+            '<style bgcolor="#991B1B" color="#FFFFFF"><b>Catatan Kendala (Tester)</b></style>',
+            '<style bgcolor="#991B1B" color="#FFFFFF"><b>Catatan Tindak Lanjut (Admin)</b></style>',
+            '<style bgcolor="#991B1B" color="#FFFFFF"><b>URL Layanan</b></style>'
+        ];
+
+        $noIssue = 1;
+        foreach ($issueServices as $ps) {
+            $levelDisplay = !empty($ps->service?->level) ? $ps->service->level : '-';
+            $handlingStatusLabel = match($ps->serviceIssue?->handling_status) {
+                'perlu_pengecekan_ulang' => 'Perlu Pengecekan Ulang',
+                'selesai'                => 'Sudah Ditindaklanjuti',
+                default                  => ($ps->serviceIssue && $ps->serviceIssue->has_solved) ? 'Sudah Ditindaklanjuti' : 'Belum Ditindaklanjuti',
+            };
+            $checkedAt = $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d/m/Y H:i') : '-';
+
+            $sheet1[] = [
+                '<center>' . ($noIssue++) . '</center>',
+                '<b>' . ($ps->service?->service_name ?? '-') . '</b>',
+                $ps->service?->category ?: '-',
+                '<center>' . $levelDisplay . '</center>',
+                '<center><style bgcolor="#FEE2E2" color="#991B1B"><b>TERKENDALA</b></style></center>',
+                '<center><style bgcolor="#FEF3C7" color="#92400E"><b>' . $handlingStatusLabel . '</b></style></center>',
+                $ps->tester?->name ?? '-',
+                '<center>' . $checkedAt . '</center>',
+                $ps->description ?: '-',
+                $ps->serviceIssue?->admin_note ?? $ps->admin_note ?? '-',
+                $ps->service?->service_url ?: '-'
+            ];
+        }
+        if ($issueServices->isEmpty()) {
+            $sheet1[] = ['<center>-</center>', 'Tidak ada layanan terkendala pada periode ini', '-', '-', '-', '-', '-', '-', '-', '-', '-'];
+        }
+        $sheet1[] = [''];
+
+        // SECTION B: LAYANAN NORMAL (HIGHLIGHT HIJAU)
+        $sheet1[] = ['<style bgcolor="#16A34A" color="#FFFFFF" font-size="11"><b>   B. DAFTAR LAYANAN NORMAL / BERJALAN (' . $normalServices->count() . ' Layanan)   </b></style>'];
+        $sheet1[] = [
+            '<center><style bgcolor="#166534" color="#FFFFFF"><b>No.</b></style></center>',
+            '<style bgcolor="#166534" color="#FFFFFF"><b>Nama Layanan</b></style>',
+            '<style bgcolor="#166534" color="#FFFFFF"><b>OPD / Kategori</b></style>',
+            '<center><style bgcolor="#166534" color="#FFFFFF"><b>Level</b></style></center>',
+            '<center><style bgcolor="#166534" color="#FFFFFF"><b>Status Pengecekan</b></style></center>',
+            '<style bgcolor="#166534" color="#FFFFFF"><b>Tester Pengecek</b></style>',
+            '<center><style bgcolor="#166534" color="#FFFFFF"><b>Waktu Diperiksa</b></style></center>',
+            '<style bgcolor="#166534" color="#FFFFFF"><b>Catatan Pengecekan</b></style>',
+            '<style bgcolor="#166534" color="#FFFFFF"><b>URL Layanan</b></style>'
+        ];
+
+        $noNormal = 1;
+        foreach ($normalServices as $ps) {
+            $levelDisplay = !empty($ps->service?->level) ? $ps->service->level : '-';
+            $checkedAt = $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d/m/Y H:i') : '-';
+
+            $sheet1[] = [
+                '<center>' . ($noNormal++) . '</center>',
+                '<b>' . ($ps->service?->service_name ?? '-') . '</b>',
+                $ps->service?->category ?: '-',
+                '<center>' . $levelDisplay . '</center>',
+                '<center><style bgcolor="#DCFCE7" color="#166534"><b>NORMAL</b></style></center>',
+                $ps->tester?->name ?? '-',
+                '<center>' . $checkedAt . '</center>',
+                $ps->description ?: '-',
+                $ps->service?->service_url ?: '-'
+            ];
+        }
+        if ($normalServices->isEmpty()) {
+            $sheet1[] = ['<center>-</center>', 'Tidak ada data layanan normal pada periode ini', '-', '-', '-', '-', '-', '-', '-'];
+        }
+        $sheet1[] = [''];
+
+        // SECTION C: LAYANAN BELUM DIPERIKSA (JIKA ADA)
+        if ($pendingServices->isNotEmpty()) {
+            $sheet1[] = ['<style bgcolor="#F59E0B" color="#FFFFFF" font-size="11"><b>   C. DAFTAR LAYANAN BELUM DIPERIKSA (' . $pendingServices->count() . ' Layanan)   </b></style>'];
+            $sheet1[] = [
+                '<center><style bgcolor="#92400E" color="#FFFFFF"><b>No.</b></style></center>',
+                '<style bgcolor="#92400E" color="#FFFFFF"><b>Nama Layanan</b></style>',
+                '<style bgcolor="#92400E" color="#FFFFFF"><b>OPD / Kategori</b></style>',
+                '<center><style bgcolor="#92400E" color="#FFFFFF"><b>Level</b></style></center>',
+                '<center><style bgcolor="#92400E" color="#FFFFFF"><b>Status Pengecekan</b></style></center>',
+                '<style bgcolor="#92400E" color="#FFFFFF"><b>Tester Ditugaskan</b></style>',
+                '<style bgcolor="#92400E" color="#FFFFFF"><b>URL Layanan</b></style>'
+            ];
+
+            $noPending = 1;
+            foreach ($pendingServices as $ps) {
+                $levelDisplay = !empty($ps->service?->level) ? $ps->service->level : '-';
+                $sheet1[] = [
+                    '<center>' . ($noPending++) . '</center>',
+                    '<b>' . ($ps->service?->service_name ?? '-') . '</b>',
+                    $ps->service?->category ?: '-',
+                    '<center>' . $levelDisplay . '</center>',
+                    '<center><style bgcolor="#FEF3C7" color="#92400E"><b>BELUM DIPERIKSA</b></style></center>',
+                    $ps->tester?->name ?? 'Belum Ditugaskan',
+                    $ps->service?->service_url ?: '-'
+                ];
             }
+        }
 
-            fclose($file);
-        };
+        // BUILD EXCEL WORKBOOK DENGAN SIMPLEXLSXGEN
+        $xlsx = SimpleXLSXGen::fromArray($sheet1, 'Ringkasan & Kendala');
+        $xlsx->setDefaultFont('Calibri');
+        $xlsx->setDefaultFontSize(10);
 
-        return response()->stream($callback, 200, $headers);
+        // Atur lebar kolom yang proporsional agar teks tidak terpotong (bebas tanda ######)
+        $xlsx->setColWidth('A', 8);
+        $xlsx->setColWidth('B', 38);
+        $xlsx->setColWidth('C', 30);
+        $xlsx->setColWidth('D', 14);
+        $xlsx->setColWidth('E', 22);
+        $xlsx->setColWidth('F', 26);
+        $xlsx->setColWidth('G', 22);
+        $xlsx->setColWidth('H', 18);
+        $xlsx->setColWidth('I', 35);
+        $xlsx->setColWidth('J', 35);
+        $xlsx->setColWidth('K', 42);
+
+        // SHEET 2: SEMUA LAYANAN (DATABASE LENGKAP DENGAN FILTER)
+        $sheet2 = [];
+        $sheet2[] = ['<style bgcolor="#1E3A8A" color="#FFFFFF" font-size="12"><b>   DATABASE SELURUH HASIL PENGECEKAN LAYANAN - ' . mb_strtoupper($periodTitle) . '   </b></style>'];
+        $sheet2[] = [''];
+        $sheet2[] = [
+            '<center><style bgcolor="#1E3A8A" color="#FFFFFF"><b>No.</b></style></center>',
+            '<style bgcolor="#1E3A8A" color="#FFFFFF"><b>Nama Layanan</b></style>',
+            '<style bgcolor="#1E3A8A" color="#FFFFFF"><b>OPD / Kategori</b></style>',
+            '<center><style bgcolor="#1E3A8A" color="#FFFFFF"><b>Level</b></style></center>',
+            '<center><style bgcolor="#1E3A8A" color="#FFFFFF"><b>Status Pengecekan</b></style></center>',
+            '<center><style bgcolor="#1E3A8A" color="#FFFFFF"><b>Status Penanganan</b></style></center>',
+            '<style bgcolor="#1E3A8A" color="#FFFFFF"><b>Tester Pengecek</b></style>',
+            '<center><style bgcolor="#1E3A8A" color="#FFFFFF"><b>Waktu Pengecekan</b></style></center>',
+            '<style bgcolor="#1E3A8A" color="#FFFFFF"><b>Catatan Pengujian / Kendala</b></style>',
+            '<style bgcolor="#1E3A8A" color="#FFFFFF"><b>Catatan Penanganan Admin</b></style>',
+            '<style bgcolor="#1E3A8A" color="#FFFFFF"><b>URL Layanan</b></style>'
+        ];
+
+        $noAll = 1;
+        foreach ($targetServices as $ps) {
+            $levelDisplay = !empty($ps->service?->level) ? $ps->service->level : '-';
+            $checkedAt = $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d/m/Y H:i') : '-';
+
+            $statusBadge = match($ps->status) {
+                'normal'   => '<center><style bgcolor="#DCFCE7" color="#166534"><b>NORMAL</b></style></center>',
+                'gangguan' => '<center><style bgcolor="#FEE2E2" color="#991B1B"><b>TERKENDALA</b></style></center>',
+                default    => '<center><style bgcolor="#FEF3C7" color="#92400E"><b>BELUM DIPERIKSA</b></style></center>',
+            };
+
+            $handlingBadge = match($ps->serviceIssue?->handling_status) {
+                'perlu_pengecekan_ulang' => '<center><style bgcolor="#FEF3C7" color="#92400E"><b>Perlu Pengecekan Ulang</b></style></center>',
+                'selesai'                => '<center><style bgcolor="#DCFCE7" color="#166534"><b>Sudah Ditindaklanjuti</b></style></center>',
+                default                  => ($ps->serviceIssue && $ps->serviceIssue->has_solved) 
+                    ? '<center><style bgcolor="#DCFCE7" color="#166534"><b>Sudah Ditindaklanjuti</b></style></center>' 
+                    : ($ps->status === 'gangguan' ? '<center><style bgcolor="#FEE2E2" color="#991B1B"><b>Belum Ditindaklanjuti</b></style></center>' : '<center>-</center>'),
+            };
+
+            $sheet2[] = [
+                '<center>' . ($noAll++) . '</center>',
+                '<b>' . ($ps->service?->service_name ?? '-') . '</b>',
+                $ps->service?->category ?: '-',
+                '<center>' . $levelDisplay . '</center>',
+                $statusBadge,
+                $handlingBadge,
+                $ps->tester?->name ?? ($ps->status === 'pending' ? 'Belum Ditugaskan' : '-'),
+                '<center>' . $checkedAt . '</center>',
+                $ps->description ?: '-',
+                $ps->serviceIssue?->admin_note ?? $ps->admin_note ?? '-',
+                $ps->service?->service_url ?: '-'
+            ];
+        }
+
+        $xlsx->addSheet($sheet2, 'Semua Layanan');
+        $xlsx->setColWidth('A', 8);
+        $xlsx->setColWidth('B', 38);
+        $xlsx->setColWidth('C', 30);
+        $xlsx->setColWidth('D', 14);
+        $xlsx->setColWidth('E', 22);
+        $xlsx->setColWidth('F', 26);
+        $xlsx->setColWidth('G', 22);
+        $xlsx->setColWidth('H', 18);
+        $xlsx->setColWidth('I', 35);
+        $xlsx->setColWidth('J', 35);
+        $xlsx->setColWidth('K', 42);
+
+        // SHEET 3: REKAP PER OPD / KATEGORI
+        $sheet3 = [];
+        $sheet3[] = ['<style bgcolor="#1E3A8A" color="#FFFFFF" font-size="12"><b>   REKAPITULASI KESIAPAN LAYANAN PER OPD / KATEGORI   </b></style>'];
+        $sheet3[] = [''];
+        $sheet3[] = [
+            '<center><style bgcolor="#1E3A8A" color="#FFFFFF"><b>No.</b></style></center>',
+            '<style bgcolor="#1E3A8A" color="#FFFFFF"><b>OPD / Instansi / Kategori</b></style>',
+            '<center><style bgcolor="#1E3A8A" color="#FFFFFF"><b>Total Layanan</b></style></center>',
+            '<center><style bgcolor="#1E3A8A" color="#FFFFFF"><b>Normal</b></style></center>',
+            '<center><style bgcolor="#1E3A8A" color="#FFFFFF"><b>Terkendala</b></style></center>',
+            '<center><style bgcolor="#1E3A8A" color="#FFFFFF"><b>Belum Diperiksa</b></style></center>',
+            '<center><style bgcolor="#1E3A8A" color="#FFFFFF"><b>Tingkat Kesiapan</b></style></center>'
+        ];
+
+        $opdGrouped = $targetServices->groupBy(fn($ps) => $ps->service?->category ?: 'Lainnya')->sortKeys();
+        $noOpd = 1;
+        foreach ($opdGrouped as $opdName => $services) {
+            $opdTotal   = $services->count();
+            $opdNormal  = $services->where('status', 'normal')->count();
+            $opdIssues  = $services->where('status', 'gangguan')->count();
+            $opdPending = $services->where('status', 'pending')->count();
+            $opdPct     = $opdTotal > 0 ? round((($opdTotal - $opdPending) / $opdTotal) * 100) : 0;
+
+            $sheet3[] = [
+                '<center>' . ($noOpd++) . '</center>',
+                '<b>' . $opdName . '</b>',
+                '<center><b>' . $opdTotal . '</b></center>',
+                '<center><style bgcolor="#DCFCE7" color="#166534"><b>' . $opdNormal . '</b></style></center>',
+                '<center><style bgcolor="#FEE2E2" color="#991B1B"><b>' . $opdIssues . '</b></style></center>',
+                '<center><style bgcolor="#FEF3C7" color="#92400E"><b>' . $opdPending . '</b></style></center>',
+                '<center><b>' . $opdPct . '%</b></center>'
+            ];
+        }
+
+        $xlsx->addSheet($sheet3, 'Rekapitulasi OPD');
+        $xlsx->setColWidth('A', 8);
+        $xlsx->setColWidth('B', 40);
+        $xlsx->setColWidth('C', 16);
+        $xlsx->setColWidth('D', 14);
+        $xlsx->setColWidth('E', 14);
+        $xlsx->setColWidth('F', 16);
+        $xlsx->setColWidth('G', 18);
+
+        $headers = [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        return response()->stream(function () use ($xlsx) {
+            echo (string) $xlsx;
+        }, 200, $headers);
     }
 
     /**

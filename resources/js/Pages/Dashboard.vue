@@ -1991,10 +1991,10 @@ function submitCheck() {
  <button
  type="button"
  @click="submitCheck"
- :disabled="checkForm.processing || (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName)"
+ :disabled="checkForm.processing || !checkForm.description?.trim() || (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName)"
  :class="[
  'px-5 py-2 rounded-xl font-bold text-xs text-white transition-all flex items-center gap-1.5 cursor-pointer active:scale-95',
- (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName)
+ (checkForm.processing || !checkForm.description?.trim() || (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName))
  ? 'bg-slate-300 cursor-not-allowed text-slate-500 shadow-none'
  : 'bg-primary hover:bg-primary shadow-md shadow-primary/20 disabled:opacity-70'
  ]"

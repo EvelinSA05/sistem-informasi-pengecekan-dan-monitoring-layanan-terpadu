@@ -358,6 +358,22 @@ const isEditMode = computed(() => {
 	return selectedService.value && selectedService.value.status !== 'pending';
 });
 
+const isCheckFormValid = computed(() => {
+	// Status harus dipilih ('normal' atau 'gangguan')
+	if (!checkForm.status) return false;
+
+	// Catatan pengujian wajib diisi dan tidak boleh hanya spasi kosong
+	if (!checkForm.description || checkForm.description.trim() === '') return false;
+
+	// Jika status gangguan/kendala, bukti lampiran wajib diunggah (atau sudah ada file sebelumnya)
+	if (checkForm.status === 'gangguan') {
+		const hasAttachment = Boolean(attachmentFile.value || (existingAttachment.value && !checkForm.remove_attachment));
+		if (!hasAttachment) return false;
+	}
+
+	return true;
+});
+
 function openCheckModal(service) {
 	selectedService.value = service;
 	checkForm.status = service.status === 'pending' ? 'normal' : service.status;
@@ -621,22 +637,22 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  <div class="relative z-10">
   <!-- Top Bar: Kembali link + Status Pill & Deadline -->
   <div class="flex items-center justify-between gap-3 mb-4">
-   <Link :href="route('admin.periods.index')" class="inline-flex items-center gap-1.5 text-xs font-medium text-white/80 hover:text-white transition-colors group cursor-pointer">
-    <span class="transition-transform group-hover:-translate-x-0.5">&larr;</span>
+   <Link :href="route('admin.periods.index')" class="inline-flex items-center gap-2 text-xs font-semibold text-white/85 hover:text-white transition-colors group cursor-pointer">
+    <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+     <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+    </svg>
     <span>Kembali ke Daftar Periode</span>
    </Link>
 
    <div class="flex items-center gap-2">
-    <span v-if="period.deadline_date" class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-white/90 bg-white/10 border border-white/15 px-3 py-1 rounded-full backdrop-blur-sm">
-     <svg class="w-3.5 h-3.5 text-amber-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+    <span v-if="period.deadline_date" class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/95 bg-white/10 border border-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
+     <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
      <span>Tenggat: {{ period.deadline_date }}</span>
     </span>
-    <span v-if="period.status === 'proses'" class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-500/20 border border-emerald-400/30 px-3 py-1 rounded-full backdrop-blur-sm">
-     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+    <span v-if="period.status === 'proses'" class="inline-flex items-center text-[11px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-500/20 border border-emerald-400/30 px-3 py-1 rounded-full backdrop-blur-sm">
      AKTIF
     </span>
-    <span v-else class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-300 bg-white/10 border border-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
-     <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+    <span v-else class="inline-flex items-center text-[11px] font-bold uppercase tracking-wider text-slate-300 bg-white/10 border border-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
      NONAKTIF
     </span>
    </div>
@@ -653,7 +669,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
 
    <div class="flex items-center gap-2 flex-wrap shrink-0">
     <Link :href="route('admin.periods.edit', period.id)" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl transition-all cursor-pointer backdrop-blur-sm shadow-xs active:scale-95">
-     <svg class="w-3.5 h-3.5 text-white/90" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+     <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
      </svg>
      <span>Edit Periode</span>
@@ -665,15 +681,15 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl transition-all cursor-pointer backdrop-blur-sm disabled:opacity-50 shadow-xs active:scale-95"
      title="Sinkronkan daftar layanan periode dengan Master Layanan Majadigi terbaru"
     >
-     <svg class="w-3.5 h-3.5" :class="{'animate-spin': isSyncingServices}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+     <svg class="w-3.5 h-3.5 text-white" :class="{'animate-spin': isSyncingServices}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
      <span>{{ isSyncingServices ? 'Menyinkronkan...' : 'Sinkron Layanan' }}</span>
     </button>
     <a :href="exportExcelUrl" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl transition-all cursor-pointer backdrop-blur-sm shadow-xs active:scale-95">
-     <svg class="w-3.5 h-3.5 text-emerald-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+     <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
      <span>{{ hasActiveFilters ? `Export Excel (${filteredServices.length})` : 'Export Excel' }}</span>
     </a>
     <a :href="exportPdfUrl" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl transition-all cursor-pointer backdrop-blur-sm shadow-xs active:scale-95">
-     <svg class="w-3.5 h-3.5 text-rose-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+     <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
      <span>{{ hasActiveFilters ? `Export PDF (${filteredServices.length})` : 'Export PDF' }}</span>
     </a>
     <button type="button" @click="togglePeriodStatus" :disabled="isUpdatingStatus" class="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-primary bg-white hover:bg-slate-100 border border-transparent rounded-xl transition-all duration-150 cursor-pointer disabled:opacity-50 shadow-md active:scale-95">
@@ -1457,7 +1473,9 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
 								<div class="flex items-center justify-between mb-1.5">
 									<label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
 										Lampiran / Bukti Kendala
-										<span class="text-rose-600 font-bold lowercase">(wajib)</span>
+										<span :class="checkForm.status === 'gangguan' ? 'text-rose-600' : 'text-slate-400'" class="font-bold lowercase">
+											({{ checkForm.status === 'gangguan' ? 'wajib' : 'opsional' }})
+										</span>
 									</label>
 									<span class="text-[10px] text-slate-400">File maks. 10MB</span>
 								</div>
@@ -1544,10 +1562,13 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
 						<button
 							type="button"
 							@click="submitCheck"
-							:disabled="checkForm.processing"
-							class="px-5 py-2 rounded-xl font-bold text-xs text-white bg-primary hover:bg-[#1d4ed8] shadow-md shadow-primary/20 transition-all disabled:opacity-70 flex items-center gap-1.5 cursor-pointer active:scale-95"
+							:disabled="checkForm.processing || !isCheckFormValid"
+							:class="(!isCheckFormValid || checkForm.processing) 
+								? 'opacity-40 cursor-not-allowed bg-slate-300 text-slate-500 shadow-none' 
+								: 'bg-primary hover:bg-[#1d4ed8] text-white shadow-md shadow-primary/20 cursor-pointer active:scale-95'"
+							class="px-5 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5"
 						>
-							<svg v-if="checkForm.processing" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+							<svg v-if="checkForm.processing" class="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
 								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 							</svg>

@@ -1255,10 +1255,10 @@ function submitCheck() {
  <button
  type="button"
  @click="submitCheck"
- :disabled="checkForm.processing || (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName)"
+ :disabled="checkForm.processing || !checkForm.description?.trim() || (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName)"
  :class="[
  'px-5 py-2 rounded-xl font-bold text-xs text-white transition-all flex items-center gap-1.5 cursor-pointer active:scale-95',
- (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName)
+ (checkForm.processing || !checkForm.description?.trim() || (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName))
  ? 'bg-slate-300 cursor-not-allowed text-slate-500 shadow-none'
  : (selectedService?.is_recheck_needed ? 'bg-amber-500 hover:bg-amber-600 shadow-md shadow-amber-500/20' : 'bg-primary hover:bg-[#1d4ed8] shadow-md shadow-primary/20 disabled:opacity-70')
  ]"

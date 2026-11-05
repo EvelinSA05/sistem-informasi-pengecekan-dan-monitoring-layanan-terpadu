@@ -481,10 +481,25 @@ class ServiceCheckingWorkflowTest extends TestCase
             ])
         );
         $excelResponse->assertOk();
-        $csvContent = $excelResponse->streamedContent();
-        $this->assertStringContainsString('Filter Aktif', $csvContent);
-        $this->assertStringContainsString('Portal Rumah Sakit Umum', $csvContent);
-        $this->assertStringNotContainsString('Sistem Informasi Pengujian Jatim', $csvContent);
+        $excelContent = $excelResponse->streamedContent();
+
+        // Jika response berupa XLSX (file ZIP OpenXML), baca sharedStrings untuk verifikasi konten teks
+        if (str_starts_with($excelContent, "PK")) {
+            $zip = new \ZipArchive();
+            $tmp = tempnam(sys_get_temp_dir(), 'xlsx_test');
+            file_put_contents($tmp, $excelContent);
+            $zip->open($tmp);
+            $stringContent = $zip->getFromName('xl/sharedStrings.xml') ?: '';
+            $zip->close();
+            @unlink($tmp);
+            $this->assertStringContainsString('Filter Aktif', $stringContent);
+            $this->assertStringContainsString('Portal Rumah Sakit Umum', $stringContent);
+            $this->assertStringNotContainsString('Sistem Informasi Pengujian Jatim', $stringContent);
+        } else {
+            $this->assertStringContainsString('Filter Aktif', $excelContent);
+            $this->assertStringContainsString('Portal Rumah Sakit Umum', $excelContent);
+            $this->assertStringNotContainsString('Sistem Informasi Pengujian Jatim', $excelContent);
+        }
 
         // 2. Uji Export PDF dengan filter status=gangguan
         $pdfResponse = $this->actingAs($this->admin)->get(
