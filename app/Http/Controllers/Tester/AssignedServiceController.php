@@ -366,6 +366,7 @@ class AssignedServiceController extends Controller
                                 ? Carbon::parse($issue->admin_handled_at)->format('d M Y, H:i')
                                 : null,
                             'attachment' => $ps->attachment,
+                            'attachment_mime' => $ps->attachment_mime,
                             'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
                             'attachment_url' => $ps->attachment ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                             'checked_at' => $ps->checked_at
@@ -640,6 +641,7 @@ class AssignedServiceController extends Controller
                 'actor_role' => 'Tester Layanan',
                 'description' => $log->description,
                 'attachment' => $log->attachment,
+                'attachment_mime' => $log->attachment_mime ?? $ps->attachment_mime ?? null,
                 'attachment_name' => $log->attachment ? basename($log->attachment) : null,
                 'attachment_url' => $log->attachment ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                 'created_at' => $createdAt ? $createdAt->format('d M Y, H:i') : '-',

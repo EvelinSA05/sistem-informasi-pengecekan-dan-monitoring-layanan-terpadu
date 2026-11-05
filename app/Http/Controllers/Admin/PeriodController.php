@@ -383,6 +383,7 @@ class PeriodController extends Controller
                     'admin_note' => $ps->serviceIssue?->admin_note ?? $ps->admin_note,
                     'handling_status' => $ps->serviceIssue?->handling_status ?? 'belum_ditindaklanjuti',
                     'attachment' => $ps->attachment,
+                    'attachment_mime' => $ps->attachment_mime,
                     'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
                     'attachment_url' => $ps->attachment ? route('admin.periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                     'checked_at' => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : null,
@@ -451,6 +452,7 @@ class PeriodController extends Controller
                         'handling_status'  => $issue?->handling_status ?? 'belum_ditindaklanjuti',
                         'admin_handled_at' => $issue?->admin_handled_at ? Carbon::parse($issue->admin_handled_at)->format('d M Y, H:i') : null,
                         'attachment'       => $ps->attachment,
+                        'attachment_mime'  => $ps->attachment_mime,
                         'attachment_name'  => $ps->attachment ? basename($ps->attachment) : null,
                         'attachment_url'   => $ps->attachment ? route('admin.periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                         'checked_at'       => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : '-',
@@ -745,6 +747,7 @@ class PeriodController extends Controller
             'periodServices' => fn($q) => $q->withoutAttachmentData(),
             'periodServices.service',
             'periodServices.tester:id,name',
+            'periodServices.serviceIssue',
         ]);
 
         $filterResult   = $this->filterPeriodServicesForExport($period->periodServices, $request);
@@ -770,26 +773,31 @@ class PeriodController extends Controller
 
             // UTF-8 BOM for Microsoft Excel compatibility
             fputs($file, "\xEF\xBB\xBF");
+            // Instruct Microsoft Excel to parse comma-delimited columns cleanly
+            fputs($file, "sep=,\r\n");
 
             // ==========================================
-            // SECTION 1 — IDENTITAS LAPORAN & INFORMASI
+            // SECTION 1 — HEADER & IDENTITAS DOKUMEN
             // ==========================================
-            fputcsv($file, ['MAJADIGI CHECKER']);
-            fputcsv($file, ['LAPORAN HASIL PENGECEKAN LAYANAN DIGITAL']);
+            fputcsv($file, ['MAJADIGI CHECKER - PEMERINTAH PROVINSI JAWA TIMUR']);
+            fputcsv($file, ['LAPORAN HASIL PENGECEKAN KUALITAS & KETERSEDIAAN LAYANAN DIGITAL']);
             fputcsv($file, []);
 
-            fputcsv($file, ['INFORMASI LAPORAN']);
+            // ==========================================
+            // SECTION 2 — INFORMASI LAPORAN & PERIODE
+            // ==========================================
+            fputcsv($file, ['INFORMASI LAPORAN', '']);
             fputcsv($file, ['Periode Pengecekan', $periodTitle]);
-            fputcsv($file, ['Status Periode', strtoupper($period->status)]);
-            fputcsv($file, ['Dibuat Oleh', $period->creator?->name ?? 'Admin']);
-            fputcsv($file, ['Tanggal Laporan', date('d/m/Y H:i:s')]);
+            fputcsv($file, ['Status Periode', $period->status === 'proses' ? 'AKTIF (Proses Berjalan)' : 'SELESAI (Nonaktif)']);
+            fputcsv($file, ['Dibuat Oleh', $period->creator?->name ?? 'Admin Majadigi']);
+            fputcsv($file, ['Tanggal Unduh Laporan', date('d/m/Y H:i:s') . ' WIB']);
             if (!empty($activeFilters)) {
                 $filterSummary = collect($activeFilters)->map(fn($v, $k) => "{$k}: {$v}")->implode(' | ');
                 fputcsv($file, ['Filter Aktif', $filterSummary]);
             }
             fputcsv($file, []);
 
-            // Perhitungan metrik aktual (mengikuti filter jika ada)
+            // Perhitungan metrik statistik aktual (sesuai filter yang aktif jika ada)
             $totalServices = $targetServices->count();
             $normalCount   = $targetServices->where('status', 'normal')->count();
             $issuesCount   = $targetServices->where('status', 'gangguan')->count();
@@ -803,99 +811,136 @@ class PeriodController extends Controller
                 ->count();
 
             // ==========================================
-            // SECTION 2 — RINGKASAN HASIL PENGECEKAN
+            // SECTION 3 — RINGKASAN HASIL PENGECEKAN
             // ==========================================
-            fputcsv($file, ['RINGKASAN HASIL PENGECEKAN']);
+            fputcsv($file, ['RINGKASAN STATISTIK PENGECEKAN', '']);
             fputcsv($file, ['Total Layanan', $totalServices]);
-            fputcsv($file, ['Layanan Normal', $normalCount]);
-            fputcsv($file, ['Layanan Terkendala', $issuesCount]);
-            fputcsv($file, ['Belum Diperiksa', $pendingCount]);
-            fputcsv($file, ['Tingkat Kesiapan', "{$readinessPct}%"]);
-            fputcsv($file, ['Jumlah OPD/Kab/Kota', $opdCount]);
+            fputcsv($file, ['Layanan Normal (Berjalan)', $normalCount]);
+            fputcsv($file, ['Layanan Terkendala (Ada Masalah)', $issuesCount]);
+            fputcsv($file, ['Layanan Belum Diperiksa', $pendingCount]);
+            fputcsv($file, ['Tingkat Kesiapan (Selesai Pengecekan)', "{$readinessPct}%"]);
+            fputcsv($file, ['Jumlah OPD / Kategori', $opdCount]);
             fputcsv($file, []);
 
-            // ==========================================
-            // SECTION 3 — REKAP STATUS
-            // ==========================================
-            fputcsv($file, ['REKAP STATUS']);
-            fputcsv($file, ['Status Pengecekan', 'Jumlah']);
-            fputcsv($file, ['NORMAL', $normalCount]);
-            fputcsv($file, ['TERKENDALA', $issuesCount]);
-            fputcsv($file, ['BELUM DIPERIKSA', $pendingCount]);
-            fputcsv($file, []);
+            // Pemisahan Layanan Berdasarkan Status
+            $issueServices = $targetServices->filter(fn($ps) => $ps->status === 'gangguan')->values();
+            $normalServices = $targetServices->filter(fn($ps) => $ps->status === 'normal')->values();
+            $pendingServices = $targetServices->filter(fn($ps) => $ps->status === 'pending')->values();
 
             // ==========================================
-            // SECTION 4 — REKAP OPD/KAB/KOTA
+            // SECTION 4 — TABEL A. LAYANAN TERKENDALA (PRIORITAS PENANGANAN)
             // ==========================================
-            $opdSummary = $targetServices
-                ->groupBy(fn($ps) => $ps->service?->category ?: '-')
-                ->map(fn($group) => $group->count())
-                ->sortDesc();
-
-            fputcsv($file, ['REKAP OPD/KAB/KOTA']);
-            fputcsv($file, ['OPD/Kab/Kota', 'Jumlah Layanan']);
-            foreach ($opdSummary as $opdName => $opdTotal) {
-                fputcsv($file, [$opdName, $opdTotal]);
-            }
-            fputcsv($file, []);
-
-            // Pemisahan Layanan Berjalan & Terkendala (Konsisten dengan Report PDF)
-            $runningServices = $targetServices->filter(fn($ps) => $ps->status === 'normal')->values();
-            $issueServices = $targetServices->filter(fn($ps) => $ps->status !== 'normal')->values();
-
-            // ==========================================
-            // SECTION 5 — A. LAYANAN BERJALAN
-            // ==========================================
-            fputcsv($file, ['A. LAYANAN BERJALAN (' . $runningServices->count() . ' Layanan)']);
+            fputcsv($file, ['A. DAFTAR LAYANAN TERKENDALA (' . $issueServices->count() . ' Layanan)']);
             fputcsv($file, [
                 'No.',
                 'Nama Layanan',
-                'Link Layanan',
-                'OPD/Kab/Kota',
-                'Level Layanan',
-            ]);
-
-            $noRunning = 1;
-            foreach ($runningServices as $ps) {
-                $levelDisplay = !empty($ps->service?->level) ? $ps->service->level : '-';
-                fputcsv($file, [
-                    $noRunning++,
-                    $ps->service?->service_name ?? '-',
-                    $ps->service?->service_url ?: '-',
-                    $ps->service?->category ?: '-',
-                    $levelDisplay,
-                ]);
-            }
-            if ($runningServices->isEmpty()) {
-                fputcsv($file, ['-', 'Tidak ada data layanan berjalan pada periode ini', '-', '-', '-']);
-            }
-            fputcsv($file, []);
-
-            // ==========================================
-            // SECTION 6 — B. LAYANAN TERKENDALA
-            // ==========================================
-            fputcsv($file, ['B. LAYANAN TERKENDALA (' . $issueServices->count() . ' Layanan)']);
-            fputcsv($file, [
-                'No.',
-                'Nama Layanan',
-                'Link Layanan',
-                'OPD/Kab/Kota',
-                'Level Layanan',
+                'OPD / Kategori',
+                'Level',
+                'Status Pengecekan',
+                'Status Tindak Lanjut',
+                'Tester Pengecek',
+                'Waktu Diperiksa',
+                'Catatan Kendala (Tester)',
+                'Catatan Tindak Lanjut (Admin)',
+                'URL Layanan',
             ]);
 
             $noIssue = 1;
             foreach ($issueServices as $ps) {
                 $levelDisplay = !empty($ps->service?->level) ? $ps->service->level : '-';
+                $handlingStatusLabel = match($ps->serviceIssue?->handling_status) {
+                    'perlu_pengecekan_ulang' => 'Perlu Pengecekan Ulang',
+                    'selesai'                => 'Sudah Ditindaklanjuti',
+                    default                  => ($ps->serviceIssue && $ps->serviceIssue->has_solved) ? 'Sudah Ditindaklanjuti' : 'Belum Ditindaklanjuti',
+                };
+                $checkedAt = $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d/m/Y H:i') : '-';
+
                 fputcsv($file, [
                     $noIssue++,
                     $ps->service?->service_name ?? '-',
-                    $ps->service?->service_url ?: '-',
                     $ps->service?->category ?: '-',
                     $levelDisplay,
+                    'TERKENDALA',
+                    $handlingStatusLabel,
+                    $ps->tester?->name ?? '-',
+                    $checkedAt,
+                    $ps->description ?: '-',
+                    $ps->serviceIssue?->admin_note ?? $ps->admin_note ?? '-',
+                    $ps->service?->service_url ?: '-',
                 ]);
             }
             if ($issueServices->isEmpty()) {
-                fputcsv($file, ['-', 'Tidak ada data layanan terkendala pada periode ini', '-', '-', '-']);
+                fputcsv($file, ['-', 'Tidak ada layanan terkendala pada periode ini', '-', '-', '-', '-', '-', '-', '-', '-', '-']);
+            }
+            fputcsv($file, []);
+
+            // ==========================================
+            // SECTION 5 — TABEL B. LAYANAN NORMAL / BERJALAN
+            // ==========================================
+            fputcsv($file, ['B. DAFTAR LAYANAN NORMAL / BERJALAN (' . $normalServices->count() . ' Layanan)']);
+            fputcsv($file, [
+                'No.',
+                'Nama Layanan',
+                'OPD / Kategori',
+                'Level',
+                'Status Pengecekan',
+                'Tester Pengecek',
+                'Waktu Diperiksa',
+                'Catatan Pengecekan',
+                'URL Layanan',
+            ]);
+
+            $noNormal = 1;
+            foreach ($normalServices as $ps) {
+                $levelDisplay = !empty($ps->service?->level) ? $ps->service->level : '-';
+                $checkedAt = $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d/m/Y H:i') : '-';
+
+                fputcsv($file, [
+                    $noNormal++,
+                    $ps->service?->service_name ?? '-',
+                    $ps->service?->category ?: '-',
+                    $levelDisplay,
+                    'NORMAL',
+                    $ps->tester?->name ?? '-',
+                    $checkedAt,
+                    $ps->description ?: '-',
+                    $ps->service?->service_url ?: '-',
+                ]);
+            }
+            if ($normalServices->isEmpty()) {
+                fputcsv($file, ['-', 'Tidak ada data layanan normal pada periode ini', '-', '-', '-', '-', '-', '-', '-']);
+            }
+            fputcsv($file, []);
+
+            // ==========================================
+            // SECTION 6 — TABEL C. LAYANAN BELUM DIPERIKSA (JIKA ADA)
+            // ==========================================
+            if ($pendingServices->isNotEmpty()) {
+                fputcsv($file, ['C. DAFTAR LAYANAN BELUM DIPERIKSA (' . $pendingServices->count() . ' Layanan)']);
+                fputcsv($file, [
+                    'No.',
+                    'Nama Layanan',
+                    'OPD / Kategori',
+                    'Level',
+                    'Status Pengecekan',
+                    'Tester Ditugaskan',
+                    'URL Layanan',
+                ]);
+
+                $noPending = 1;
+                foreach ($pendingServices as $ps) {
+                    $levelDisplay = !empty($ps->service?->level) ? $ps->service->level : '-';
+                    fputcsv($file, [
+                        $noPending++,
+                        $ps->service?->service_name ?? '-',
+                        $ps->service?->category ?: '-',
+                        $levelDisplay,
+                        'BELUM DIPERIKSA',
+                        $ps->tester?->name ?? 'Belum Ditugaskan',
+                        $ps->service?->service_url ?: '-',
+                    ]);
+                }
+                fputcsv($file, []);
             }
 
             fclose($file);
@@ -1188,6 +1233,7 @@ class PeriodController extends Controller
                 'actor_role' => 'Tester Layanan',
                 'description' => $log->description,
                 'attachment' => $log->attachment,
+                'attachment_mime' => $log->attachment_mime ?? $ps->attachment_mime ?? null,
                 'attachment_name' => $log->attachment ? basename($log->attachment) : null,
                 'attachment_url' => $log->attachment ? route('admin.periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                 'created_at' => $createdAt ? $createdAt->format('d M Y, H:i') : '-',

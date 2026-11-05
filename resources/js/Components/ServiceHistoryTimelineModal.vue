@@ -30,9 +30,32 @@ function toggleTimelineOrder() {
     timelineOrder.value = timelineOrder.value === 'asc' ? 'desc' : 'asc';
 }
 
-function isImageAttachment(urlOrName) {
-    if (!urlOrName) return false;
-    return !!String(urlOrName).match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
+const failedImages = ref(new Set());
+
+function onImageError(key) {
+    if (key) failedImages.value.add(key);
+}
+
+function isImageAttachment(item) {
+    if (!item) return false;
+    if (typeof item === 'object') {
+        if (item.attachment_mime && item.attachment_mime.startsWith('image/')) return true;
+        const nameOrUrl = item.attachment_name || item.attachment || item.attachment_url || '';
+        if (/\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(nameOrUrl)) return true;
+        if (item.attachment_url && !/\.(pdf|doc|docx|xls|xlsx|zip|rar|txt)(\?.*)?$/i.test(nameOrUrl)) return true;
+        return false;
+    }
+    const str = String(item);
+    if (/\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(str)) return true;
+    if (!/\.(pdf|doc|docx|xls|xlsx|zip|rar|txt)(\?.*)?$/i.test(str) && str.includes('/attachment/')) return true;
+    return false;
+}
+
+function shouldShowPreview(item) {
+    if (!item || !item.attachment_url) return false;
+    const key = item.id || item.attachment_url;
+    if (failedImages.value.has(key)) return false;
+    return isImageAttachment(item);
 }
 </script>
 
@@ -264,12 +287,13 @@ function isImageAttachment(urlOrName) {
 
                                         <!-- Preview Gambar jika file gambar -->
                                         <div
-                                            v-if="isImageAttachment(item.attachment_url || item.attachment_name)"
+                                            v-if="shouldShowPreview(item)"
                                             class="relative rounded-xl overflow-hidden bg-slate-100 border border-slate-200/90 p-1 flex items-center justify-center max-h-56 group/img"
                                         >
                                             <img
                                                 :src="item.attachment_url"
                                                 :alt="item.attachment_name || 'Bukti Kendala'"
+                                                @error="onImageError(item.id || item.attachment_url)"
                                                 class="max-h-52 object-contain rounded-lg w-auto mx-auto"
                                             />
                                             <a

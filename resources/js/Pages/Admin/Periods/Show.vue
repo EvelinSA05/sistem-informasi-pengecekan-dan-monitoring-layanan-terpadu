@@ -16,7 +16,7 @@ const props = defineProps({
 // Layanan Terkendala state & actions
 const troubledList = ref([...props.troubled_services]);
 const troubledCurrentPage = ref(1);
-const troubledPerPage = ref(5);
+const troubledPerPage = ref(3);
 
 const paginatedTroubledList = computed(() => {
  const start = (troubledCurrentPage.value - 1) * troubledPerPage.value;
@@ -619,59 +619,72 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-primary/10 rounded-full blur-2xl"></div>
 
  <div class="relative z-10">
- <!-- Kembali -->
- <Link :href="route('admin.periods.index')" class="inline-flex items-center gap-1.5 text-xs text-white/80 hover:text-white transition-colors group mb-4 cursor-pointer">
- <span class="transition-transform group-hover:-translate-x-0.5">&larr;</span>
- <span>Kembali</span>
- </Link>
+  <!-- Top Bar: Kembali link + Status Pill & Deadline -->
+  <div class="flex items-center justify-between gap-3 mb-4">
+   <Link :href="route('admin.periods.index')" class="inline-flex items-center gap-1.5 text-xs font-medium text-white/80 hover:text-white transition-colors group cursor-pointer">
+    <span class="transition-transform group-hover:-translate-x-0.5">&larr;</span>
+    <span>Kembali ke Daftar Periode</span>
+   </Link>
 
- <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
- <div>
- <div class="flex items-center gap-3 flex-wrap">
- <h2 class="text-xl font-bold text-white">Detail Periode: {{ period.title }}</h2>
- <span v-if="period.status === 'proses'" class="text-[11px] font-bold uppercase tracking-wide text-cyan-100 bg-white/15 border border-white/20 px-2.5 py-0.5 rounded-full backdrop-blur-sm">AKTIF</span>
- <span v-else class="text-[11px] font-bold uppercase tracking-wide text-white/80 bg-white/10 border border-white/15 px-2.5 py-0.5 rounded-full backdrop-blur-sm">NONAKTIF</span>
- </div>
- <p class="text-xs text-white/70 mt-1.5">
- Dibuat pada {{ period.created_at_label }} oleh {{ period.creator_name }}
- <template v-if="period.deadline_date"> <span class="mx-1 text-white/40">|</span> Tenggat Waktu: {{ period.deadline_date }}</template>
- </p>
- </div>
+   <div class="flex items-center gap-2">
+    <span v-if="period.deadline_date" class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-white/90 bg-white/10 border border-white/15 px-3 py-1 rounded-full backdrop-blur-sm">
+     <svg class="w-3.5 h-3.5 text-amber-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+     <span>Tenggat: {{ period.deadline_date }}</span>
+    </span>
+    <span v-if="period.status === 'proses'" class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-500/20 border border-emerald-400/30 px-3 py-1 rounded-full backdrop-blur-sm">
+     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+     AKTIF
+    </span>
+    <span v-else class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-300 bg-white/10 border border-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
+     <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+     NONAKTIF
+    </span>
+   </div>
+  </div>
 
- <div class="flex items-center gap-2 flex-wrap shrink-0">
- <Link :href="route('admin.periods.edit', period.id)" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/20 border border-white/25 rounded-xl hover:bg-white/30 transition-all cursor-pointer backdrop-blur-sm shadow-2xs">
-  <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-   <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-  </svg>
-  <span>Edit Periode</span>
- </Link>
- <button
-  type="button"
-  @click="syncServicesWithMaster"
-  :disabled="isSyncingServices"
-  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/15 border border-white/20 rounded-lg hover:bg-white/25 transition-colors cursor-pointer backdrop-blur-sm disabled:opacity-50"
-  title="Sinkronkan daftar layanan periode dengan Master Layanan Majadigi terbaru"
- >
-  <svg class="w-3.5 h-3.5" :class="{'animate-spin': isSyncingServices}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-  {{ isSyncingServices ? 'Menyinkronkan...' : 'Sinkron Layanan' }}
- </button>
- <a :href="exportExcelUrl" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/15 border border-white/20 rounded-lg hover:bg-white/25 transition-colors cursor-pointer backdrop-blur-sm">
- <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
- <span>{{ hasActiveFilters ? `Export Excel (${filteredServices.length})` : 'Export Excel' }}</span>
- </a>
- <a :href="exportPdfUrl" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/15 border border-white/20 rounded-lg hover:bg-white/25 transition-colors cursor-pointer backdrop-blur-sm">
- <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
- <span>{{ hasActiveFilters ? `Export PDF (${filteredServices.length})` : 'Export PDF' }}</span>
- </a>
- <button type="button" @click="togglePeriodStatus" :disabled="isUpdatingStatus" class="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-primary bg-white hover:bg-primary hover:text-white border border-transparent hover:border-white/30 rounded-lg transition-all duration-150 cursor-pointer disabled:opacity-50 shadow-sm">
- <svg v-if="period.status === 'proses'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
- <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
- {{ isUpdatingStatus ? 'Memproses...' : (period.status === 'proses' ? 'Selesaikan Periode' : 'Buka Kembali Periode') }}
- </button>
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
+   <div>
+    <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Detail Periode: {{ period.title }}</h2>
+    <p class="text-xs text-white/70 mt-1.5">
+     Dibuat pada {{ period.created_at_label }} oleh {{ period.creator_name }}
+     <template v-if="period.deadline_date"> <span class="mx-1 text-white/40 sm:hidden">|</span> <span class="text-amber-200/90 sm:hidden">Tenggat: {{ period.deadline_date }}</span></template>
+    </p>
+   </div>
+
+   <div class="flex items-center gap-2 flex-wrap shrink-0">
+    <Link :href="route('admin.periods.edit', period.id)" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl transition-all cursor-pointer backdrop-blur-sm shadow-xs active:scale-95">
+     <svg class="w-3.5 h-3.5 text-white/90" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+     </svg>
+     <span>Edit Periode</span>
+    </Link>
+    <button
+     type="button"
+     @click="syncServicesWithMaster"
+     :disabled="isSyncingServices"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl transition-all cursor-pointer backdrop-blur-sm disabled:opacity-50 shadow-xs active:scale-95"
+     title="Sinkronkan daftar layanan periode dengan Master Layanan Majadigi terbaru"
+    >
+     <svg class="w-3.5 h-3.5" :class="{'animate-spin': isSyncingServices}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+     <span>{{ isSyncingServices ? 'Menyinkronkan...' : 'Sinkron Layanan' }}</span>
+    </button>
+    <a :href="exportExcelUrl" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl transition-all cursor-pointer backdrop-blur-sm shadow-xs active:scale-95">
+     <svg class="w-3.5 h-3.5 text-emerald-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+     <span>{{ hasActiveFilters ? `Export Excel (${filteredServices.length})` : 'Export Excel' }}</span>
+    </a>
+    <a :href="exportPdfUrl" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl transition-all cursor-pointer backdrop-blur-sm shadow-xs active:scale-95">
+     <svg class="w-3.5 h-3.5 text-rose-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+     <span>{{ hasActiveFilters ? `Export PDF (${filteredServices.length})` : 'Export PDF' }}</span>
+    </a>
+    <button type="button" @click="togglePeriodStatus" :disabled="isUpdatingStatus" class="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-primary bg-white hover:bg-slate-100 border border-transparent rounded-xl transition-all duration-150 cursor-pointer disabled:opacity-50 shadow-md active:scale-95">
+     <svg v-if="period.status === 'proses'" class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+     <svg v-else class="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+     <span>{{ isUpdatingStatus ? 'Memproses...' : (period.status === 'proses' ? 'Selesaikan Periode' : 'Buka Kembali Periode') }}</span>
+    </button>
+   </div>
+  </div>
  </div>
- </div>
- </div>
- </div>
+</div>
 
  <!-- ═══════════════════════════════════════════════════ -->
  <!-- 2. KPI CARDS (4 kolom, clean monokromatik) -->
@@ -1117,33 +1130,11 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
     </button>
    </div>
 
-   <!-- Pintasan Ekspor Laporan Sesuai Filter -->
-   <div class="flex items-center gap-2 shrink-0">
-    <span v-if="hasActiveFilters" class="text-[11px] font-semibold text-primary bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg">
+   <!-- Status Filter Aktif jika ada filter yang diterapkan -->
+   <div v-if="hasActiveFilters" class="flex items-center gap-2 shrink-0">
+    <span class="text-[11px] font-semibold text-primary bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg">
      Filter Aktif: {{ filteredServices.length }} Layanan
     </span>
-    <a
-     :href="exportExcelUrl"
-     target="_blank"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
-     title="Unduh laporan Excel/CSV sesuai filter yang dipilih"
-    >
-     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-     </svg>
-     <span>{{ hasActiveFilters ? `Unduh Excel Terfilter (${filteredServices.length})` : 'Unduh Excel' }}</span>
-    </a>
-    <a
-     :href="exportPdfUrl"
-     target="_blank"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold transition-colors cursor-pointer"
-     title="Cetak laporan PDF sesuai filter yang dipilih"
-    >
-     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-     </svg>
-     <span>{{ hasActiveFilters ? `Cetak PDF Terfilter (${filteredServices.length})` : 'Cetak PDF' }}</span>
-    </a>
    </div>
   </div>
  </div>

@@ -6,10 +6,19 @@ defineProps({
 
 const emit = defineEmits(['close']);
 
-function isImageFile(filename) {
+function isImageFile(filename, mimeType = null) {
+    if (mimeType && mimeType.startsWith('image/')) return true;
     if (!filename) return false;
-    const ext = String(filename).split('.').pop().toLowerCase();
-    return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(ext);
+    const clean = String(filename).split('?')[0];
+    const parts = clean.split('.');
+    if (parts.length > 1) {
+        const ext = parts.pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(ext)) return true;
+    }
+    if (clean.includes('/attachment/') && !/\.(pdf|doc|docx|xls|xlsx|zip|rar|txt)$/i.test(clean)) {
+        return true;
+    }
+    return false;
 }
 
 function getFileExtension(filename) {
@@ -191,7 +200,7 @@ function getFileExtension(filename) {
                                 </div>
 
                                 <div
-                                    v-if="isImageFile(issue.attachment_name || issue.attachment) && issue.attachment_url"
+                                    v-if="isImageFile(issue.attachment_name || issue.attachment || issue.attachment_url, issue.attachment_mime) && issue.attachment_url"
                                     class="rounded-xl overflow-hidden border border-slate-200 bg-slate-900/5 relative group p-2"
                                 >
                                     <img
@@ -299,7 +308,29 @@ function getFileExtension(filename) {
                                             {{ log.description || '(Tidak ada catatan keterangan)' }}
                                         </div>
 
-                                        <div v-if="log.attachment_url" class="pt-1">
+                                        <div v-if="log.attachment_url" class="pt-2 space-y-2">
+                                            <!-- Preview Gambar jika bukti berupa file gambar -->
+                                            <div
+                                                v-if="isImageFile(log.attachment_name || log.attachment || log.attachment_url, log.attachment_mime)"
+                                                class="rounded-xl overflow-hidden border border-slate-200 bg-slate-900/5 relative group p-1 max-w-xs"
+                                            >
+                                                <img
+                                                    :src="log.attachment_url"
+                                                    :alt="log.attachment_name || 'Bukti'"
+                                                    class="max-h-44 object-contain rounded-lg mx-auto"
+                                                />
+                                                <a
+                                                    :href="log.attachment_url"
+                                                    target="_blank"
+                                                    class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
+                                                >
+                                                    <span class="px-2 py-0.5 rounded-md bg-black/80 text-white text-[10px] font-semibold flex items-center gap-1 shadow-sm">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                                        Buka Penuh
+                                                    </span>
+                                                </a>
+                                            </div>
+
                                             <a
                                                 :href="log.attachment_url"
                                                 target="_blank"
