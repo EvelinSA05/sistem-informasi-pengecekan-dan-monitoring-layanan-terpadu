@@ -61,7 +61,9 @@ class ProfileTest extends TestCase
             ->assertSessionHasNoErrors()
             ->assertRedirect('/profile');
 
-        $this->assertSame($user->email, $user->refresh()->email);
+        $user->refresh();
+
+        $this->assertSame($user->email, $user->email);
     }
 
     public function test_user_can_delete_their_account(): void
