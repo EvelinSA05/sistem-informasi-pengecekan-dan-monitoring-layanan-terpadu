@@ -398,3 +398,4 @@ function isImageAttachment(urlOrName) {
         </div>
     </Transition>
 </template>
+

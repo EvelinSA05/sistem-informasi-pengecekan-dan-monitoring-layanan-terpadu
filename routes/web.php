@@ -21,6 +21,16 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/attachment/{periodService}/download', [AdminPeriodController::class, 'downloadAttachment'])->name('periods.attachment.download');
+    Route::post('/notifications/mark-read', function (\Illuminate\Http\Request $request) {
+        $user = $request->user();
+        if ($user) {
+            if ($user->role === 'admin') {
+                \App\Models\ServiceIssue::where('has_notif', false)->update(['has_notif' => true]);
+            }
+            $request->session()->put('notifications_read_at_' . $user->id, now()->addSecond()->toIso8601String());
+        }
+        return back();
+    })->name('notifications.mark_read');
 
     // ─── Admin Routes ──────────────────────────────────────────
     Route::prefix('admin')->name('admin.')->middleware([\App\Http\Middleware\IsAdmin::class])->group(function () {

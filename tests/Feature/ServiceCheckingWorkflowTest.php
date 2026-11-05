@@ -292,4 +292,75 @@ class ServiceCheckingWorkflowTest extends TestCase
         $response->assertRedirect('/');
         $this->assertGuest();
     }
+
+    public function test_in_app_notifications_and_mark_read_for_admin_and_tester(): void
+    {
+        $fakeImage = $this->createFakePng('bukti_notif.png');
+
+        // 1. Tester melaporkan kendala -> Admin menerima notifikasi belum dibaca
+        $this->actingAs($this->tester1)->post(
+            route('tester.submit_check', $this->periodService->id),
+            [
+                'status'      => 'gangguan',
+                'description' => 'Kendala untuk pengujian lonceng notifikasi.',
+                'attachment'  => $fakeImage,
+            ]
+        );
+
+        $adminDash = $this->actingAs($this->admin)->get(route('dashboard'));
+        $adminDash->assertOk();
+        $adminNotifs = $adminDash->viewData('page')['props']['notifications'] ?? null;
+        $this->assertNotNull($adminNotifs);
+        $this->assertGreaterThanOrEqual(1, $adminNotifs['unread_count']);
+
+        // 2. Admin klik Tandai Dibaca -> has_notif = true & unread_count menjadi 0
+        $this->actingAs($this->admin)->post(route('notifications.mark_read'))->assertRedirect();
+        $issue = ServiceIssue::where('period_service_id', $this->periodService->id)->firstOrFail();
+        $this->assertTrue($issue->has_notif);
+
+        $adminDashAfterRead = $this->actingAs($this->admin)->get(route('dashboard'));
+        $this->assertEquals(0, $adminDashAfterRead->viewData('page')['props']['notifications']['unread_count']);
+
+        // 3. Admin menindaklanjuti kendala -> Tester menerima notifikasi "Perlu Cek Ulang"
+        $this->actingAs($this->admin)->post(
+            route('admin.services.issues.toggle_solved', $issue->id),
+            [
+                'admin_note' => 'Silakan cek ulang layanan setelah restart server.',
+            ]
+        );
+
+        $testerDash = $this->actingAs($this->tester1)->get(route('dashboard'));
+        $testerDash->assertOk();
+        $testerNotifs = $testerDash->viewData('page')['props']['notifications'] ?? null;
+        $this->assertNotNull($testerNotifs);
+        $this->assertGreaterThanOrEqual(1, $testerNotifs['unread_count']);
+        $this->assertEquals('recheck_needed', $testerNotifs['items'][0]['type']);
+    }
+
+    public function test_admin_dashboard_provides_period_trends_and_top_troubled_services(): void
+    {
+        $fakeImage = $this->createFakePng('bukti_trend.png');
+
+        // Laporkan kendala pada periode pertama
+        $this->actingAs($this->tester1)->post(
+            route('tester.submit_check', $this->periodService->id),
+            [
+                'status'      => 'gangguan',
+                'description' => 'Kendala periode pertama untuk analitik tren.',
+                'attachment'  => $fakeImage,
+            ]
+        );
+
+        $response = $this->actingAs($this->admin)->get(route('dashboard'));
+        $response->assertOk();
+
+        $props = $response->viewData('page')['props'];
+        $this->assertArrayHasKey('periodTrends', $props);
+        $this->assertArrayHasKey('topTroubledServices', $props);
+        $this->assertCount(1, $props['periodTrends']);
+        $this->assertEquals(1, $props['periodTrends'][0]['gangguan']);
+        $this->assertCount(1, $props['topTroubledServices']);
+        $this->assertEquals($this->service->id, $props['topTroubledServices'][0]['id']);
+        $this->assertEquals(1, $props['topTroubledServices'][0]['total_issues']);
+    }
 }

@@ -117,6 +117,61 @@ function confirmLogout() {
  router.post(route('logout'));
 }
 
+// ─── In-App Notification Bell State & Handlers ──────────────────────────
+const isNotifOpen = ref(false);
+const notifDropdownRef = ref(null);
+
+const notifications = computed(() => {
+ return page.props.notifications ?? { unread_count: 0, total_count: 0, items: [] };
+});
+
+const unreadNotifCount = computed(() => notifications.value?.unread_count ?? 0);
+const notifItems = computed(() => notifications.value?.items ?? []);
+
+function toggleNotifDropdown() {
+ isNotifOpen.value = !isNotifOpen.value;
+}
+
+function handleOutsideNotifClick(event) {
+ if (isNotifOpen.value && notifDropdownRef.value && !notifDropdownRef.value.contains(event.target)) {
+  isNotifOpen.value = false;
+ }
+}
+
+function markAllNotificationsRead() {
+ router.post(route('notifications.mark_read'), {}, {
+  preserveScroll: true,
+  preserveState: true,
+ });
+}
+
+function openNotificationItem(item) {
+ isNotifOpen.value = false;
+ if (item?.is_unread) {
+  router.post(route('notifications.mark_read'), {}, {
+   preserveScroll: true,
+   preserveState: true,
+   onFinish: () => {
+    if (item?.url) router.visit(item.url);
+   },
+  });
+ } else if (item?.url) {
+  router.visit(item.url);
+ }
+}
+
+function notifBadgeClass(severity) {
+ if (severity === 'danger') return 'bg-rose-50 text-rose-700 border-rose-200';
+ if (severity === 'warning') return 'bg-amber-50 text-amber-700 border-amber-200';
+ return 'bg-blue-50 text-blue-700 border-blue-200';
+}
+
+function notifIconClass(severity) {
+ if (severity === 'danger') return 'bg-rose-50 text-rose-600 border-rose-100';
+ if (severity === 'warning') return 'bg-amber-50 text-amber-600 border-amber-100';
+ return 'bg-blue-50 text-primary border-blue-100';
+}
+
 // ─── Real-Time Inactivity Timeout (Auto Logout 1 Jam) ───────────────────
 const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 1 Jam (60 Menit)
 let lastActivityTime = Date.now();
@@ -157,6 +212,7 @@ onMounted(() => {
 	window.addEventListener('mousemove', handleUserActivity, { passive: true });
 	window.addEventListener('keydown', handleUserActivity, { passive: true });
 	window.addEventListener('click', handleUserActivity, { passive: true });
+	window.addEventListener('click', handleOutsideNotifClick);
 	window.addEventListener('scroll', handleUserActivity, { passive: true });
 	window.addEventListener('touchstart', handleUserActivity, { passive: true });
 });
@@ -169,6 +225,7 @@ onUnmounted(() => {
 	window.removeEventListener('mousemove', handleUserActivity);
 	window.removeEventListener('keydown', handleUserActivity);
 	window.removeEventListener('click', handleUserActivity);
+	window.removeEventListener('click', handleOutsideNotifClick);
 	window.removeEventListener('scroll', handleUserActivity);
 	window.removeEventListener('touchstart', handleUserActivity);
 });
@@ -302,9 +359,135 @@ onUnmounted(() => {
  </div>
  </div>
 
- <div class="flex items-center justify-center px-3.5 py-1.5 rounded-full bg-primary border border-primary/80 text-xs font-semibold text-white shadow-xs shrink-0">
- <span class="hidden sm:inline">Sistem Aktif</span>
- <span class="sm:hidden text-[10px]">Aktif</span>
+ <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
+  <!-- Lonceng Notifikasi In-App -->
+  <div ref="notifDropdownRef" class="relative">
+   <button
+    @click.stop="toggleNotifDropdown"
+    type="button"
+    class="relative p-2 rounded-xl bg-slate-100/80 hover:bg-slate-200/70 text-slate-700 border border-slate-200/80 transition-all duration-150 flex items-center justify-center focus:outline-none cursor-pointer"
+    aria-label="Notifikasi"
+    title="Notifikasi Sistem"
+   >
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+     <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+    </svg>
+
+    <!-- Badge Jumlah Belum Dibaca -->
+    <span
+     v-if="unreadNotifCount > 0"
+     class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center shadow-sm ring-2 ring-white"
+    >
+     {{ unreadNotifCount > 9 ? '9+' : unreadNotifCount }}
+    </span>
+    <span
+     v-else-if="notifItems.length > 0"
+     class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white"
+    ></span>
+   </button>
+
+   <!-- Dropdown Panel Notifikasi -->
+   <Transition
+    enter-active-class="transition ease-out duration-150"
+    enter-from-class="opacity-0 translate-y-1 scale-95"
+    enter-to-class="opacity-100 translate-y-0 scale-100"
+    leave-active-class="transition ease-in duration-100"
+    leave-from-class="opacity-100 translate-y-0 scale-100"
+    leave-to-class="opacity-0 translate-y-1 scale-95"
+   >
+    <div
+     v-if="isNotifOpen"
+     class="fixed sm:absolute right-3 sm:right-0 top-16 sm:top-auto sm:mt-2.5 w-[calc(100vw-1.5rem)] sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden z-50"
+    >
+     <!-- Header Dropdown -->
+     <div class="px-4 py-3.5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+       <h3 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Notifikasi</h3>
+       <span
+        v-if="unreadNotifCount > 0"
+        class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-bold"
+       >
+        {{ unreadNotifCount }} Baru
+       </span>
+      </div>
+      <button
+       v-if="unreadNotifCount > 0"
+       @click.stop="markAllNotificationsRead"
+       type="button"
+       class="text-[11px] font-bold text-primary hover:underline cursor-pointer"
+      >
+       Tandai Dibaca
+      </button>
+     </div>
+
+     <!-- Daftar Item Notifikasi -->
+     <div v-if="notifItems.length > 0" class="max-h-80 overflow-y-auto divide-y divide-slate-100">
+      <button
+       v-for="item in notifItems"
+       :key="item.id"
+       type="button"
+       @click="openNotificationItem(item)"
+       class="w-full text-left px-4 py-3.5 hover:bg-slate-50/90 transition-colors flex items-start gap-3 cursor-pointer"
+       :class="item.is_unread ? 'bg-blue-50/30' : 'bg-white'"
+      >
+       <!-- Icon Berdasarkan Severity -->
+       <div
+        class="w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 mt-0.5"
+        :class="notifIconClass(item.severity)"
+       >
+        <svg v-if="item.severity === 'danger'" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <svg v-else-if="item.severity === 'warning'" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+       </div>
+
+       <!-- Konten Notifikasi -->
+       <div class="min-w-0 flex-1">
+        <div class="flex items-center justify-between gap-2 mb-1">
+         <span
+          class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border"
+          :class="notifBadgeClass(item.severity)"
+         >
+          {{ item.badge }}
+         </span>
+         <span class="text-[10px] text-slate-400 font-medium shrink-0">{{ item.time_label }}</span>
+        </div>
+        <p class="text-xs font-bold text-slate-800 truncate">{{ item.title }}</p>
+        <p class="text-[11px] text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">{{ item.description }}</p>
+       </div>
+
+       <!-- Indikator Unread -->
+       <span
+        v-if="item.is_unread"
+        class="w-2 h-2 rounded-full bg-rose-500 shrink-0 mt-2"
+        title="Belum dibaca"
+       ></span>
+      </button>
+     </div>
+
+     <!-- Empty State -->
+     <div v-else class="px-5 py-8 text-center">
+      <div class="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center mx-auto mb-2.5 text-slate-300">
+       <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+       </svg>
+      </div>
+      <p class="text-xs font-bold text-slate-700">Tidak ada notifikasi aktif</p>
+      <p class="text-[11px] text-slate-400 mt-0.5">Semua pemberitahuan kendala & pengingat tenggat waktu akan muncul di sini.</p>
+     </div>
+    </div>
+   </Transition>
+  </div>
+
+  <div class="flex items-center justify-center px-3.5 py-1.5 rounded-full bg-primary border border-primary/80 text-xs font-semibold text-white shadow-xs shrink-0">
+   <span class="hidden sm:inline">Sistem Aktif</span>
+   <span class="sm:hidden text-[10px]">Aktif</span>
+  </div>
  </div>
  </header>
 

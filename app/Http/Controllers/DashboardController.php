@@ -130,13 +130,15 @@ class DashboardController extends Controller
                 ->values();
 
             // --- Recent Periods dengan Progress ---
-            $recentPeriods = CheckingPeriod::with([
+            $recentPeriodModels = CheckingPeriod::with([
                 'periodTesters:period_id,tester_id',
                 'periodServices:id,period_id,status,checked_at',
             ])
                 ->orderBy('date', 'desc')
                 ->take(8)
-                ->get()
+                ->get();
+
+            $recentPeriods = $recentPeriodModels
                 ->map(function ($period) {
                     $carbonDate = Carbon::parse($period->date);
                     $totalServices = $period->periodServices->count();
@@ -164,6 +166,117 @@ class DashboardController extends Controller
                 })
                 ->values();
 
+            // --- Tren Historis & Perbandingan Antar-Periode (6 Periode Terakhir Urut Kronologis) ---
+            $chronologicalPeriods = $recentPeriodModels->take(6)->reverse()->values();
+            $prevGangguanCount = null;
+
+            $periodTrends = $chronologicalPeriods->map(function ($period) use (&$prevGangguanCount) {
+                $carbonDate = Carbon::parse($period->date);
+                $monthName = $this->indonesianMonths[(int) $carbonDate->format('n')] ?? $carbonDate->format('M');
+                $shortMonth = substr($monthName, 0, 3);
+
+                $totalServices = $period->periodServices->count();
+                $normalCount   = $period->periodServices->where('status', 'normal')->count();
+                $gangguanCount = $period->periodServices->where('status', 'gangguan')->count();
+                $pendingCount  = max(0, $totalServices - ($normalCount + $gangguanCount));
+                $checkedCount  = $normalCount + $gangguanCount;
+
+                $healthRate = $checkedCount > 0
+                    ? (int) round(($normalCount / $checkedCount) * 100)
+                    : 0;
+
+                $issueDelta = $prevGangguanCount !== null
+                    ? ($gangguanCount - $prevGangguanCount)
+                    : null;
+
+                $prevGangguanCount = $gangguanCount;
+
+                return [
+                    'id'          => $period->id,
+                    'date_label'  => $this->formatIndonesianDate($carbonDate),
+                    'short_label' => $carbonDate->format('d') . ' ' . $shortMonth . ' ' . $carbonDate->format('y'),
+                    'status'      => $period->status,
+                    'normal'      => $normalCount,
+                    'gangguan'    => $gangguanCount,
+                    'pending'     => $pendingCount,
+                    'checked'     => $checkedCount,
+                    'total'       => $totalServices,
+                    'health_rate' => $healthRate,
+                    'issue_delta' => $issueDelta,
+                ];
+            })->values();
+
+            // --- Top 5 Layanan Paling Sering Bermasalah (Lintas Periode) ---
+            $troubledRows = PeriodService::query()
+                ->join('services', 'services.id', '=', 'period_services.service_id')
+                ->leftJoin('service_issues', 'service_issues.period_service_id', '=', 'period_services.id')
+                ->where(function ($q) {
+                    $q->where('period_services.status', 'gangguan')
+                      ->orWhereNotNull('service_issues.id');
+                })
+                ->selectRaw("
+                    services.id as service_id,
+                    services.service_name,
+                    services.category,
+                    services.level,
+                    services.service_url,
+                    COUNT(DISTINCT period_services.id) as total_issues,
+                    SUM(CASE WHEN period_services.status = 'gangguan' THEN 1 ELSE 0 END) as active_issues,
+                    MAX(period_services.checked_at) as last_checked_at
+                ")
+                ->groupBy(
+                    'services.id',
+                    'services.service_name',
+                    'services.category',
+                    'services.level',
+                    'services.service_url'
+                )
+                ->orderByDesc('total_issues')
+                ->orderByDesc('active_issues')
+                ->take(5)
+                ->get();
+
+            $troubledServiceIds = $troubledRows->pluck('service_id')->all();
+            $latestIssueByService = collect();
+
+            if (!empty($troubledServiceIds)) {
+                $latestIssueByService = PeriodService::withoutAttachmentData()
+                    ->with('period:id,date')
+                    ->whereIn('service_id', $troubledServiceIds)
+                    ->where(function ($q) {
+                        $q->where('status', 'gangguan')
+                          ->orWhereHas('serviceIssue');
+                    })
+                    ->orderByDesc('checked_at')
+                    ->orderByDesc('id')
+                    ->get()
+                    ->groupBy('service_id')
+                    ->map(fn ($group) => $group->first());
+            }
+
+            $topTroubledServices = $troubledRows->map(function ($row) use ($latestIssueByService) {
+                $latestPs = $latestIssueByService->get($row->service_id);
+                $lastPeriodLabel = $latestPs && $latestPs->period
+                    ? $this->formatIndonesianDate(Carbon::parse($latestPs->period->date))
+                    : null;
+
+                $totalIssues  = (int) ($row->total_issues ?? 0);
+                $activeIssues = (int) ($row->active_issues ?? 0);
+
+                return [
+                    'id'                => (int) $row->service_id,
+                    'service_name'      => $row->service_name,
+                    'category'          => $row->category ?: 'Tanpa Kategori',
+                    'level'             => $row->level ?: '-',
+                    'service_url'       => $row->service_url,
+                    'total_issues'      => $totalIssues,
+                    'active_issues'     => $activeIssues,
+                    'resolved_issues'   => max(0, $totalIssues - $activeIssues),
+                    'last_period_label' => $lastPeriodLabel,
+                    'last_description'  => $latestPs?->description,
+                ];
+            })->values();
+
             return Inertia::render('Dashboard', [
                 'testerStats' => [
                     'total' => $testerTotal,
@@ -185,8 +298,10 @@ class DashboardController extends Controller
                 ],
 
                 'categoryDistribution' => $categoryDistribution,
-                'levelDistribution' => $levelDistribution,
-                'recentPeriods' => $recentPeriods,
+                'levelDistribution'    => $levelDistribution,
+                'recentPeriods'        => $recentPeriods,
+                'periodTrends'         => $periodTrends,
+                'topTroubledServices'  => $topTroubledServices,
             ]);
         }
 

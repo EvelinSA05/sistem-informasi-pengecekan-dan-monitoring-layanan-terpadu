@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import AdminAnalyticsTrendsSection from '@/Components/AdminAnalyticsTrendsSection.vue';
 import { computed, ref, onMounted, nextTick } from 'vue';
 import { Chart, registerables } from 'chart.js';
 
@@ -19,6 +20,8 @@ const props = defineProps({
  categoryDistribution: { type: Array, default: () => [] },
  levelDistribution: { type: Array, default: () => [] },
  recentPeriods: { type: Array, default: () => [] },
+ periodTrends: { type: Array, default: () => [] },
+ topTroubledServices: { type: Array, default: () => [] },
 
  // Tester Monitoring Center props
  activePeriod: { type: String, default: null },
@@ -981,6 +984,12 @@ function submitCheck() {
  </div>
  </div>
  </div>
+
+ <!-- ── ROW 4.5: Tren Historis Antar-Periode & Top 5 Layanan Bermasalah ── -->
+ <AdminAnalyticsTrendsSection
+  :period-trends="periodTrends"
+  :top-troubled-services="topTroubledServices"
+ />
 
  <!-- ── ROW 5: Ringkasan Periode Terbaru ───────────────── -->
  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
