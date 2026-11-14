@@ -1091,9 +1091,9 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
    <div v-if="isTableVisible" class="flex items-center gap-2 flex-wrap">
     <div class="inline-flex p-0.5 bg-slate-100 rounded-lg text-xs text-slate-600">
      <button type="button" @click="statusFilter = 'all'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'all' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Semua</button>
-     <button type="button" @click="statusFilter = 'checked'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'checked' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Sudah Dicek</button>
      <button type="button" @click="statusFilter = 'normal'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'normal' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Normal</button>
      <button type="button" @click="statusFilter = 'gangguan'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'gangguan' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Kendala</button>
+     <button type="button" @click="statusFilter = 'checked'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'checked' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Sudah Dicek</button>
      <button type="button" @click="statusFilter = 'pending'" :class="['px-2.5 py-1 rounded-md transition-all cursor-pointer', statusFilter === 'pending' ? 'bg-white text-slate-800 shadow-sm font-semibold' : 'hover:text-slate-800']">Belum Dicek</button>
     </div>
     <div class="relative">

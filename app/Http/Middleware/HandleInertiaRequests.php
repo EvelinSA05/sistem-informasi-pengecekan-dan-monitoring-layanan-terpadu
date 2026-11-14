@@ -87,19 +87,54 @@ class HandleInertiaRequests extends Middleware
                     $isUnread = !$issue->has_notif && (!$readAtCarbon || $eventTime->isAfter($readAtCarbon));
 
                     $items[] = [
-                        'id'          => 'issue-' . $issue->id,
-                        'type'        => 'issue_reported',
-                        'severity'    => 'danger',
-                        'badge'       => 'Kendala Baru',
-                        'title'       => "Kendala: {$serviceName}",
-                        'description' => "Dilaporkan oleh {$testerName}" . ($issue->periodService?->description ? ' — "' . \Illuminate\Support\Str::limit($issue->periodService->description, 70) . '"' : ''),
-                        'time_label'  => $eventTime->diffForHumans(),
-                        'url'         => $issue->periode_id ? route('admin.periods.show', $issue->periode_id) : route('admin.periods.index'),
-                        'is_unread'   => $isUnread,
+                        'id'                => 'issue-' . $issue->id,
+                        'type'              => 'issue_reported',
+                        'severity'          => 'danger',
+                        'badge'             => 'Kendala Baru',
+                        'title'             => "Kendala: {$serviceName}",
+                        'description'       => "Dilaporkan oleh {$testerName}" . ($issue->periodService?->description ? ' — "' . \Illuminate\Support\Str::limit($issue->periodService->description, 90) . '"' : ''),
+                        'time_label'        => $eventTime->diffForHumans(),
+                        'created_at_full'   => $eventTime->format('d M Y, H:i'),
+                        'sort_ts'           => $eventTime->timestamp,
+                        'url'               => $issue->periode_id ? route('admin.periods.show', $issue->periode_id) : route('admin.periods.index'),
+                        'is_unread'         => $isUnread,
                     ];
                 }
 
-                // 2. Pengingat Tenggat Waktu Periode Aktif (H-3 s/d Hari Ini)
+                // 2. Log Aktivitas Pengecekan Terbaru oleh Tester (Normal / Kendala / Cek Ulang)
+                $recentLogs = \App\Models\ServiceCheckLog::with([
+                    'tester:id,name',
+                    'periodService' => fn ($q) => $q->select(['id', 'period_id', 'service_id'])
+                        ->with(['service:id,service_name', 'period:id,date']),
+                ])
+                    ->orderByDesc('created_at')
+                    ->take(15)
+                    ->get();
+
+                foreach ($recentLogs as $log) {
+                    $serviceName = $log->periodService?->service?->service_name ?? 'Layanan Digital';
+                    $testerName = $log->tester?->name ?? 'Tester';
+                    $periodId = $log->periodService?->period_id;
+                    $eventTime = $log->created_at ? \Carbon\Carbon::parse($log->created_at) : now();
+                    $isUnread = !$readAtCarbon || $eventTime->isAfter($readAtCarbon);
+                    $isIssue = $log->status === 'gangguan';
+
+                    $items[] = [
+                        'id'                => 'checklog-' . $log->id,
+                        'type'              => $isIssue ? 'check_issue' : 'check_normal',
+                        'severity'          => $isIssue ? 'danger' : 'info',
+                        'badge'             => $isIssue ? 'Update Kendala' : 'Update Normal',
+                        'title'             => "{$testerName} memeriksa {$serviceName}",
+                        'description'       => ($isIssue ? 'Status: Terkendala' : 'Status: Normal') . ($log->description ? ' — "' . \Illuminate\Support\Str::limit($log->description, 90) . '"' : ''),
+                        'time_label'        => $eventTime->diffForHumans(),
+                        'created_at_full'   => $eventTime->format('d M Y, H:i'),
+                        'sort_ts'           => $eventTime->timestamp,
+                        'url'               => $periodId ? route('admin.periods.show', $periodId) : route('admin.periods.index'),
+                        'is_unread'         => $isUnread,
+                    ];
+                }
+
+                // 3. Pengingat Tenggat Waktu Periode Aktif (H-3 s/d Hari Ini)
                 $activePeriods = \App\Models\CheckingPeriod::where('status', 'proses')
                     ->whereNotNull('deadline_date')
                     ->orderBy('deadline_date', 'asc')
@@ -160,17 +195,19 @@ class HandleInertiaRequests extends Middleware
                     $isUnread = !$readAtCarbon || $handledAt->isAfter($readAtCarbon);
 
                     $items[] = [
-                        'id'          => 'recheck-' . $ps->id,
-                        'type'        => 'recheck_needed',
-                        'severity'    => 'warning',
-                        'badge'       => 'Perlu Cek Ulang',
-                        'title'       => "Cek Ulang: {$serviceName}",
-                        'description' => $adminNote
+                        'id'                => 'recheck-' . $ps->id,
+                        'type'              => 'recheck_needed',
+                        'severity'          => 'warning',
+                        'badge'             => 'Perlu Cek Ulang',
+                        'title'             => "Cek Ulang: {$serviceName}",
+                        'description'       => $adminNote
                             ? 'Admin menindaklanjuti kendala: "' . \Illuminate\Support\Str::limit($adminNote, 70) . '"'
                             : 'Administrator telah menandai kendala selesai. Silakan lakukan pengecekan ulang.',
-                        'time_label'  => $handledAt->diffForHumans(),
-                        'url'         => route('tester.periods.services', ['period' => $ps->period_id, 'status' => 'gangguan']),
-                        'is_unread'   => $isUnread,
+                        'time_label'        => $handledAt->diffForHumans(),
+                        'created_at_full'   => $handledAt->format('d M Y, H:i'),
+                        'sort_ts'           => $handledAt->timestamp,
+                        'url'               => route('tester.periods.services', ['period' => $ps->period_id, 'status' => 'gangguan']),
+                        'is_unread'         => $isUnread,
                     ];
                 }
 
@@ -221,18 +258,69 @@ class HandleInertiaRequests extends Middleware
                     $isUnread = !$readAtCarbon || $createdAt->isAfter($readAtCarbon);
 
                     $items[] = [
-                        'id'          => 'period-assigned-' . $period->id,
-                        'type'        => 'period_assigned',
-                        'severity'    => 'info',
-                        'badge'       => 'Tugas Aktif',
-                        'title'       => "Penugasan Periode {$periodDateLabel}",
-                        'description' => "Anda memiliki {$pendingCount} layanan yang menunggu pengujian pada periode aktif ini.",
-                        'time_label'  => $createdAt->diffForHumans(),
-                        'url'         => route('tester.periods.services', ['period' => $period->id, 'status' => 'pending']),
-                        'is_unread'   => $isUnread,
+                        'id'                => 'period-assigned-' . $period->id,
+                        'type'              => 'period_assigned',
+                        'severity'          => 'info',
+                        'badge'             => 'Tugas Aktif',
+                        'title'             => "Penugasan Periode {$periodDateLabel}",
+                        'description'       => "Anda memiliki {$pendingCount} layanan yang menunggu pengujian pada periode aktif ini.",
+                        'time_label'        => $createdAt->diffForHumans(),
+                        'created_at_full'   => $createdAt->format('d M Y, H:i'),
+                        'sort_ts'           => $createdAt->timestamp,
+                        'url'               => route('tester.periods.services', ['period' => $period->id, 'status' => 'pending']),
+                        'is_unread'         => $isUnread,
+                    ];
+                }
+
+                // 3. Log Update Pengecekan Terbaru oleh Tester Ini
+                $myRecentLogs = \App\Models\ServiceCheckLog::with([
+                    'periodService' => fn ($q) => $q->select(['id', 'period_id', 'service_id'])
+                        ->with(['service:id,service_name']),
+                ])
+                    ->where('tester_id', $user->id)
+                    ->orderByDesc('created_at')
+                    ->take(10)
+                    ->get();
+
+                foreach ($myRecentLogs as $log) {
+                    $serviceName = $log->periodService?->service?->service_name ?? 'Layanan Digital';
+                    $periodId = $log->periodService?->period_id;
+                    $eventTime = $log->created_at ? \Carbon\Carbon::parse($log->created_at) : now();
+                    $isUnread = !$readAtCarbon || $eventTime->isAfter($readAtCarbon);
+                    $isIssue = $log->status === 'gangguan';
+
+                    $items[] = [
+                        'id'                => 'mylog-' . $log->id,
+                        'type'              => $isIssue ? 'check_issue' : 'check_normal',
+                        'severity'          => $isIssue ? 'danger' : 'info',
+                        'badge'             => $isIssue ? 'Laporan Kendala' : 'Hasil Normal',
+                        'title'             => "Update: {$serviceName}",
+                        'description'       => ($isIssue ? 'Dilaporkan Terkendala' : 'Diverifikasi Normal') . ($log->description ? ' — "' . \Illuminate\Support\Str::limit($log->description, 90) . '"' : ''),
+                        'time_label'        => $eventTime->diffForHumans(),
+                        'created_at_full'   => $eventTime->format('d M Y, H:i'),
+                        'sort_ts'           => $eventTime->timestamp,
+                        'url'               => $periodId ? route('tester.periods.services', ['period' => $periodId]) : route('tester.services.index'),
+                        'is_unread'         => $isUnread,
                     ];
                 }
             }
+
+            // Urutkan semua notifikasi dari yang paling baru; jika timestamp sama, utamakan notifikasi aksi (recheck/issue/deadline)
+            $priorityRank = [
+                'recheck_needed'   => 4,
+                'issue_reported'   => 4,
+                'deadline_warning' => 3,
+                'period_assigned'  => 2,
+                'check_issue'      => 1,
+                'check_normal'     => 1,
+            ];
+            usort($items, function ($a, $b) use ($priorityRank) {
+                $tsCmp = ($b['sort_ts'] ?? 0) <=> ($a['sort_ts'] ?? 0);
+                if ($tsCmp !== 0) {
+                    return $tsCmp;
+                }
+                return ($priorityRank[$b['type'] ?? ''] ?? 0) <=> ($priorityRank[$a['type'] ?? ''] ?? 0);
+            });
 
             $unreadCount = collect($items)->where('is_unread', true)->count();
 
