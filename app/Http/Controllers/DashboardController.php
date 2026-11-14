@@ -313,6 +313,40 @@ class DashboardController extends Controller
                     ];
                 })->values();
 
+            // --- Drill-Down Semua Status Layanan (Normal, Terkendala, Belum Dicek) pada Periode Tren ---
+            $trendPeriodIds = $chronologicalPeriods->pluck('id')->all();
+            $periodServicesDetail = empty($trendPeriodIds)
+                ? collect()
+                : PeriodService::withoutAttachmentData()
+                    ->with([
+                        'service:id,service_name,category,level',
+                        'period:id,date',
+                        'tester:id,name',
+                        'serviceIssue:id,period_service_id,handling_status',
+                    ])
+                    ->whereIn('period_id', $trendPeriodIds)
+                    ->orderBy('id')
+                    ->get()
+                    ->map(function ($ps) {
+                        $periodDateLabel = $ps->period
+                            ? $this->formatIndonesianDate(Carbon::parse($ps->period->date))
+                            : '-';
+                        $status = in_array($ps->status, ['normal', 'gangguan'], true) ? $ps->status : 'pending';
+
+                        return [
+                            'id'                => $ps->id,
+                            'period_id'         => $ps->period_id,
+                            'period_date_label' => $periodDateLabel,
+                            'service_name'      => $ps->service?->service_name ?? 'Layanan',
+                            'category'          => $ps->service?->category ?: 'Umum',
+                            'level'             => $ps->service?->level ?: '-',
+                            'status'            => $status,
+                            'tester_name'       => $ps->tester?->name ?? '-',
+                            'description'       => $ps->description ?: '-',
+                            'handling_status'   => $ps->serviceIssue?->handling_status ?? ($status === 'gangguan' ? 'belum_ditindaklanjuti' : null),
+                        ];
+                    })->values();
+
             return Inertia::render('Dashboard', [
                 'testerStats' => [
                     'total' => $testerTotal,
@@ -339,6 +373,7 @@ class DashboardController extends Controller
                 'periodTrends'           => $periodTrends,
                 'topTroubledServices'    => $topTroubledServices,
                 'troubledServicesDetail' => $troubledServicesDetail,
+                'periodServicesDetail'   => $periodServicesDetail,
             ]);
         }
 

@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { Chart, registerables } from 'chart.js';
@@ -18,11 +18,16 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    periodServicesDetail: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const drillLevel = ref(1); // 1 = Grafik 1 (Tren Periode) | 2 = Grafik 2 (Distribusi OPD) | 3 = Detail Layanan
 const drillDownSearch = ref('');
 const drillDownPeriodId = ref('all');
+const drillDownStatus = ref('all'); // 'all' | 'normal' | 'gangguan' | 'pending'
 const drillDownCategory = ref('');
 const drillDownServiceName = ref('');
 const analyticsCardRef = ref(null);
@@ -30,8 +35,18 @@ const analyticsCardRef = ref(null);
 const opdChartRef = ref(null);
 let opdChartInstance = null;
 
+const statusLabelMap = {
+    all: 'Semua Status',
+    normal: 'Normal',
+    gangguan: 'Terkendala',
+    pending: 'Belum Dicek',
+};
+
+const selectedStatusLabel = computed(() => statusLabelMap[drillDownStatus.value] || 'Semua Status');
+
 async function openDrillDown(options = {}) {
     drillDownPeriodId.value = options.periodId ? String(options.periodId) : 'all';
+    drillDownStatus.value = options.status || (options.serviceName ? 'gangguan' : 'all');
     drillDownCategory.value = options.category || '';
     drillDownServiceName.value = options.serviceName || '';
     drillDownSearch.value = options.serviceName || '';
@@ -43,6 +58,7 @@ async function openDrillDown(options = {}) {
 function goToStep(step) {
     if (step === 1 || step === 'root') {
         drillDownPeriodId.value = 'all';
+        drillDownStatus.value = 'all';
         drillDownCategory.value = '';
         drillDownServiceName.value = '';
         drillDownSearch.value = '';
@@ -70,21 +86,31 @@ const selectedPeriodLabel = computed(() => {
     return found?.date_label || 'Periode Terpilih';
 });
 
+const baseDrillDownItems = computed(() => {
+    if (props.periodServicesDetail && props.periodServicesDetail.length > 0) {
+        return props.periodServicesDetail;
+    }
+    return (props.troubledServicesDetail || []).map(item => ({ ...item, status: 'gangguan' }));
+});
+
 const periodScopedItems = computed(() => {
-    const items = props.troubledServicesDetail || [];
-    if (drillDownPeriodId.value === 'all') return items;
-    return items.filter(item => String(item.period_id) === drillDownPeriodId.value);
+    const items = baseDrillDownItems.value;
+    return items.filter(item => {
+        const matchPeriod = drillDownPeriodId.value === 'all' || String(item.period_id) === drillDownPeriodId.value;
+        const matchStatus = drillDownStatus.value === 'all' || item.status === drillDownStatus.value;
+        return matchPeriod && matchStatus;
+    });
 });
 
 const opdBranchStats = computed(() => {
     const counts = new Map();
     periodScopedItems.value.forEach(item => {
-        const cat = item.category || 'Lainnya';
-        const existing = counts.get(cat) || { category: cat, total: 0, active: 0 };
+        const cat = item.category || 'Umum';
+        const existing = counts.get(cat) || { category: cat, total: 0, normal: 0, gangguan: 0, pending: 0 };
         existing.total += 1;
-        if (item.handling_status !== 'selesai') {
-            existing.active += 1;
-        }
+        if (item.status === 'normal') existing.normal += 1;
+        else if (item.status === 'gangguan') existing.gangguan += 1;
+        else existing.pending += 1;
         counts.set(cat, existing);
     });
     return Array.from(counts.values()).sort((a, b) => b.total - a.total);
@@ -174,9 +200,14 @@ function buildTrendChart() {
             onClick: (_event, elements) => {
                 if (elements && elements.length > 0) {
                     const idx = elements[0].index;
+                    const dsIdx = elements[0].datasetIndex;
+                    const statusByDataset = ['normal', 'gangguan', 'pending'];
                     const p = props.periodTrends?.[idx];
                     if (p) {
-                        openDrillDown({ periodId: p.id });
+                        openDrillDown({
+                            periodId: p.id,
+                            status: statusByDataset[dsIdx] || 'all',
+                        });
                     }
                 }
             },
@@ -258,30 +289,24 @@ function buildOpdChart() {
     const topBranches = opdBranchStats.value.slice(0, 10);
     if (!topBranches.length) return;
 
-    const labels = topBranches.map(b => b.category.length > 28 ? `${b.category.slice(0, 26)}â€¦` : b.category);
-    const activeData = topBranches.map(b => b.active);
-    const resolvedData = topBranches.map(b => Math.max(0, b.total - b.active));
+    const labels = topBranches.map(b => b.category.length > 28 ? `${b.category.slice(0, 26)}...` : b.category);
+    const datasets = drillDownStatus.value === 'normal'
+        ? [{ label: 'Normal', data: topBranches.map(b => b.normal), backgroundColor: '#059669', borderRadius: 6, barPercentage: 0.72 }]
+        : drillDownStatus.value === 'gangguan'
+            ? [{ label: 'Terkendala', data: topBranches.map(b => b.gangguan), backgroundColor: '#e11d48', borderRadius: 6, barPercentage: 0.72 }]
+            : drillDownStatus.value === 'pending'
+                ? [{ label: 'Belum Dicek', data: topBranches.map(b => b.pending), backgroundColor: '#94a3b8', borderRadius: 6, barPercentage: 0.72 }]
+                : [
+                    { label: 'Normal', data: topBranches.map(b => b.normal), backgroundColor: '#059669', borderRadius: 6, barPercentage: 0.72 },
+                    { label: 'Terkendala', data: topBranches.map(b => b.gangguan), backgroundColor: '#e11d48', borderRadius: 6, barPercentage: 0.72 },
+                    { label: 'Belum Dicek', data: topBranches.map(b => b.pending), backgroundColor: '#cbd5e1', borderRadius: 6, barPercentage: 0.72 },
+                ];
 
     opdChartInstance = new Chart(opdChartRef.value, {
         type: 'bar',
         data: {
             labels,
-            datasets: [
-                {
-                    label: 'Belum Selesai',
-                    data: activeData,
-                    backgroundColor: '#e11d48',
-                    borderRadius: 6,
-                    barPercentage: 0.72,
-                },
-                {
-                    label: 'Sudah Selesai',
-                    data: resolvedData,
-                    backgroundColor: '#10b981',
-                    borderRadius: 6,
-                    barPercentage: 0.72,
-                },
-            ],
+            datasets,
         },
         options: {
             indexAxis: 'y',
@@ -324,7 +349,7 @@ function buildOpdChart() {
                             const idx = items?.[0]?.dataIndex;
                             return topBranches[idx]?.category || '';
                         },
-                        afterBody: () => 'Klik batang grafik untuk lihat daftar layanan â†’',
+                        afterBody: () => 'Klik batang grafik untuk lihat daftar layanan',
                     },
                 },
             },
@@ -360,7 +385,7 @@ watch(
 );
 
 watch(
-    [drillLevel, drillDownPeriodId],
+    [drillLevel, drillDownPeriodId, drillDownStatus],
     async ([level]) => {
         await nextTick();
         if (level === 1) {
@@ -401,9 +426,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <!-- â”€â”€â”€ Kiri: Grafik Tren & Cabang Drill-Down In-Place (7 Kolom) â”€â”€â”€ -->
-        <div ref="analyticsCardRef" class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 flex flex-col justify-between">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        <!-- Kiri: Grafik Tren & Cabang Drill-Down In-Place (7 Kolom) -->
+        <div ref="analyticsCardRef" class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 flex flex-col">
             <div>
                 <!-- Header Card + Breadcrumb Drill-Down In-Place -->
                 <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-4">
@@ -413,7 +438,7 @@ onUnmounted(() => {
                                 Analytics Antar-Periode
                             </span>
                             <template v-if="drillLevel > 1">
-                                <span class="text-slate-300 text-xs">â€º</span>
+                                <span class="text-slate-300 text-xs">&rsaquo;</span>
                                 <button
                                     type="button"
                                     @click="goToStep(1)"
@@ -421,7 +446,7 @@ onUnmounted(() => {
                                 >
                                     Grafik 1
                                 </button>
-                                <span class="text-slate-300 text-xs">â€º</span>
+                                <span class="text-slate-300 text-xs">&rsaquo;</span>
                                 <button
                                     type="button"
                                     @click="goToStep(2)"
@@ -430,10 +455,10 @@ onUnmounted(() => {
                                         ? 'bg-primary text-white border-primary'
                                         : 'bg-white text-slate-600 border-slate-200 hover:border-primary hover:text-primary'"
                                 >
-                                    Grafik 2: {{ selectedPeriodLabel }}
+                                    Grafik 2: {{ selectedPeriodLabel }} ({{ selectedStatusLabel }})
                                 </button>
                                 <template v-if="drillLevel === 3">
-                                    <span class="text-slate-300 text-xs">â€º</span>
+                                    <span class="text-slate-300 text-xs">&rsaquo;</span>
                                     <span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold truncate max-w-[170px]">
                                         {{ drillDownCategory || drillDownServiceName || 'Detail Layanan' }}
                                     </span>
@@ -442,18 +467,18 @@ onUnmounted(() => {
                         </div>
                         <h3 class="text-sm font-bold text-slate-800">
                             <template v-if="drillLevel === 1">Tren Historis & Perbandingan Status Layanan</template>
-                            <template v-else-if="drillLevel === 2">Distribusi Kendala per OPD / Kategori ({{ selectedPeriodLabel }})</template>
-                            <template v-else>Daftar Layanan Bermasalah ({{ filteredDrillDownItems.length }})</template>
+                            <template v-else-if="drillLevel === 2">Distribusi Layanan {{ selectedStatusLabel }} per OPD ({{ selectedPeriodLabel }})</template>
+                            <template v-else>Daftar Layanan {{ selectedStatusLabel }} ({{ filteredDrillDownItems.length }})</template>
                         </h3>
                         <p class="text-xs text-slate-400 mt-0.5">
                             <template v-if="drillLevel === 1">
-                                Perbandingan jumlah layanan Normal vs Terkendala pada {{ periodTrends.length || 0 }} periode terakhir (klik batang untuk drill-down)
+                                Perbandingan jumlah layanan Normal, Terkendala, dan Belum Dicek pada {{ periodTrends.length || 0 }} periode terakhir (klik batang untuk drill-down)
                             </template>
                             <template v-else-if="drillLevel === 2">
-                                Klik salah satu batang OPD untuk melihat layanan bermasalah pada periode ini
+                                Klik salah satu batang OPD untuk melihat daftar layanan pada OPD tersebut
                             </template>
                             <template v-else>
-                                {{ drillDownCategory ? `OPD: ${drillDownCategory}` : 'Semua OPD' }} Â· {{ selectedPeriodLabel }}
+                                {{ drillDownCategory ? `OPD: ${drillDownCategory}` : 'Semua OPD' }} &middot; {{ selectedPeriodLabel }}
                             </template>
                         </p>
                     </div>
@@ -465,13 +490,13 @@ onUnmounted(() => {
                                 v-if="latestPeriod.issue_delta < 0"
                                 class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold"
                             >
-                                â†“ {{ Math.abs(latestPeriod.issue_delta) }} kendala vs periode lalu
+                                &darr; {{ Math.abs(latestPeriod.issue_delta) }} kendala vs periode lalu
                             </span>
                             <span
                                 v-else-if="latestPeriod.issue_delta > 0"
                                 class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold"
                             >
-                                â†‘ +{{ latestPeriod.issue_delta }} kendala vs periode lalu
+                                &uarr; +{{ latestPeriod.issue_delta }} kendala vs periode lalu
                             </span>
                             <span
                                 v-else
@@ -497,10 +522,10 @@ onUnmounted(() => {
 
                 <!-- LEVEL 1: Area Grafik Bar Antar-Periode -->
                 <template v-if="drillLevel === 1">
-                    <div v-if="periodTrends.length > 0" class="relative h-64 w-full mt-2">
+                    <div v-if="periodTrends.length > 0" class="relative h-72 w-full mt-2">
                         <canvas ref="trendChartRef"></canvas>
                     </div>
-                    <div v-else class="h-64 flex flex-col items-center justify-center text-center">
+                    <div v-else class="h-72 flex flex-col items-center justify-center text-center">
                         <div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center mb-3 text-slate-300">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 16l4-4 4 4 5-6" />
@@ -512,8 +537,29 @@ onUnmounted(() => {
 
                 <!-- LEVEL 2 (In-Place): Grafik 2 Distribusi OPD / Kategori -->
                 <template v-else-if="drillLevel === 2">
+                    <!-- Filter Status di Grafik 2 -->
+                    <div class="flex flex-wrap items-center gap-1.5 mb-3">
+                        <button
+                            v-for="opt in [
+                                { key: 'all', label: 'Semua Status' },
+                                { key: 'normal', label: 'Normal' },
+                                { key: 'gangguan', label: 'Terkendala' },
+                                { key: 'pending', label: 'Belum Dicek' },
+                            ]"
+                            :key="opt.key"
+                            type="button"
+                            @click="drillDownStatus = opt.key"
+                            class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer"
+                            :class="drillDownStatus === opt.key
+                                ? 'bg-primary text-white border-primary'
+                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-primary hover:text-primary'"
+                        >
+                            {{ opt.label }}
+                        </button>
+                    </div>
+
                     <div v-if="opdBranchStats.length > 0" class="space-y-3">
-                        <div class="relative h-56 w-full mt-1">
+                        <div class="relative h-60 w-full mt-1">
                             <canvas ref="opdChartRef"></canvas>
                         </div>
                         <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
@@ -526,16 +572,16 @@ onUnmounted(() => {
                                 class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 hover:border-primary hover:text-primary bg-slate-50/70 text-slate-700 text-[11px] font-semibold transition-all cursor-pointer"
                             >
                                 <span class="truncate max-w-[180px]">{{ branch.category }}</span>
-                                <span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-extrabold">{{ branch.total }}</span>
+                                <span class="px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-700 text-[10px] font-extrabold">{{ branch.total }}</span>
                             </button>
                         </div>
                     </div>
                     <div v-else class="h-64 flex flex-col items-center justify-center text-center">
-                        <p class="text-xs text-slate-400 font-medium">Tidak ada layanan bermasalah pada periode ini.</p>
+                        <p class="text-xs text-slate-400 font-medium">Tidak ada layanan dengan status {{ selectedStatusLabel }} pada periode ini.</p>
                     </div>
                 </template>
 
-                <!-- LEVEL 3 (In-Place): Daftar Layanan Bermasalah -->
+                <!-- LEVEL 3 (In-Place): Daftar Layanan -->
                 <template v-else>
                     <div class="space-y-2.5">
                         <div class="relative">
@@ -549,11 +595,16 @@ onUnmounted(() => {
                                 class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none"
                             />
                         </div>
-                        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
                             <div
                                 v-for="item in filteredDrillDownItems"
                                 :key="item.id"
-                                class="p-3 rounded-xl border border-rose-200/80 bg-rose-50/30 hover:bg-rose-50/50 transition-all"
+                                class="p-3 rounded-xl border transition-all"
+                                :class="item.status === 'gangguan'
+                                    ? 'border-rose-200/80 bg-rose-50/30 hover:bg-rose-50/50'
+                                    : (item.status === 'normal'
+                                        ? 'border-emerald-200/80 bg-emerald-50/30 hover:bg-emerald-50/50'
+                                        : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50')"
                             >
                                 <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
                                     <div class="min-w-0 flex-1">
@@ -562,19 +613,19 @@ onUnmounted(() => {
                                             <span class="px-1.5 py-0.5 rounded bg-primary text-white text-[10px] font-bold">{{ item.level }}</span>
                                             <span
                                                 class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border"
-                                                :class="item.handling_status === 'perlu_pengecekan_ulang'
-                                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                                    : (item.handling_status === 'selesai'
-                                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                        : 'bg-rose-100 text-rose-700 border-rose-200')"
+                                                :class="item.status === 'gangguan'
+                                                    ? 'bg-rose-100 text-rose-700 border-rose-200'
+                                                    : (item.status === 'normal'
+                                                        ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                                                        : 'bg-slate-200/80 text-slate-700 border-slate-300')"
                                             >
-                                                {{ item.handling_status === 'perlu_pengecekan_ulang' ? 'Perlu Cek Ulang' : (item.handling_status === 'selesai' ? 'Selesai' : 'Belum Tindak Lanjut') }}
+                                                {{ item.status === 'gangguan' ? 'Terkendala' : (item.status === 'normal' ? 'Normal' : 'Belum Dicek') }}
                                             </span>
                                         </div>
                                         <p class="text-[11px] text-slate-500 mt-0.5">
-                                            {{ item.category }} Â· {{ item.period_date_label }} Â· Tester: <strong class="text-slate-700">{{ item.tester_name }}</strong>
+                                            {{ item.category }} &middot; {{ item.period_date_label }} &middot; Tester: <strong class="text-slate-700">{{ item.tester_name }}</strong>
                                         </p>
-                                        <p class="text-[11px] text-rose-800 bg-white/80 border border-rose-100 rounded-lg px-2.5 py-1.5 mt-1.5">
+                                        <p v-if="item.description && item.description !== '-'" class="text-[11px] text-slate-700 bg-white/80 border border-slate-200/70 rounded-lg px-2.5 py-1.5 mt-1.5">
                                             {{ item.description }}
                                         </p>
                                     </div>
@@ -590,7 +641,7 @@ onUnmounted(() => {
                                 </div>
                             </div>
                             <div v-if="filteredDrillDownItems.length === 0" class="py-8 text-center text-slate-400 text-xs">
-                                Tidak ada layanan bermasalah yang sesuai dengan filter.
+                                Tidak ada layanan yang sesuai dengan filter.
                             </div>
                         </div>
                     </div>

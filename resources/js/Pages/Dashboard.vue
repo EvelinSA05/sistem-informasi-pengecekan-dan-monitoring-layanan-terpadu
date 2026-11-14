@@ -23,6 +23,7 @@ const props = defineProps({
  periodTrends: { type: Array, default: () => [] },
  topTroubledServices: { type: Array, default: () => [] },
  troubledServicesDetail: { type: Array, default: () => [] },
+ periodServicesDetail: { type: Array, default: () => [] },
 
  // Tester Monitoring Center props
  activePeriod: { type: String, default: null },
@@ -991,6 +992,7 @@ function submitCheck() {
   :period-trends="periodTrends"
   :top-troubled-services="topTroubledServices"
   :troubled-services-detail="troubledServicesDetail"
+  :period-services-detail="periodServicesDetail"
  />
 
  <!-- ── ROW 5: Ringkasan Periode Terbaru ───────────────── -->
