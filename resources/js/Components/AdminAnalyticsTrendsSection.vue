@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { Chart, registerables } from 'chart.js';
@@ -20,13 +20,12 @@ const props = defineProps({
     },
 });
 
-const showDrillDownModal = ref(false);
-const drillDownStep = ref('opd'); // 'opd' (Grafik 2: Cabang OPD) | 'services' (Level 3: Detail Layanan)
+const drillLevel = ref(1); // 1 = Grafik 1 (Tren Periode) | 2 = Grafik 2 (Distribusi OPD) | 3 = Detail Layanan
 const drillDownSearch = ref('');
 const drillDownPeriodId = ref('all');
 const drillDownCategory = ref('');
 const drillDownServiceName = ref('');
-const drillDownSectionRef = ref(null);
+const analyticsCardRef = ref(null);
 
 const opdChartRef = ref(null);
 let opdChartInstance = null;
@@ -36,26 +35,25 @@ async function openDrillDown(options = {}) {
     drillDownCategory.value = options.category || '';
     drillDownServiceName.value = options.serviceName || '';
     drillDownSearch.value = options.serviceName || '';
-    drillDownStep.value = options.serviceName ? 'services' : (options.step || 'opd');
-    showDrillDownModal.value = true;
+    drillLevel.value = options.serviceName ? 3 : (options.level || 2);
     await nextTick();
-    drillDownSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    analyticsCardRef.value?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function goToStep(step) {
-    if (step === 'all') {
+    if (step === 1 || step === 'root') {
         drillDownPeriodId.value = 'all';
         drillDownCategory.value = '';
         drillDownServiceName.value = '';
         drillDownSearch.value = '';
-        drillDownStep.value = 'opd';
+        drillLevel.value = 1;
         return;
     }
-    if (step === 'opd') {
+    if (step === 2 || step === 'opd') {
         drillDownCategory.value = '';
         drillDownServiceName.value = '';
         drillDownSearch.value = '';
-        drillDownStep.value = 'opd';
+        drillLevel.value = 2;
     }
 }
 
@@ -63,7 +61,7 @@ function selectOpdBranch(category) {
     drillDownCategory.value = category;
     drillDownServiceName.value = '';
     drillDownSearch.value = '';
-    drillDownStep.value = 'services';
+    drillLevel.value = 3;
 }
 
 const selectedPeriodLabel = computed(() => {
@@ -255,12 +253,12 @@ function buildOpdChart() {
         opdChartInstance.destroy();
         opdChartInstance = null;
     }
-    if (!showDrillDownModal.value || !opdChartRef.value) return;
+    if (drillLevel.value !== 2 || !opdChartRef.value) return;
 
     const topBranches = opdBranchStats.value.slice(0, 10);
     if (!topBranches.length) return;
 
-    const labels = topBranches.map(b => b.category.length > 28 ? `${b.category.slice(0, 26)}…` : b.category);
+    const labels = topBranches.map(b => b.category.length > 28 ? `${b.category.slice(0, 26)}â€¦` : b.category);
     const activeData = topBranches.map(b => b.active);
     const resolvedData = topBranches.map(b => Math.max(0, b.total - b.active));
 
@@ -326,7 +324,7 @@ function buildOpdChart() {
                             const idx = items?.[0]?.dataIndex;
                             return topBranches[idx]?.category || '';
                         },
-                        afterBody: () => 'Klik batang grafik untuk lihat daftar layanan →',
+                        afterBody: () => 'Klik batang grafik untuk lihat daftar layanan â†’',
                     },
                 },
             },
@@ -362,14 +360,30 @@ watch(
 );
 
 watch(
-    [showDrillDownModal, drillDownStep, drillDownPeriodId],
-    async ([isOpen]) => {
-        if (isOpen) {
-            await nextTick();
+    [drillLevel, drillDownPeriodId],
+    async ([level]) => {
+        await nextTick();
+        if (level === 1) {
+            if (opdChartInstance) {
+                opdChartInstance.destroy();
+                opdChartInstance = null;
+            }
+            buildTrendChart();
+        } else if (level === 2) {
+            if (trendChartInstance) {
+                trendChartInstance.destroy();
+                trendChartInstance = null;
+            }
             buildOpdChart();
-        } else if (opdChartInstance) {
-            opdChartInstance.destroy();
-            opdChartInstance = null;
+        } else {
+            if (trendChartInstance) {
+                trendChartInstance.destroy();
+                trendChartInstance = null;
+            }
+            if (opdChartInstance) {
+                opdChartInstance.destroy();
+                opdChartInstance = null;
+            }
         }
     }
 );
@@ -388,53 +402,199 @@ onUnmounted(() => {
 
 <template>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <!-- ─── Kiri: Grafik Tren & Perbandingan Antar-Periode (7 Kolom) ─── -->
-        <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 flex flex-col justify-between">
+        <!-- â”€â”€â”€ Kiri: Grafik Tren & Cabang Drill-Down In-Place (7 Kolom) â”€â”€â”€ -->
+        <div ref="analyticsCardRef" class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 flex flex-col justify-between">
             <div>
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                    <div>
-                        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-primary border border-blue-100 text-[10px] font-bold uppercase tracking-wider mb-1.5">
-                            Analytics Antar-Periode
+                <!-- Header Card + Breadcrumb Drill-Down In-Place -->
+                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-4">
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-primary border border-blue-100 text-[10px] font-bold uppercase tracking-wider">
+                                Analytics Antar-Periode
+                            </span>
+                            <template v-if="drillLevel > 1">
+                                <span class="text-slate-300 text-xs">â€º</span>
+                                <button
+                                    type="button"
+                                    @click="goToStep(1)"
+                                    class="px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold cursor-pointer transition-colors"
+                                >
+                                    Grafik 1
+                                </button>
+                                <span class="text-slate-300 text-xs">â€º</span>
+                                <button
+                                    type="button"
+                                    @click="goToStep(2)"
+                                    class="px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors cursor-pointer"
+                                    :class="drillLevel === 2
+                                        ? 'bg-primary text-white border-primary'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:border-primary hover:text-primary'"
+                                >
+                                    Grafik 2: {{ selectedPeriodLabel }}
+                                </button>
+                                <template v-if="drillLevel === 3">
+                                    <span class="text-slate-300 text-xs">â€º</span>
+                                    <span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold truncate max-w-[170px]">
+                                        {{ drillDownCategory || drillDownServiceName || 'Detail Layanan' }}
+                                    </span>
+                                </template>
+                            </template>
                         </div>
-                        <h3 class="text-sm font-bold text-slate-800">Tren Historis & Perbandingan Status Layanan</h3>
-                        <p class="text-xs text-slate-400 mt-0.5">Perbandingan jumlah layanan Normal vs Terkendala pada {{ periodTrends.length || 0 }} periode terakhir</p>
+                        <h3 class="text-sm font-bold text-slate-800">
+                            <template v-if="drillLevel === 1">Tren Historis & Perbandingan Status Layanan</template>
+                            <template v-else-if="drillLevel === 2">Distribusi Kendala per OPD / Kategori ({{ selectedPeriodLabel }})</template>
+                            <template v-else>Daftar Layanan Bermasalah ({{ filteredDrillDownItems.length }})</template>
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5">
+                            <template v-if="drillLevel === 1">
+                                Perbandingan jumlah layanan Normal vs Terkendala pada {{ periodTrends.length || 0 }} periode terakhir (klik batang untuk drill-down)
+                            </template>
+                            <template v-else-if="drillLevel === 2">
+                                Klik salah satu batang OPD untuk melihat layanan bermasalah pada periode ini
+                            </template>
+                            <template v-else>
+                                {{ drillDownCategory ? `OPD: ${drillDownCategory}` : 'Semua OPD' }} Â· {{ selectedPeriodLabel }}
+                            </template>
+                        </p>
                     </div>
 
-                    <!-- Badge Perbandingan Periode Terakhir vs Sebelumnya -->
-                    <div v-if="latestPeriod && previousPeriod" class="shrink-0">
-                        <span
-                            v-if="latestPeriod.issue_delta < 0"
-                            class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold"
-                        >
-                            ↓ {{ Math.abs(latestPeriod.issue_delta) }} kendala vs periode lalu
-                        </span>
-                        <span
-                            v-else-if="latestPeriod.issue_delta > 0"
-                            class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold"
-                        >
-                            ↑ +{{ latestPeriod.issue_delta }} kendala vs periode lalu
-                        </span>
-                        <span
-                            v-else
-                            class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold"
-                        >
-                            = Stabil vs periode lalu
-                        </span>
+                    <!-- Kanan Header: Badge Delta (Level 1) atau Tombol Kembali (Level 2 & 3) -->
+                    <div class="shrink-0 flex items-center gap-2">
+                        <template v-if="drillLevel === 1 && latestPeriod && previousPeriod">
+                            <span
+                                v-if="latestPeriod.issue_delta < 0"
+                                class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold"
+                            >
+                                â†“ {{ Math.abs(latestPeriod.issue_delta) }} kendala vs periode lalu
+                            </span>
+                            <span
+                                v-else-if="latestPeriod.issue_delta > 0"
+                                class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold"
+                            >
+                                â†‘ +{{ latestPeriod.issue_delta }} kendala vs periode lalu
+                            </span>
+                            <span
+                                v-else
+                                class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold"
+                            >
+                                = Stabil vs periode lalu
+                            </span>
+                        </template>
+                        <template v-else-if="drillLevel > 1">
+                            <button
+                                type="button"
+                                @click="goToStep(drillLevel === 3 ? 2 : 1)"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                            >
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                                </svg>
+                                <span>{{ drillLevel === 3 ? 'Kembali ke Grafik 2' : 'Kembali ke Grafik 1' }}</span>
+                            </button>
+                        </template>
                     </div>
                 </div>
 
-                <!-- Area Grafik Bar Antar-Periode -->
-                <div v-if="periodTrends.length > 0" class="relative h-64 w-full mt-2">
-                    <canvas ref="trendChartRef"></canvas>
-                </div>
-                <div v-else class="h-64 flex flex-col items-center justify-center text-center">
-                    <div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center mb-3 text-slate-300">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 16l4-4 4 4 5-6" />
-                        </svg>
+                <!-- LEVEL 1: Area Grafik Bar Antar-Periode -->
+                <template v-if="drillLevel === 1">
+                    <div v-if="periodTrends.length > 0" class="relative h-64 w-full mt-2">
+                        <canvas ref="trendChartRef"></canvas>
                     </div>
-                    <p class="text-sm text-slate-400 font-medium">Belum ada riwayat periode untuk dibandingkan</p>
-                </div>
+                    <div v-else class="h-64 flex flex-col items-center justify-center text-center">
+                        <div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center mb-3 text-slate-300">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 16l4-4 4 4 5-6" />
+                            </svg>
+                        </div>
+                        <p class="text-sm text-slate-400 font-medium">Belum ada riwayat periode untuk dibandingkan</p>
+                    </div>
+                </template>
+
+                <!-- LEVEL 2 (In-Place): Grafik 2 Distribusi OPD / Kategori -->
+                <template v-else-if="drillLevel === 2">
+                    <div v-if="opdBranchStats.length > 0" class="space-y-3">
+                        <div class="relative h-56 w-full mt-1">
+                            <canvas ref="opdChartRef"></canvas>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Cabang OPD:</span>
+                            <button
+                                v-for="branch in opdBranchStats"
+                                :key="branch.category"
+                                type="button"
+                                @click="selectOpdBranch(branch.category)"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 hover:border-primary hover:text-primary bg-slate-50/70 text-slate-700 text-[11px] font-semibold transition-all cursor-pointer"
+                            >
+                                <span class="truncate max-w-[180px]">{{ branch.category }}</span>
+                                <span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-extrabold">{{ branch.total }}</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div v-else class="h-64 flex flex-col items-center justify-center text-center">
+                        <p class="text-xs text-slate-400 font-medium">Tidak ada layanan bermasalah pada periode ini.</p>
+                    </div>
+                </template>
+
+                <!-- LEVEL 3 (In-Place): Daftar Layanan Bermasalah -->
+                <template v-else>
+                    <div class="space-y-2.5">
+                        <div class="relative">
+                            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 105.65 5.65a7.5 7.5 0 0010.6 10.6z" />
+                            </svg>
+                            <input
+                                v-model="drillDownSearch"
+                                type="text"
+                                placeholder="Cari nama layanan, tester, atau catatan..."
+                                class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none"
+                            />
+                        </div>
+                        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                            <div
+                                v-for="item in filteredDrillDownItems"
+                                :key="item.id"
+                                class="p-3 rounded-xl border border-rose-200/80 bg-rose-50/30 hover:bg-rose-50/50 transition-all"
+                            >
+                                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            <p class="text-xs font-bold text-slate-900">{{ item.service_name }}</p>
+                                            <span class="px-1.5 py-0.5 rounded bg-primary text-white text-[10px] font-bold">{{ item.level }}</span>
+                                            <span
+                                                class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border"
+                                                :class="item.handling_status === 'perlu_pengecekan_ulang'
+                                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                    : (item.handling_status === 'selesai'
+                                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                        : 'bg-rose-100 text-rose-700 border-rose-200')"
+                                            >
+                                                {{ item.handling_status === 'perlu_pengecekan_ulang' ? 'Perlu Cek Ulang' : (item.handling_status === 'selesai' ? 'Selesai' : 'Belum Tindak Lanjut') }}
+                                            </span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">
+                                            {{ item.category }} Â· {{ item.period_date_label }} Â· Tester: <strong class="text-slate-700">{{ item.tester_name }}</strong>
+                                        </p>
+                                        <p class="text-[11px] text-rose-800 bg-white/80 border border-rose-100 rounded-lg px-2.5 py-1.5 mt-1.5">
+                                            {{ item.description }}
+                                        </p>
+                                    </div>
+                                    <Link
+                                        :href="route('admin.periods.show', item.period_id)"
+                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary hover:bg-[#1d4ed8] text-white text-[11px] font-bold shrink-0 self-start"
+                                    >
+                                        <span>Detail</span>
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                        </svg>
+                                    </Link>
+                                </div>
+                            </div>
+                            <div v-if="filteredDrillDownItems.length === 0" class="py-8 text-center text-slate-400 text-xs">
+                                Tidak ada layanan bermasalah yang sesuai dengan filter.
+                            </div>
+                        </div>
+                    </div>
+                </template>
             </div>
 
             <!-- Ringkasan KPI Tren -->
@@ -460,7 +620,7 @@ onUnmounted(() => {
             </div>
         </div>
 
-        <!-- ─── Kanan: Top 5 Layanan Paling Sering Bermasalah (5 Kolom) ─── -->
+        <!-- â”€â”€â”€ Kanan: Top 5 Layanan Paling Sering Bermasalah (5 Kolom) â”€â”€â”€ -->
         <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 flex flex-col justify-between">
             <div>
                 <div class="flex items-center justify-between gap-2 mb-4">
@@ -572,208 +732,4 @@ onUnmounted(() => {
         </div>
     </div>
 
-    <!-- Cabang Drill-Down Inline di Halaman yang Sama (Grafik 2 OPD -> Level 3 Detail Layanan) -->
-    <Transition
-        enter-active-class="transition-all duration-200 ease-out"
-        enter-from-class="opacity-0 -translate-y-2"
-        enter-to-class="opacity-100 translate-y-0"
-        leave-active-class="transition-all duration-150 ease-in"
-        leave-from-class="opacity-100 translate-y-0"
-        leave-to-class="opacity-0 -translate-y-2"
-    >
-        <div
-            v-if="showDrillDownModal"
-            ref="drillDownSectionRef"
-            class="mt-5 bg-white rounded-2xl border border-blue-200/90 shadow-sm overflow-hidden"
-        >
-            <!-- Header + Breadcrumb Cabang Drill-Down -->
-            <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-blue-50/70 via-white to-slate-50/70">
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-1.5 text-[11px] font-bold mb-1.5">
-                        <span class="inline-flex items-center gap-1 text-primary">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 7v10m0 0h10m-10 0l4-4m-4 4l4 4" />
-                            </svg>
-                            Cabang Drill-Down:
-                        </span>
-                        <button
-                            type="button"
-                            @click="goToStep('all')"
-                            class="px-2.5 py-0.5 rounded-full border transition-colors cursor-pointer"
-                            :class="drillDownPeriodId === 'all' && drillDownStep === 'opd'
-                                ? 'bg-primary text-white border-primary'
-                                : 'bg-white text-slate-600 border-slate-200 hover:border-primary hover:text-primary'"
-                        >
-                            Grafik 1: Semua Periode
-                        </button>
-                        <span v-if="drillDownPeriodId !== 'all'" class="text-slate-400">›</span>
-                        <button
-                            v-if="drillDownPeriodId !== 'all'"
-                            type="button"
-                            @click="goToStep('opd')"
-                            class="px-2.5 py-0.5 rounded-full border transition-colors cursor-pointer"
-                            :class="drillDownStep === 'opd'
-                                ? 'bg-primary text-white border-primary'
-                                : 'bg-white text-slate-600 border-slate-200 hover:border-primary hover:text-primary'"
-                        >
-                            Grafik 2: {{ selectedPeriodLabel }}
-                        </button>
-                        <span v-if="drillDownStep === 'services'" class="text-slate-400">›</span>
-                        <span
-                            v-if="drillDownStep === 'services'"
-                            class="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 truncate max-w-[260px]"
-                        >
-                            Level 3: {{ drillDownCategory || drillDownServiceName || 'Daftar Layanan' }}
-                        </span>
-                    </div>
-                    <h3 class="text-sm sm:text-base font-extrabold text-slate-900">
-                        Grafik 2 — Distribusi Kendala per OPD / Kategori ({{ selectedPeriodLabel }})
-                    </h3>
-                    <p class="text-xs text-slate-500 mt-0.5">
-                        Klik salah satu batang grafik OPD di bawah untuk menampilkan daftar layanan bermasalah pada OPD tersebut.
-                    </p>
-                </div>
-
-                <div class="flex flex-wrap items-center gap-2 shrink-0">
-                    <select
-                        v-model="drillDownPeriodId"
-                        class="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:border-primary outline-none text-slate-700"
-                    >
-                        <option value="all">Semua Periode</option>
-                        <option v-for="p in periodTrends" :key="p.id" :value="String(p.id)">
-                            {{ p.date_label }} ({{ p.gangguan }} kendala)
-                        </option>
-                    </select>
-                    <button
-                        type="button"
-                        @click="showDrillDownModal = false"
-                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
-                    >
-                        <span>Tutup Cabang</span>
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            <!-- LEVEL 2 (Inline): Grafik 2 Distribusi OPD / Kategori -->
-            <div class="p-5 sm:p-6 space-y-4">
-                <div v-if="opdBranchStats.length > 0" class="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4">
-                    <div class="relative h-64 w-full">
-                        <canvas ref="opdChartRef"></canvas>
-                    </div>
-                </div>
-
-                <!-- Chip OPD untuk cabang cepat -->
-                <div v-if="opdBranchStats.length > 0" class="flex flex-wrap items-center gap-2">
-                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1">Cabang OPD:</span>
-                    <button
-                        v-for="branch in opdBranchStats"
-                        :key="branch.category"
-                        type="button"
-                        @click="selectOpdBranch(branch.category)"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer"
-                        :class="drillDownStep === 'services' && drillDownCategory === branch.category
-                            ? 'bg-primary text-white border-primary shadow-xs'
-                            : 'bg-white text-slate-700 border-slate-200 hover:border-primary hover:text-primary'"
-                    >
-                        <span class="truncate max-w-[200px]">{{ branch.category }}</span>
-                        <span
-                            class="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold"
-                            :class="drillDownStep === 'services' && drillDownCategory === branch.category
-                                ? 'bg-white/20 text-white'
-                                : 'bg-rose-50 text-rose-700'"
-                        >
-                            {{ branch.total }}
-                        </span>
-                    </button>
-                    <button
-                        v-if="drillDownStep === 'services'"
-                        type="button"
-                        @click="goToStep('opd')"
-                        class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
-                    >
-                        Reset Filter OPD
-                    </button>
-                </div>
-
-                <div v-else class="py-8 text-center text-slate-400 text-xs">
-                    Tidak ada layanan bermasalah pada periode ini.
-                </div>
-            </div>
-
-            <!-- LEVEL 3 (Inline): Detail Layanan Bermasalah untuk OPD / Filter Terpilih -->
-            <div v-if="drillDownStep === 'services'" class="px-5 sm:px-6 pb-6 pt-4 border-t border-slate-100 bg-slate-50/40 space-y-3">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    <div>
-                        <p class="text-[11px] font-bold text-rose-600 uppercase tracking-wider">
-                            Level 3 — Detail Layanan Bermasalah ({{ filteredDrillDownItems.length }})
-                        </p>
-                        <p class="text-xs text-slate-500">
-                            {{ drillDownCategory ? `OPD: ${drillDownCategory}` : 'Semua OPD' }} · {{ selectedPeriodLabel }}
-                        </p>
-                    </div>
-                    <div class="relative w-full sm:w-72">
-                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 105.65 5.65a7.5 7.5 0 0010.6 10.6z" />
-                        </svg>
-                        <input
-                            v-model="drillDownSearch"
-                            type="text"
-                            placeholder="Cari layanan, tester, atau catatan..."
-                            class="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none"
-                        />
-                    </div>
-                </div>
-
-                <div class="space-y-2.5 max-h-96 overflow-y-auto pr-1">
-                    <div
-                        v-for="item in filteredDrillDownItems"
-                        :key="item.id"
-                        class="p-4 rounded-2xl border border-rose-200/80 bg-white hover:border-rose-300 transition-all shadow-2xs"
-                    >
-                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                            <div class="min-w-0 flex-1">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <p class="text-sm font-bold text-slate-900">{{ item.service_name }}</p>
-                                    <span class="px-2 py-0.5 rounded-md bg-primary text-white text-[10px] font-bold">{{ item.level }}</span>
-                                    <span
-                                        class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border"
-                                        :class="item.handling_status === 'perlu_pengecekan_ulang'
-                                            ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                            : (item.handling_status === 'selesai'
-                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                : 'bg-rose-100 text-rose-700 border-rose-200')"
-                                    >
-                                        {{ item.handling_status === 'perlu_pengecekan_ulang' ? 'Perlu Cek Ulang' : (item.handling_status === 'selesai' ? 'Selesai' : 'Belum Tindak Lanjut') }}
-                                    </span>
-                                </div>
-                                <p class="text-xs text-slate-500 mt-1">
-                                    {{ item.category }} · Periode: <strong class="text-slate-700">{{ item.period_date_label }}</strong> · Tester: <strong class="text-slate-700">{{ item.tester_name }}</strong>
-                                </p>
-                                <p class="text-xs text-rose-800 bg-rose-50/70 border border-rose-100 rounded-xl px-3 py-2 mt-2">
-                                    <span class="font-semibold">Catatan:</span> {{ item.description }}
-                                </p>
-                            </div>
-                            <Link
-                                :href="route('admin.periods.show', item.period_id)"
-                                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary hover:bg-[#1d4ed8] text-white text-xs font-bold shadow-xs transition-all shrink-0 self-start"
-                            >
-                                <span>Detail Periode</span>
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                                </svg>
-                            </Link>
-                        </div>
-                    </div>
-
-                    <div v-if="filteredDrillDownItems.length === 0" class="py-8 text-center text-slate-400 text-xs">
-                        Tidak ada layanan bermasalah yang sesuai dengan filter.
-                    </div>
-                </div>
-            </div>
-        </div>
-    </Transition>
 </template>
-
