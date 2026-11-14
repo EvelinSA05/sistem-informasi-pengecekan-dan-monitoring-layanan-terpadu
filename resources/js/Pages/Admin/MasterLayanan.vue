@@ -396,10 +396,10 @@ function confirmDelete() {
  </div>
 
  <!-- ── Toolbar ───────────────────────────────────────── -->
- <div class="flex flex-col xl:flex-row xl:flex-wrap justify-between items-stretch xl:items-center gap-3 mb-6">
+ <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-6">
  <!-- Search & Filters -->
- <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 w-full xl:w-auto xl:flex-1 min-w-0">
- <div class="relative w-full sm:w-64 lg:w-72 min-w-0">
+ <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:flex-1 min-w-0">
+ <div class="relative w-full sm:flex-1 sm:min-w-[170px] sm:max-w-xs min-w-0">
  <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
  <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
@@ -422,19 +422,19 @@ function confirmDelete() {
  </svg>
  </button>
  </div>
- <select v-model="filterStatus" class="w-full sm:w-44 py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none text-slate-700">
+ <select v-model="filterStatus" class="w-full sm:w-36 shrink-0 py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none text-slate-700">
  <option value="">Semua Status</option>
  <option value="aktif">Aktif</option>
  <option value="tidak_aktif">Tidak Aktif</option>
  <option value="butuh_konfirmasi">Butuh Konfirmasi</option>
  </select>
- <select v-model="filterLevel" class="w-full sm:w-36 py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none text-slate-700">
+ <select v-model="filterLevel" class="w-full sm:w-32 shrink-0 py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none text-slate-700">
  <option value="">Semua Level</option>
  <option v-for="lvl in levels" :key="lvl" :value="lvl">{{ lvl }}</option>
  </select>
  </div>
  <!-- Action Buttons: Sync & Add -->
- <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 w-full xl:w-auto shrink-0">
+ <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto shrink-0">
   <button
    type="button"
    @click="triggerSyncMajadigi"
