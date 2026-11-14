@@ -29,6 +29,12 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (\Throwable $e, Request $request) {
+            if ($e instanceof \Illuminate\Validation\ValidationException
+                || $e instanceof \Illuminate\Auth\AuthenticationException
+                || $e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                return null;
+            }
+
             \Illuminate\Support\Facades\Log::error('Exception intercepted: ' . $e->getMessage(), [
                 'file' => $e->getFile() . ':' . $e->getLine(),
                 'url'  => $request->fullUrl(),
