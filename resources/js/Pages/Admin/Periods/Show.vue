@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
 import axios from 'axios';
-import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, usePage, useForm, usePoll } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ClientPagination from '@/Components/ClientPagination.vue';
 import AdminIssueDetailModal from '@/Components/AdminIssueDetailModal.vue';
@@ -11,6 +11,11 @@ const props = defineProps({
  period: { type: Object, required: true },
  distribution: { type: Array, default: () => [] },
  troubled_services: { type: Array, default: () => [] },
+});
+
+// Polling real-time agar Layanan Terkendala, Statistik, & Distribusi Tester otomatis terupdate tanpa refresh manual
+usePoll(10000, {
+ only: ['period', 'distribution', 'troubled_services'],
 });
 
 // Layanan Terkendala state & actions

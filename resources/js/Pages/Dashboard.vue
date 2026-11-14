@@ -22,6 +22,7 @@ const props = defineProps({
  recentPeriods: { type: Array, default: () => [] },
  periodTrends: { type: Array, default: () => [] },
  topTroubledServices: { type: Array, default: () => [] },
+ troubledServicesDetail: { type: Array, default: () => [] },
 
  // Tester Monitoring Center props
  activePeriod: { type: String, default: null },
@@ -289,7 +290,7 @@ function renderTesterStatusChart() {
  plugins: {
  legend: {
  position: 'bottom',
- labels: { padding: 12, font: { size: 11, weight: 'bold' }, usePointStyle: true, pointStyleWidth: 8 },
+ labels: { padding: 12, font: { size: 11, weight: 'bold' }, usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, pointStyleWidth: 8 },
  },
  tooltip: {
  callbacks: {
@@ -325,7 +326,7 @@ function initCharts() {
  plugins: {
  legend: {
  position: 'bottom',
- labels: { padding: 14, font: { size: 12 }, usePointStyle: true, pointStyleWidth: 10 },
+ labels: { padding: 14, font: { size: 12 }, usePointStyle: true, pointStyle: 'circle', boxWidth: 10, boxHeight: 10, pointStyleWidth: 10 },
  },
  tooltip: {
  callbacks: {
@@ -359,7 +360,7 @@ function initCharts() {
  plugins: {
  legend: {
  position: 'bottom',
- labels: { padding: 14, font: { size: 12 }, usePointStyle: true, pointStyleWidth: 10 },
+ labels: { padding: 14, font: { size: 12 }, usePointStyle: true, pointStyle: 'circle', boxWidth: 10, boxHeight: 10, pointStyleWidth: 10 },
  },
  tooltip: {
  callbacks: {
@@ -989,6 +990,7 @@ function submitCheck() {
  <AdminAnalyticsTrendsSection
   :period-trends="periodTrends"
   :top-troubled-services="topTroubledServices"
+  :troubled-services-detail="troubledServicesDetail"
  />
 
  <!-- ── ROW 5: Ringkasan Periode Terbaru ───────────────── -->

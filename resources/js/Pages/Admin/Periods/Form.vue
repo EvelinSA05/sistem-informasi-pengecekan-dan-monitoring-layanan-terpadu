@@ -194,9 +194,11 @@ function submitForm() {
  <div class="flex items-center gap-4 mb-6">
  <Link
  :href="route('admin.periods.index')"
- class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-primary transition-colors group"
+ class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 hover:text-primary hover:border-primary/40 hover:bg-blue-50/40 shadow-2xs transition-all group"
  >
- <span class="text-sm transition-transform group-hover:-translate-x-0.5">←</span>
+ <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+ </svg>
  <span>Kembali</span>
  </Link>
  <h2 class="text-xl font-bold text-slate-900 tracking-tight">
