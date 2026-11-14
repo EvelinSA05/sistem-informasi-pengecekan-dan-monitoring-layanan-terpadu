@@ -293,7 +293,11 @@ class AssignedServiceController extends Controller
                 }
 
                 if (!empty($statusFilter)) {
-                    $servicesQuery->where('status', $statusFilter);
+                    if ($statusFilter === 'checked') {
+                        $servicesQuery->whereIn('status', ['normal', 'gangguan']);
+                    } else {
+                        $servicesQuery->where('status', $statusFilter);
+                    }
                 }
 
                 if (!empty($levelFilter)) {
@@ -419,7 +423,7 @@ class AssignedServiceController extends Controller
 
         $validated = $request->validate([
             'status' => 'required|in:normal,gangguan',
-            'description' => 'required|string|max:5000',
+            'description' => 'nullable|required_if:status,gangguan|string|max:5000',
             'attachment' => [
                 \Illuminate\Validation\Rule::requiredIf(function () use ($request, $periodService, $isRecheck) {
                     if ($request->input('status') !== 'gangguan') {

@@ -87,7 +87,7 @@ class ServiceCheckingWorkflowTest extends TestCase
         ]);
     }
 
-    public function test_tester_must_provide_mandatory_description_even_for_normal_status(): void
+    public function test_tester_can_submit_normal_check_without_description(): void
     {
         $response = $this->actingAs($this->tester1)->post(
             route('tester.submit_check', $this->periodService->id),
@@ -97,8 +97,16 @@ class ServiceCheckingWorkflowTest extends TestCase
             ]
         );
 
-        $response->assertSessionHasErrors(['description']);
-        $this->assertEquals('pending', $this->periodService->fresh()->status);
+        $response->assertSessionHasNoErrors();
+        $fresh = $this->periodService->fresh();
+        $this->assertEquals('normal', $fresh->status);
+        $this->assertNotNull($fresh->checked_at);
+
+        // Pastikan filter status=checked menampilkan layanan yang sudah dicek (normal/gangguan)
+        $filterResponse = $this->actingAs($this->tester1)->get(
+            route('tester.periods.services', ['period' => $this->period->id, 'status' => 'checked'])
+        );
+        $filterResponse->assertOk();
     }
 
     public function test_tester_can_submit_normal_check_with_description(): void

@@ -523,6 +523,18 @@ function submitCheck() {
  </button>
  <button
  type="button"
+ @click="filterStatus = 'checked'"
+ class="px-3.5 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer border flex items-center gap-1.5"
+ :class="filterStatus === 'checked' ? 'bg-slate-800 text-white border-slate-800 shadow-xs' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
+ >
+ <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+ <span>Sudah Dicek</span>
+ <span class="px-1.5 py-0.2 rounded-md text-[11px]" :class="filterStatus === 'checked' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'">
+ {{ props.stats.checked }}
+ </span>
+ </button>
+ <button
+ type="button"
  @click="filterStatus = 'normal'"
  class="px-3.5 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer border flex items-center gap-1.5"
  :class="filterStatus === 'normal' ? 'bg-slate-800 text-white border-slate-800 shadow-xs' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
@@ -582,6 +594,7 @@ function submitCheck() {
  >
  <option value="">Semua Status</option>
  <option value="pending">Belum Dicek</option>
+ <option value="checked">Sudah Dicek</option>
  <option value="normal">Normal</option>
  <option value="gangguan">Terkendala</option>
  </select>
@@ -1100,7 +1113,7 @@ function submitCheck() {
  rows="3"
  maxlength="5000"
  class="w-full rounded-xl bg-slate-50/70 border border-slate-200 text-xs focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary p-3 leading-relaxed placeholder:text-slate-400 outline-none transition-all"
- :placeholder="checkForm.status === 'gangguan' ? (selectedService?.is_recheck_needed ? 'Tuliskan catatan kendala terbaru yang masih terjadi pada layanan ini...' : 'Jelaskan secara spesifik kendala yang dialami (misal: halaman 404, lambat diakses, SSL expired, gagal login, dsb.)...') : (selectedService?.is_recheck_needed ? 'Catatan pengujian hasil verifikasi (wajib)...' : 'Tambahkan catatan pengujian (wajib)...')"
+ :placeholder="checkForm.status === 'gangguan' ? (selectedService?.is_recheck_needed ? 'Tuliskan catatan kendala terbaru yang masih terjadi pada layanan ini...' : 'Jelaskan secara spesifik kendala yang dialami (misal: halaman 404, lambat diakses, SSL expired, gagal login, dsb.)...') : (selectedService?.is_recheck_needed ? 'Tambahkan catatan pengujian hasil verifikasi (opsional)...' : 'Tambahkan catatan pengujian (opsional)...')"
  ></textarea>
  <p v-if="checkForm.errors.description" class="mt-1 text-xs text-rose-500">{{ checkForm.errors.description }}</p>
  </div>
@@ -1248,17 +1261,17 @@ function submitCheck() {
  <button
  type="button"
  @click="showCheckModal = false"
- class="px-4.5 py-2 rounded-xl font-semibold text-xs text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
+ class="px-6 py-2 min-w-[100px] rounded-xl font-semibold text-xs text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer text-center"
  >
  Batal
  </button>
  <button
  type="button"
  @click="submitCheck"
- :disabled="checkForm.processing || !checkForm.description?.trim() || (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName)"
+ :disabled="checkForm.processing || !checkForm.status || (checkForm.status === 'gangguan' && (!checkForm.description?.trim() || (!checkForm.attachment && !existingAttachmentName)))"
  :class="[
  'px-5 py-2 rounded-xl font-bold text-xs text-white transition-all flex items-center gap-1.5 cursor-pointer active:scale-95',
- (checkForm.processing || !checkForm.description?.trim() || (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName))
+ (checkForm.processing || !checkForm.status || (checkForm.status === 'gangguan' && (!checkForm.description?.trim() || (!checkForm.attachment && !existingAttachmentName))))
  ? 'bg-slate-300 cursor-not-allowed text-slate-500 shadow-none'
  : (selectedService?.is_recheck_needed ? 'bg-amber-500 hover:bg-amber-600 shadow-md shadow-amber-500/20' : 'bg-primary hover:bg-[#1d4ed8] shadow-md shadow-primary/20 disabled:opacity-70')
  ]"

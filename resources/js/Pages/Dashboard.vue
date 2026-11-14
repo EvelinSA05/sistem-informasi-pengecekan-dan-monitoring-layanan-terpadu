@@ -1839,13 +1839,14 @@ function submitCheck() {
  <div>
  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
  {{ checkForm.status === 'gangguan' ? 'Catatan / Keterangan Kendala' : 'Catatan Pengujian' }}
- <span class="text-rose-600 font-bold lowercase">(wajib)</span>
+ <span v-if="checkForm.status === 'gangguan'" class="text-rose-600 font-bold lowercase">(wajib)</span>
+ <span v-else class="text-slate-400 font-normal lowercase">(opsional)</span>
  </label>
  <textarea
  v-model="checkForm.description"
  rows="3"
  class="w-full rounded-xl bg-slate-50/70 border border-slate-200 text-xs focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary p-3 leading-relaxed placeholder:text-slate-400 outline-none transition-all"
- :placeholder="checkForm.status === 'gangguan' ? 'Jelaskan secara spesifik kendala yang dialami (misal: halaman 404, lambat diakses, SSL expired, gagal login, dsb.)...' : 'Tambahkan catatan pengujian (wajib)...'"
+ :placeholder="checkForm.status === 'gangguan' ? 'Jelaskan secara spesifik kendala yang dialami (misal: halaman 404, lambat diakses, SSL expired, gagal login, dsb.)...' : 'Tambahkan catatan pengujian (opsional)...'"
  ></textarea>
  <p v-if="checkForm.errors.description" class="mt-1 text-xs text-rose-500">{{ checkForm.errors.description }}</p>
  </div>
@@ -1984,17 +1985,17 @@ function submitCheck() {
  <button
  type="button"
  @click="showCheckModal = false"
- class="px-4.5 py-2 rounded-xl font-semibold text-xs text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
+ class="px-6 py-2 min-w-[100px] rounded-xl font-semibold text-xs text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer text-center"
  >
  Batal
  </button>
  <button
  type="button"
  @click="submitCheck"
- :disabled="checkForm.processing || !checkForm.description?.trim() || (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName)"
+ :disabled="checkForm.processing || !checkForm.status || (checkForm.status === 'gangguan' && (!checkForm.description?.trim() || (!checkForm.attachment && !existingAttachmentName)))"
  :class="[
  'px-5 py-2 rounded-xl font-bold text-xs text-white transition-all flex items-center gap-1.5 cursor-pointer active:scale-95',
- (checkForm.processing || !checkForm.description?.trim() || (checkForm.status === 'gangguan' && !checkForm.attachment && !existingAttachmentName))
+ (checkForm.processing || !checkForm.status || (checkForm.status === 'gangguan' && (!checkForm.description?.trim() || (!checkForm.attachment && !existingAttachmentName))))
  ? 'bg-slate-300 cursor-not-allowed text-slate-500 shadow-none'
  : 'bg-primary hover:bg-primary shadow-md shadow-primary/20 disabled:opacity-70'
  ]"

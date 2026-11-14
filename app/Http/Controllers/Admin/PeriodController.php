@@ -686,7 +686,11 @@ class PeriodController extends Controller
             }
 
             if ($status !== '' && $status !== 'all') {
-                if ($ps->status !== $status) {
+                if ($status === 'checked') {
+                    if (!in_array($ps->status, ['normal', 'gangguan'], true)) {
+                        return false;
+                    }
+                } elseif ($ps->status !== $status) {
                     return false;
                 }
             }
@@ -718,6 +722,7 @@ class PeriodController extends Controller
         }
         if ($status !== '' && $status !== 'all') {
             $activeFilters['Status'] = match ($status) {
+                'checked'  => 'Sudah Dicek',
                 'normal'   => 'Normal',
                 'gangguan' => 'Terkendala',
                 'pending'  => 'Belum Dicek',
