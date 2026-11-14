@@ -303,8 +303,22 @@ class HandleInertiaRequests extends Middleware
                 }
             }
 
-            // Urutkan semua notifikasi dari yang paling baru
-            usort($items, fn ($a, $b) => ($b['sort_ts'] ?? 0) <=> ($a['sort_ts'] ?? 0));
+            // Urutkan semua notifikasi dari yang paling baru; jika timestamp sama, utamakan notifikasi aksi (recheck/issue/deadline)
+            $priorityRank = [
+                'recheck_needed'   => 4,
+                'issue_reported'   => 4,
+                'deadline_warning' => 3,
+                'period_assigned'  => 2,
+                'check_issue'      => 1,
+                'check_normal'     => 1,
+            ];
+            usort($items, function ($a, $b) use ($priorityRank) {
+                $tsCmp = ($b['sort_ts'] ?? 0) <=> ($a['sort_ts'] ?? 0);
+                if ($tsCmp !== 0) {
+                    return $tsCmp;
+                }
+                return ($priorityRank[$b['type'] ?? ''] ?? 0) <=> ($priorityRank[$a['type'] ?? ''] ?? 0);
+            });
 
             $unreadCount = collect($items)->where('is_unread', true)->count();
 
