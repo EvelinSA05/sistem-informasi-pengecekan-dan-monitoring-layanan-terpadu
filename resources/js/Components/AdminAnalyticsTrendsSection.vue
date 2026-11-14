@@ -21,28 +21,85 @@ const props = defineProps({
 });
 
 const showDrillDownModal = ref(false);
+const drillDownStep = ref('opd'); // 'opd' (Grafik 2: Cabang OPD) | 'services' (Level 3: Detail Layanan)
 const drillDownSearch = ref('');
 const drillDownPeriodId = ref('all');
+const drillDownCategory = ref('');
 const drillDownServiceName = ref('');
+
+const opdChartRef = ref(null);
+let opdChartInstance = null;
 
 function openDrillDown(options = {}) {
     drillDownPeriodId.value = options.periodId ? String(options.periodId) : 'all';
+    drillDownCategory.value = options.category || '';
     drillDownServiceName.value = options.serviceName || '';
     drillDownSearch.value = options.serviceName || '';
+    drillDownStep.value = options.serviceName ? 'services' : (options.step || 'opd');
     showDrillDownModal.value = true;
 }
 
-const filteredDrillDownItems = computed(() => {
+function goToStep(step) {
+    if (step === 'all') {
+        drillDownPeriodId.value = 'all';
+        drillDownCategory.value = '';
+        drillDownServiceName.value = '';
+        drillDownSearch.value = '';
+        drillDownStep.value = 'opd';
+        return;
+    }
+    if (step === 'opd') {
+        drillDownCategory.value = '';
+        drillDownServiceName.value = '';
+        drillDownSearch.value = '';
+        drillDownStep.value = 'opd';
+    }
+}
+
+function selectOpdBranch(category) {
+    drillDownCategory.value = category;
+    drillDownServiceName.value = '';
+    drillDownSearch.value = '';
+    drillDownStep.value = 'services';
+}
+
+const selectedPeriodLabel = computed(() => {
+    if (drillDownPeriodId.value === 'all') return 'Semua Periode';
+    const found = (props.periodTrends || []).find(p => String(p.id) === drillDownPeriodId.value);
+    return found?.date_label || 'Periode Terpilih';
+});
+
+const periodScopedItems = computed(() => {
     const items = props.troubledServicesDetail || [];
+    if (drillDownPeriodId.value === 'all') return items;
+    return items.filter(item => String(item.period_id) === drillDownPeriodId.value);
+});
+
+const opdBranchStats = computed(() => {
+    const counts = new Map();
+    periodScopedItems.value.forEach(item => {
+        const cat = item.category || 'Lainnya';
+        const existing = counts.get(cat) || { category: cat, total: 0, active: 0 };
+        existing.total += 1;
+        if (item.handling_status !== 'selesai') {
+            existing.active += 1;
+        }
+        counts.set(cat, existing);
+    });
+    return Array.from(counts.values()).sort((a, b) => b.total - a.total);
+});
+
+const filteredDrillDownItems = computed(() => {
+    const items = periodScopedItems.value;
     const q = drillDownSearch.value.trim().toLowerCase();
     return items.filter(item => {
-        const matchPeriod = drillDownPeriodId.value === 'all' || String(item.period_id) === drillDownPeriodId.value;
+        const matchCategory = !drillDownCategory.value || (item.category || 'Lainnya') === drillDownCategory.value;
         const matchQuery = !q
             || (item.service_name || '').toLowerCase().includes(q)
             || (item.category || '').toLowerCase().includes(q)
             || (item.tester_name || '').toLowerCase().includes(q)
             || (item.description || '').toLowerCase().includes(q);
-        return matchPeriod && matchQuery;
+        return matchCategory && matchQuery;
     });
 });
 
@@ -138,9 +195,9 @@ function buildTrendChart() {
                     labels: {
                         boxWidth: 8,
                         boxHeight: 8,
-                        pointStyleWidth: 8,
-                        usePointStyle: true,
-                        pointStyle: 'circle',
+                        usePointStyle: false,
+                        useBorderRadius: true,
+                        borderRadius: 4,
                         font: {
                             size: 11,
                             weight: '600',
@@ -190,6 +247,103 @@ function buildTrendChart() {
     });
 }
 
+function buildOpdChart() {
+    if (opdChartInstance) {
+        opdChartInstance.destroy();
+        opdChartInstance = null;
+    }
+    if (!showDrillDownModal.value || drillDownStep.value !== 'opd' || !opdChartRef.value) return;
+
+    const topBranches = opdBranchStats.value.slice(0, 10);
+    if (!topBranches.length) return;
+
+    const labels = topBranches.map(b => b.category.length > 28 ? `${b.category.slice(0, 26)}…` : b.category);
+    const activeData = topBranches.map(b => b.active);
+    const resolvedData = topBranches.map(b => Math.max(0, b.total - b.active));
+
+    opdChartInstance = new Chart(opdChartRef.value, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Belum Selesai',
+                    data: activeData,
+                    backgroundColor: '#e11d48',
+                    borderRadius: 6,
+                    barPercentage: 0.72,
+                },
+                {
+                    label: 'Sudah Selesai',
+                    data: resolvedData,
+                    backgroundColor: '#10b981',
+                    borderRadius: 6,
+                    barPercentage: 0.72,
+                },
+            ],
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            onClick: (_event, elements) => {
+                if (elements && elements.length > 0) {
+                    const idx = elements[0].index;
+                    const branch = topBranches[idx];
+                    if (branch) {
+                        selectOpdBranch(branch.category);
+                    }
+                }
+            },
+            onHover: (event, elements) => {
+                if (event?.native?.target) {
+                    event.native.target.style.cursor = elements?.length ? 'pointer' : 'default';
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    align: 'end',
+                    labels: {
+                        boxWidth: 8,
+                        boxHeight: 8,
+                        usePointStyle: false,
+                        useBorderRadius: true,
+                        borderRadius: 4,
+                        font: { size: 11, weight: '600' },
+                        color: '#475569',
+                    },
+                },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    padding: 10,
+                    cornerRadius: 10,
+                    callbacks: {
+                        title: (items) => {
+                            const idx = items?.[0]?.dataIndex;
+                            return topBranches[idx]?.category || '';
+                        },
+                        afterBody: () => 'Klik batang grafik untuk lihat daftar layanan →',
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                    beginAtZero: true,
+                    ticks: { precision: 0, font: { size: 11 }, color: '#94a3b8' },
+                    grid: { color: '#f1f5f9' },
+                },
+                y: {
+                    stacked: true,
+                    grid: { display: false },
+                    ticks: { font: { size: 11, weight: '600' }, color: '#475569' },
+                },
+            },
+        },
+    });
+}
+
 onMounted(async () => {
     await nextTick();
     buildTrendChart();
@@ -204,10 +358,27 @@ watch(
     { deep: true }
 );
 
+watch(
+    [showDrillDownModal, drillDownStep, drillDownPeriodId],
+    async ([isOpen, step]) => {
+        if (isOpen && step === 'opd') {
+            await nextTick();
+            buildOpdChart();
+        } else if (opdChartInstance) {
+            opdChartInstance.destroy();
+            opdChartInstance = null;
+        }
+    }
+);
+
 onUnmounted(() => {
     if (trendChartInstance) {
         trendChartInstance.destroy();
         trendChartInstance = null;
+    }
+    if (opdChartInstance) {
+        opdChartInstance.destroy();
+        opdChartInstance = null;
     }
 });
 </script>
@@ -411,20 +582,53 @@ onUnmounted(() => {
             <div v-if="showDrillDownModal" class="fixed inset-0 z-[110] flex items-center justify-center p-4">
                 <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showDrillDownModal = false"></div>
                 <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden z-10 border border-slate-200">
-                    <!-- Modal Header -->
-                    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-4 bg-slate-50/70">
-                        <div>
-                            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-bold uppercase tracking-wider mb-1">
-                                Drill-Down Layanan Bermasalah
+                    <!-- Modal Header + Breadcrumb Cabang Drill-Down -->
+                    <div class="px-6 py-4 border-b border-slate-100 flex items-start justify-between gap-4 bg-slate-50/70">
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-1.5 text-[11px] font-bold mb-1.5">
+                                <button
+                                    type="button"
+                                    @click="goToStep('all')"
+                                    class="px-2 py-0.5 rounded-full border transition-colors cursor-pointer"
+                                    :class="drillDownPeriodId === 'all' && drillDownStep === 'opd'
+                                        ? 'bg-primary text-white border-primary'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:border-primary hover:text-primary'"
+                                >
+                                    Level 1: Semua Periode
+                                </button>
+                                <span v-if="drillDownPeriodId !== 'all'" class="text-slate-400">›</span>
+                                <button
+                                    v-if="drillDownPeriodId !== 'all'"
+                                    type="button"
+                                    @click="goToStep('opd')"
+                                    class="px-2 py-0.5 rounded-full border transition-colors cursor-pointer"
+                                    :class="drillDownStep === 'opd'
+                                        ? 'bg-primary text-white border-primary'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:border-primary hover:text-primary'"
+                                >
+                                    Level 2: {{ selectedPeriodLabel }}
+                                </button>
+                                <span v-if="drillDownStep === 'services'" class="text-slate-400">›</span>
+                                <span
+                                    v-if="drillDownStep === 'services'"
+                                    class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 truncate max-w-[220px]"
+                                >
+                                    Level 3: {{ drillDownCategory || drillDownServiceName || 'Daftar Layanan' }}
+                                </span>
                             </div>
                             <h3 class="text-base font-extrabold text-slate-900">
-                                Daftar Layanan yang Mengalami Kendala ({{ filteredDrillDownItems.length }})
+                                <template v-if="drillDownStep === 'opd'">
+                                    Distribusi Kendala per OPD / Kategori ({{ selectedPeriodLabel }})
+                                </template>
+                                <template v-else>
+                                    Daftar Layanan Bermasalah ({{ filteredDrillDownItems.length }})
+                                </template>
                             </h3>
                         </div>
                         <button
                             type="button"
                             @click="showDrillDownModal = false"
-                            class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                            class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer shrink-0"
                             aria-label="Tutup modal"
                         >
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -435,7 +639,7 @@ onUnmounted(() => {
 
                     <!-- Filter Bar -->
                     <div class="px-6 py-3 border-b border-slate-100 flex flex-col sm:flex-row gap-2.5 bg-white">
-                        <div class="relative flex-1">
+                        <div v-if="drillDownStep === 'services'" class="relative flex-1">
                             <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 105.65 5.65a7.5 7.5 0 0010.6 10.6z" />
                             </svg>
@@ -446,9 +650,19 @@ onUnmounted(() => {
                                 class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none"
                             />
                         </div>
+                        <div v-else class="flex-1 flex items-center justify-between gap-2 text-xs text-slate-500">
+                            <span>Klik batang grafik OPD di bawah untuk menuju ke detail layanan.</span>
+                            <button
+                                type="button"
+                                @click="drillDownStep = 'services'"
+                                class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] shrink-0 cursor-pointer"
+                            >
+                                Lihat Semua ({{ periodScopedItems.length }})
+                            </button>
+                        </div>
                         <select
                             v-model="drillDownPeriodId"
-                            class="px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary outline-none text-slate-700 sm:w-52"
+                            class="px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary outline-none text-slate-700 sm:w-56"
                         >
                             <option value="all">Semua Periode</option>
                             <option v-for="p in periodTrends" :key="p.id" :value="String(p.id)">
@@ -457,8 +671,40 @@ onUnmounted(() => {
                         </select>
                     </div>
 
-                    <!-- List Body -->
-                    <div class="flex-1 overflow-y-auto p-6 space-y-3">
+                    <!-- LEVEL 2: Grafik 2 Distribusi OPD / Kategori -->
+                    <div v-if="drillDownStep === 'opd'" class="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div v-if="opdBranchStats.length > 0" class="bg-slate-50/60 border border-slate-200/70 rounded-2xl p-4">
+                            <div class="relative h-64 w-full">
+                                <canvas ref="opdChartRef"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Daftar OPD yang Bisa Diklik -->
+                        <div v-if="opdBranchStats.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <button
+                                v-for="branch in opdBranchStats"
+                                :key="branch.category"
+                                type="button"
+                                @click="selectOpdBranch(branch.category)"
+                                class="p-3 rounded-xl border border-slate-200 hover:border-primary hover:bg-blue-50/30 bg-white text-left flex items-center justify-between gap-3 transition-all cursor-pointer group"
+                            >
+                                <div class="min-w-0">
+                                    <p class="text-xs font-bold text-slate-800 group-hover:text-primary truncate">{{ branch.category }}</p>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">{{ branch.active }} aktif · {{ branch.total - branch.active }} selesai</p>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-extrabold shrink-0">
+                                    {{ branch.total }} →
+                                </span>
+                            </button>
+                        </div>
+
+                        <div v-else class="py-12 text-center text-slate-400 text-xs">
+                            Tidak ada layanan bermasalah pada periode ini.
+                        </div>
+                    </div>
+
+                    <!-- LEVEL 3: Daftar Layanan Bermasalah -->
+                    <div v-else class="flex-1 overflow-y-auto p-6 space-y-3">
                         <div
                             v-for="item in filteredDrillDownItems"
                             :key="item.id"
