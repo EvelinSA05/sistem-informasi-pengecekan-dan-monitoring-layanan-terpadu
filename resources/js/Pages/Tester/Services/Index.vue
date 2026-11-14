@@ -1089,7 +1089,7 @@ function submitCheck() {
  class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold transition-colors"
  :class="checkForm.status === 'gangguan' ? 'bg-rose-500 text-white shadow-xs' : 'bg-slate-100 text-slate-400 border border-slate-200'"
  >
- <svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01"/></svg>
+ <svg class="w-5 h-5 stroke-[2.8]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01"/></svg>
  </div>
  <div class="min-w-0">
  <p class="font-extrabold text-xs leading-none">KENDALA</p>

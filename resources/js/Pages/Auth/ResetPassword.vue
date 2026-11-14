@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import InputError from '@/Components/InputError.vue';
 
@@ -16,6 +16,7 @@ const props = defineProps({
 
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
+const clientError = ref('');
 
 const form = useForm({
  token: props.token,
@@ -24,9 +25,35 @@ const form = useForm({
  password_confirmation: '',
 });
 
+const alertMessages = computed(() => {
+ const messages = [];
+ if (clientError.value) {
+ messages.push(clientError.value);
+ }
+ Object.values(form.errors).forEach((msg) => {
+ if (msg && !messages.includes(msg)) {
+ messages.push(msg);
+ }
+ });
+ return messages;
+});
+
 const submit = () => {
+ clientError.value = '';
+ form.clearErrors();
+
+ if (!form.password || form.password.length < 8) {
+ clientError.value = 'Kata sandi gagal disimpan: Kata sandi baru minimal harus terdiri dari 8 karakter.';
+ return;
+ }
+
+ if (form.password !== form.password_confirmation) {
+ clientError.value = 'Kata sandi gagal disimpan: Konfirmasi kata sandi tidak cocok dengan kata sandi baru.';
+ return;
+ }
+
  form.post(route('password.store'), {
- onFinish: () => form.reset('password', 'password_confirmation'),
+ onSuccess: () => form.reset('password', 'password_confirmation'),
  });
 };
 </script>
@@ -67,8 +94,27 @@ const submit = () => {
  Atur Ulang Kata Sandi
  </h1>
  <p class="text-xs sm:text-sm text-slate-500 mt-1.5 leading-relaxed">
- Masukkan kata sandi baru untuk akun Checker System Anda.
+ Masukkan kata sandi baru minimal 8 karakter untuk akun Checker System Anda.
  </p>
+ </div>
+
+ <!-- Alert Error Banner -->
+ <div
+ v-if="alertMessages.length > 0"
+ role="alert"
+ class="mb-4 p-3.5 rounded-xl bg-rose-50 border border-rose-300 text-xs sm:text-sm text-rose-800 flex items-start gap-3 shadow-sm"
+ >
+ <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-rose-200 flex items-center justify-center">
+ <svg class="w-3.5 h-3.5 text-rose-700" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01" />
+ </svg>
+ </span>
+ <div class="space-y-1 leading-relaxed">
+ <p class="font-bold text-rose-900">Gagal menyimpan kata sandi baru</p>
+ <ul class="list-disc list-inside space-y-0.5 font-medium">
+ <li v-for="(msg, idx) in alertMessages" :key="idx">{{ msg }}</li>
+ </ul>
+ </div>
  </div>
 
  <!-- Form -->

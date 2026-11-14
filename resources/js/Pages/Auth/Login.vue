@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import InputError from '@/Components/InputError.vue';
 
@@ -40,6 +40,24 @@ const form = useForm({
     password: '',
     remember: false,
     'g-recaptcha-response': '',
+});
+
+const loginErrorMessages = computed(() => {
+    const rawErrors = {
+        ...(page.props.errors || {}),
+        ...form.errors,
+    };
+    const messages = [];
+    Object.values(rawErrors).forEach((msg) => {
+        if (!msg) return;
+        const normalized = msg === 'These credentials do not match our records.'
+            ? 'Email atau kata sandi yang Anda masukkan salah. Silakan periksa kembali.'
+            : msg;
+        if (!messages.includes(normalized)) {
+            messages.push(normalized);
+        }
+    });
+    return messages;
 });
 
 onMounted(() => {
@@ -287,6 +305,27 @@ const submit = () => {
  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
  </svg>
  <span>{{ status }}</span>
+ </div>
+
+ <!-- Alert Error Login (password salah, akun nonaktif, reCAPTCHA, dll) -->
+ <div
+ v-if="loginErrorMessages.length > 0"
+ role="alert"
+ id="login-error-alert"
+ class="mb-4 p-3.5 rounded-xl bg-rose-50 border border-rose-300 text-xs sm:text-sm text-rose-800 flex items-start gap-3 shadow-sm"
+ >
+ <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-rose-200 flex items-center justify-center">
+ <svg class="w-3.5 h-3.5 text-rose-700" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01" />
+ </svg>
+ </span>
+ <div class="space-y-1 leading-relaxed">
+ <p class="font-bold text-rose-900">Gagal masuk ke sistem</p>
+ <ul class="list-disc list-inside space-y-0.5 font-medium" v-if="loginErrorMessages.length > 1">
+ <li v-for="(msg, idx) in loginErrorMessages" :key="idx">{{ msg }}</li>
+ </ul>
+ <p v-else class="font-medium">{{ loginErrorMessages[0] }}</p>
+ </div>
  </div>
 
  <!-- Form Inputs -->
