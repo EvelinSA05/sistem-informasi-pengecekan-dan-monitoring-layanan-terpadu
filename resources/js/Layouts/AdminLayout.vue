@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { Link, usePage, router } from '@inertiajs/vue3';
+import { Link, usePage, router, usePoll, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
  title: { type: String, default: 'Dashboard' },
@@ -117,9 +117,44 @@ function confirmLogout() {
  router.post(route('logout'));
 }
 
+// ─── Real-Time Polling Notifikasi Global (Admin & Tester) ───────────────
+usePoll(15000, {
+ only: ['notifications'],
+});
+
 // ─── Header User Profile Dropdown State & Handlers ──────────────────────
 const isProfileOpen = ref(false);
 const profileDropdownRef = ref(null);
+const showChangePasswordModal = ref(false);
+const passwordSuccessMsg = ref('');
+
+const passwordForm = useForm({
+ current_password: '',
+ password: '',
+ password_confirmation: '',
+});
+
+function openChangePasswordModal() {
+ isProfileOpen.value = false;
+ passwordSuccessMsg.value = '';
+ passwordForm.reset();
+ passwordForm.clearErrors();
+ showChangePasswordModal.value = true;
+}
+
+function submitChangePassword() {
+ passwordForm.put(route('password.update'), {
+  preserveScroll: true,
+  onSuccess: () => {
+   passwordForm.reset();
+   passwordSuccessMsg.value = 'Password berhasil diperbarui.';
+   setTimeout(() => {
+    showChangePasswordModal.value = false;
+    passwordSuccessMsg.value = '';
+   }, 1200);
+  },
+ });
+}
 
 function toggleProfileDropdown() {
  isProfileOpen.value = !isProfileOpen.value;
@@ -131,6 +166,28 @@ function toggleProfileDropdown() {
 // ─── In-App Notification Bell State & Handlers ──────────────────────────
 const isNotifOpen = ref(false);
 const notifDropdownRef = ref(null);
+const showAllNotifModal = ref(false);
+const notifFilterTab = ref('all');
+const notifSearch = ref('');
+
+function openAllNotificationsModal() {
+ isNotifOpen.value = false;
+ notifFilterTab.value = 'all';
+ notifSearch.value = '';
+ showAllNotifModal.value = true;
+}
+
+const filteredAllNotifs = computed(() => {
+ const q = notifSearch.value.trim().toLowerCase();
+ return notifItems.value.filter(item => {
+  const matchTab = notifFilterTab.value === 'all' || item.is_unread;
+  const matchSearch = !q
+   || (item.title || '').toLowerCase().includes(q)
+   || (item.description || '').toLowerCase().includes(q)
+   || (item.badge || '').toLowerCase().includes(q);
+  return matchTab && matchSearch;
+ });
+});
 
 const notifications = computed(() => {
  return page.props.notifications ?? { unread_count: 0, total_count: 0, items: [] };
@@ -497,6 +554,20 @@ onUnmounted(() => {
       <p class="text-xs font-bold text-slate-700">Tidak ada notifikasi aktif</p>
       <p class="text-[11px] text-slate-400 mt-0.5">Semua pemberitahuan kendala & pengingat tenggat waktu akan muncul di sini.</p>
      </div>
+
+     <!-- Footer Lihat Semua Notifikasi -->
+     <div class="px-4 py-2.5 border-t border-slate-100 bg-slate-50/70">
+      <button
+       type="button"
+       @click="openAllNotificationsModal"
+       class="w-full py-1.5 rounded-xl text-xs font-bold text-primary hover:bg-blue-50 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+      >
+       <span>Lihat Detail Keseluruhan Notifikasi ({{ notifItems.length }})</span>
+       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+       </svg>
+      </button>
+     </div>
     </div>
    </Transition>
   </div>
@@ -573,21 +644,33 @@ onUnmounted(() => {
      </div>
 
      <!-- Aksi Cepat -->
-     <div class="p-2.5 bg-slate-50/70 flex items-center gap-2">
-      <Link
-       :href="route('profile.edit')"
-       @click="isProfileOpen = false"
-       class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition-colors"
-      >
-       <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-       </svg>
-       <span>Edit Profil</span>
-      </Link>
+     <div class="p-2.5 bg-slate-50/70 flex flex-col gap-2">
+      <div class="flex items-center gap-2">
+       <Link
+        :href="route('profile.edit')"
+        @click="isProfileOpen = false"
+        class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition-colors"
+       >
+        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+        <span>Edit Profil</span>
+       </Link>
+       <button
+        type="button"
+        @click="openChangePasswordModal"
+        class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-blue-50 hover:border-primary/40 hover:text-primary text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
+       >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        <span>Ubah Password</span>
+       </button>
+      </div>
       <button
        type="button"
        @click="isProfileOpen = false; showLogoutModal = true"
-       class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200/70 text-xs font-semibold text-rose-600 transition-colors cursor-pointer"
+       class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200/70 text-xs font-semibold text-rose-600 transition-colors cursor-pointer"
       >
        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -652,5 +735,239 @@ onUnmounted(() => {
  </div>
  </div>
  </Transition>
+ </Teleport>
+
+ <!-- ════════════════════════════════════════════════════ -->
+ <!-- Modal Detail Keseluruhan Notifikasi -->
+ <!-- ════════════════════════════════════════════════════ -->
+ <Teleport to="body">
+  <Transition
+   enter-active-class="transition-all duration-200 ease-out"
+   enter-from-class="opacity-0"
+   enter-to-class="opacity-100"
+   leave-active-class="transition-all duration-150 ease-in"
+   leave-from-class="opacity-100"
+   leave-to-class="opacity-0"
+  >
+   <div v-if="showAllNotifModal" class="fixed inset-0 z-[105] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showAllNotifModal = false"></div>
+    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden z-10 border border-slate-200">
+     <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between gap-3">
+      <div>
+       <div class="flex items-center gap-2">
+        <h3 class="text-base font-extrabold text-slate-900">Semua Notifikasi & Aktivitas</h3>
+        <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+         Real-Time
+        </span>
+       </div>
+       <p class="text-xs text-slate-500 mt-0.5">Riwayat lengkap seluruh pembaruan sistem dan penugasan</p>
+      </div>
+      <div class="flex items-center gap-2">
+       <button
+        v-if="unreadNotifCount > 0"
+        type="button"
+        @click="markAllNotificationsRead"
+        class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-primary text-[11px] font-bold transition-colors cursor-pointer"
+       >
+        Tandai Semua Dibaca
+       </button>
+       <button
+        type="button"
+        @click="showAllNotifModal = false"
+        class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
+       >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+       </button>
+      </div>
+     </div>
+
+     <!-- Filter & Search -->
+     <div class="px-6 py-3 border-b border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 bg-white">
+      <div class="inline-flex p-0.5 bg-slate-100 rounded-xl text-xs">
+       <button
+        type="button"
+        @click="notifFilterTab = 'all'"
+        class="px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer"
+        :class="notifFilterTab === 'all' ? 'bg-white text-slate-800 shadow-2xs' : 'text-slate-500 hover:text-slate-700'"
+       >
+        Semua ({{ notifItems.length }})
+       </button>
+       <button
+        type="button"
+        @click="notifFilterTab = 'unread'"
+        class="px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer"
+        :class="notifFilterTab === 'unread' ? 'bg-white text-slate-800 shadow-2xs' : 'text-slate-500 hover:text-slate-700'"
+       >
+        Belum Dibaca ({{ unreadNotifCount }})
+       </button>
+      </div>
+      <div class="relative flex-1">
+       <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 105.65 5.65a7.5 7.5 0 0010.6 10.6z" />
+       </svg>
+       <input
+        v-model="notifSearch"
+        type="text"
+        placeholder="Cari notifikasi..."
+        class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary outline-none"
+       />
+      </div>
+     </div>
+
+     <!-- List -->
+     <div class="flex-1 overflow-y-auto divide-y divide-slate-100">
+      <button
+       v-for="item in filteredAllNotifs"
+       :key="item.id"
+       type="button"
+       @click="showAllNotifModal = false; openNotificationItem(item)"
+       class="w-full text-left px-6 py-4 hover:bg-slate-50 transition-colors flex items-start gap-3.5 cursor-pointer"
+       :class="item.is_unread ? 'bg-blue-50/25' : ''"
+      >
+       <div
+        class="w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 mt-0.5"
+        :class="notifIconClass(item.severity)"
+       >
+        <svg v-if="item.severity === 'danger'" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <svg v-else-if="item.severity === 'warning'" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+       </div>
+       <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+         <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border" :class="notifBadgeClass(item.severity)">
+          {{ item.badge }}
+         </span>
+         <span class="text-[11px] text-slate-400 font-medium">
+          {{ item.created_at_full ? `${item.created_at_full} (${item.time_label})` : item.time_label }}
+         </span>
+        </div>
+        <p class="text-xs font-bold text-slate-800">{{ item.title }}</p>
+        <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">{{ item.description }}</p>
+       </div>
+       <span v-if="item.is_unread" class="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0 mt-2" title="Belum dibaca"></span>
+      </button>
+
+      <div v-if="filteredAllNotifs.length === 0" class="py-12 text-center text-slate-400 text-xs">
+       Tidak ada notifikasi yang sesuai.
+      </div>
+     </div>
+
+     <div class="px-6 py-3 border-t border-slate-100 bg-slate-50/70 flex justify-end">
+      <button
+       type="button"
+       @click="showAllNotifModal = false"
+       class="px-5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-xs font-semibold text-slate-700 cursor-pointer"
+      >
+       Tutup
+      </button>
+     </div>
+    </div>
+   </div>
+  </Transition>
+ </Teleport>
+
+ <!-- ════════════════════════════════════════════════════ -->
+ <!-- Modal Ubah Password Cepat dari Detail Profil -->
+ <!-- ════════════════════════════════════════════════════ -->
+ <Teleport to="body">
+  <Transition
+   enter-active-class="transition-all duration-200 ease-out"
+   enter-from-class="opacity-0"
+   enter-to-class="opacity-100"
+   leave-active-class="transition-all duration-150 ease-in"
+   leave-from-class="opacity-100"
+   leave-to-class="opacity-0"
+  >
+   <div v-if="showChangePasswordModal" class="fixed inset-0 z-[105] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showChangePasswordModal = false"></div>
+    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden z-10 border border-slate-200">
+     <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between">
+      <div>
+       <h3 class="text-base font-extrabold text-slate-900">Ubah Password</h3>
+       <p class="text-xs text-slate-500 mt-0.5">Perbarui kata sandi akun {{ user?.name }}</p>
+      </div>
+      <button
+       type="button"
+       @click="showChangePasswordModal = false"
+       class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
+      >
+       <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+       </svg>
+      </button>
+     </div>
+
+     <form @submit.prevent="submitChangePassword" class="p-6 space-y-4">
+      <div v-if="passwordSuccessMsg" class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+       {{ passwordSuccessMsg }}
+      </div>
+
+      <div>
+       <label class="block text-xs font-bold text-slate-700 mb-1.5">Password Saat Ini</label>
+       <input
+        v-model="passwordForm.current_password"
+        type="password"
+        required
+        autocomplete="current-password"
+        placeholder="Masukkan password saat ini"
+        class="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none"
+       />
+       <p v-if="passwordForm.errors.current_password" class="mt-1 text-xs text-rose-500">{{ passwordForm.errors.current_password }}</p>
+      </div>
+
+      <div>
+       <label class="block text-xs font-bold text-slate-700 mb-1.5">Password Baru</label>
+       <input
+        v-model="passwordForm.password"
+        type="password"
+        required
+        autocomplete="new-password"
+        placeholder="Minimal 8 karakter"
+        class="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none"
+       />
+       <p v-if="passwordForm.errors.password" class="mt-1 text-xs text-rose-500">{{ passwordForm.errors.password }}</p>
+      </div>
+
+      <div>
+       <label class="block text-xs font-bold text-slate-700 mb-1.5">Konfirmasi Password Baru</label>
+       <input
+        v-model="passwordForm.password_confirmation"
+        type="password"
+        required
+        autocomplete="new-password"
+        placeholder="Ulangi password baru"
+        class="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none"
+       />
+       <p v-if="passwordForm.errors.password_confirmation" class="mt-1 text-xs text-rose-500">{{ passwordForm.errors.password_confirmation }}</p>
+      </div>
+
+      <div class="pt-2 flex items-center justify-end gap-2.5">
+       <button
+        type="button"
+        @click="showChangePasswordModal = false"
+        class="px-5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-xs font-semibold text-slate-600 cursor-pointer"
+       >
+        Batal
+       </button>
+       <button
+        type="submit"
+        :disabled="passwordForm.processing"
+        class="px-5 py-2 rounded-xl bg-primary hover:bg-[#1d4ed8] text-white text-xs font-bold shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+       >
+        {{ passwordForm.processing ? 'Menyimpan...' : 'Simpan Password' }}
+       </button>
+      </div>
+     </form>
+    </div>
+   </div>
+  </Transition>
  </Teleport>
 </template>
