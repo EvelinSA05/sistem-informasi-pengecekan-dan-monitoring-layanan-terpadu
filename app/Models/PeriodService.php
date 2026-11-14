@@ -60,6 +60,29 @@ class PeriodService extends Model
             return asset('storage/' . $this->attachment);
         }
     }
+
+    /**
+     * Format nama file lampiran agar menampilkan nama asli yang bersih (tanpa prefix timestamp / hash acak).
+     */
+    public static function formatAttachmentName(?string $path, ?string $serviceName = null): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        $base = basename($path);
+        // Hapus prefix timestamp (misal: 1794694000_)
+        $clean = preg_replace('/^\d{10}_/', '', $base);
+
+        // Jika masih berupa hash acak 40 karakter dari Laravel store(), tampilkan nama yang rapi
+        if (preg_match('/^[a-zA-Z0-9]{40}(\.[a-zA-Z0-9]+)?$/', $clean, $m)) {
+            $ext = $m[1] ?? '';
+            $slug = $serviceName ? \Illuminate\Support\Str::slug($serviceName, '_') : 'Layanan';
+            return 'Bukti_Kendala_' . ($slug ?: 'Layanan') . $ext;
+        }
+
+        return $clean;
+    }
     public function period()
     {
         return $this->belongsTo(CheckingPeriod::class, 'period_id');

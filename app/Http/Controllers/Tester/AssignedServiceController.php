@@ -371,7 +371,7 @@ class AssignedServiceController extends Controller
                                 : null,
                             'attachment' => $ps->attachment,
                             'attachment_mime' => $ps->attachment_mime,
-                            'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
+                            'attachment_name' => PeriodService::formatAttachmentName($ps->attachment, $ps->service?->service_name),
                             'attachment_url' => $ps->attachment ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                             'checked_at' => $ps->checked_at
                                 ? Carbon::parse($ps->checked_at)->format('d M Y, H:i')
@@ -474,18 +474,21 @@ class AssignedServiceController extends Controller
                         $attachmentMime = $file->getMimeType();
                         // Store base64 encoded content in DB for Vercel compatibility
                         $attachmentData = base64_encode(file_get_contents($file->getRealPath()));
-                        // Keep a filename path for reference
+                        // Keep original filename (with timestamp prefix to avoid collisions)
                         $originalName = $file->getClientOriginalName();
-                        $safeFilename = 'attachments/' . time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalName);
-                        $attachmentPath = $safeFilename;
+                        $cleanOriginal = preg_replace('/[^a-zA-Z0-9._\-\s()]/', '_', $originalName);
+                        $storedFilename = time() . '_' . ltrim($cleanOriginal, '.');
+                        $attachmentPath = 'attachments/' . $storedFilename;
                         // Also try to store to disk (may fail on Vercel, but that's OK)
                         try {
                             $tmpPublic = storage_path('app/public/attachments');
                             if (!is_dir($tmpPublic)) {
                                 @mkdir($tmpPublic, 0777, true);
                             }
-                            $storedPath = $file->store('attachments', 'public');
-                            if ($storedPath) $attachmentPath = $storedPath;
+                            $storedPath = $file->storeAs('attachments', $storedFilename, 'public');
+                            if ($storedPath) {
+                                $attachmentPath = $storedPath;
+                            }
                         } catch (\Throwable $storeErr) {
                             \Illuminate\Support\Facades\Log::warning('Attachment disk store failed (using DB): ' . $storeErr->getMessage());
                         }
@@ -646,7 +649,7 @@ class AssignedServiceController extends Controller
                 'description' => $log->description,
                 'attachment' => $log->attachment,
                 'attachment_mime' => $log->attachment_mime ?? $ps->attachment_mime ?? null,
-                'attachment_name' => $log->attachment ? basename($log->attachment) : null,
+                'attachment_name' => PeriodService::formatAttachmentName($log->attachment, $ps->service?->service_name),
                 'attachment_url' => $log->attachment ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                 'created_at' => $createdAt ? $createdAt->format('d M Y, H:i') : '-',
                 'created_at_human' => $createdAt ? $createdAt->diffForHumans() : null,

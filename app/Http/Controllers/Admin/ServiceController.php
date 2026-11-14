@@ -89,8 +89,15 @@ class ServiceController extends Controller
         try {
             $result = $apiService->syncServices();
 
+            // Otomatis sinkronkan periode pengecekan yang sedang aktif/proses
+            $activePeriods = \App\Models\CheckingPeriod::where('status', 'proses')->get();
+            foreach ($activePeriods as $activePeriod) {
+                $activePeriod->syncWithMasterServices();
+            }
+
             $deletedMsg = !empty($result['deleted']) ? ", {$result['deleted']} data non-sinkronisasi berhasil dibersihkan" : "";
-            $message = "Sinkronisasi berhasil! Total {$result['total']} layanan dari Majadigi diproses ({$result['created']} data baru ditambahkan, {$result['updated']} data diperbarui{$deletedMsg}).";
+            $periodMsg = $activePeriods->isNotEmpty() ? " {$activePeriods->count()} periode aktif ikut disinkronkan otomatis." : "";
+            $message = "Sinkronisasi berhasil! Total {$result['total']} layanan dari Majadigi diproses ({$result['created']} data baru ditambahkan, {$result['updated']} data diperbarui{$deletedMsg}).{$periodMsg}";
             return back()->with('success', $message);
         } catch (\Throwable $e) {
             Log::error('Majadigi sync error: ' . $e->getMessage(), [
@@ -258,7 +265,7 @@ class ServiceController extends Controller
                         'status'      => $log->status,
                         'description' => $log->description,
                         'attachment'  => $log->attachment,
-                        'attachment_name' => $log->attachment ? basename($log->attachment) : null,
+                        'attachment_name' => \App\Models\PeriodService::formatAttachmentName($log->attachment, $service->service_name),
                         'attachment_url'  => $log->attachment && $ps ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                         'checked_at'  => $createdAt ? $createdAt->format('d M Y H:i') : '-',
                         'timestamp'   => $createdAt ? $createdAt->timestamp : 0,
@@ -296,7 +303,7 @@ class ServiceController extends Controller
                             'status'      => $ps->status,
                             'description' => $ps->description,
                             'attachment'  => $ps->attachment,
-                            'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
+                            'attachment_name' => \App\Models\PeriodService::formatAttachmentName($ps->attachment, $service->service_name),
                             'attachment_url'  => $ps->attachment ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                             'checked_at'  => $checkedAt ? $checkedAt->format('d M Y H:i') : '-',
                             'timestamp'   => $ts,
@@ -469,8 +476,8 @@ class ServiceController extends Controller
                         'status'                => 'tidak aktif',
                         'period_service_status' => $issue->periodService?->status ?? 'gangguan',
                         'catatan'               => $issue->periodService?->description ?: 'attachment',
-                        'attachment'            => $issue->periodService?->attachment ? asset('storage/' . $issue->periodService->attachment) : null,
-                        'attachment_name'       => $issue->periodService?->attachment ? basename($issue->periodService->attachment) : null,
+                        'attachment'            => $issue->periodService?->attachment ? route('periods.attachment.download', ['periodService' => $issue->period_service_id, 'inline' => 1]) : null,
+                        'attachment_name'       => \App\Models\PeriodService::formatAttachmentName($issue->periodService?->attachment, $service->service_name),
                         'has_notif'             => (bool) $issue->has_notif,
                         'has_solved'            => (bool) $issue->has_solved,
                         'handling_status'       => $issue->handling_status ?? ($issue->has_solved ? 'selesai' : 'belum_ditindaklanjuti'),
@@ -514,8 +521,8 @@ class ServiceController extends Controller
                         'catatan'               => $ps->description ?: 'attachment',
                         'admin_note'            => $ps->admin_note,
                         'handling_status'       => 'belum_ditindaklanjuti',
-                        'attachment'            => $ps->attachment ? asset('storage/' . $ps->attachment) : null,
-                        'attachment_name'       => $ps->attachment ? basename($ps->attachment) : null,
+                        'attachment'            => $ps->attachment ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
+                        'attachment_name'       => \App\Models\PeriodService::formatAttachmentName($ps->attachment, $service->service_name),
                         'has_notif'             => false,
                         'has_solved'            => false,
                         'has_solved_label'      => 'belum tindak lanjuti',

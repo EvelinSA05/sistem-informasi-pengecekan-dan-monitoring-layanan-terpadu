@@ -396,10 +396,10 @@ function confirmDelete() {
  </div>
 
  <!-- ── Toolbar ───────────────────────────────────────── -->
- <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+ <div class="flex flex-col xl:flex-row xl:flex-wrap justify-between items-stretch xl:items-center gap-3 mb-6">
  <!-- Search & Filters -->
- <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
- <div class="relative w-full sm:w-72">
+ <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 w-full xl:w-auto xl:flex-1 min-w-0">
+ <div class="relative w-full sm:w-64 lg:w-72 min-w-0">
  <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
  <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
@@ -434,7 +434,7 @@ function confirmDelete() {
  </select>
  </div>
  <!-- Action Buttons: Sync & Add -->
- <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto shrink-0">
+ <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 w-full xl:w-auto shrink-0">
   <button
    type="button"
    @click="triggerSyncMajadigi"

@@ -385,7 +385,7 @@ class PeriodController extends Controller
                     'handling_status' => $ps->serviceIssue?->handling_status ?? 'belum_ditindaklanjuti',
                     'attachment' => $ps->attachment,
                     'attachment_mime' => $ps->attachment_mime,
-                    'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
+                    'attachment_name' => PeriodService::formatAttachmentName($ps->attachment, $ps->service?->service_name),
                     'attachment_url' => $ps->attachment ? route('admin.periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                     'checked_at' => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : null,
                     'tester_name' => $ps->tester?->name ?? ($tester->name ?? 'Tester'),
@@ -454,7 +454,7 @@ class PeriodController extends Controller
                         'admin_handled_at' => $issue?->admin_handled_at ? Carbon::parse($issue->admin_handled_at)->format('d M Y, H:i') : null,
                         'attachment'       => $ps->attachment,
                         'attachment_mime'  => $ps->attachment_mime,
-                        'attachment_name'  => $ps->attachment ? basename($ps->attachment) : null,
+                        'attachment_name'  => PeriodService::formatAttachmentName($ps->attachment, $ps->service?->service_name),
                         'attachment_url'   => $ps->attachment ? route('admin.periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                         'checked_at'       => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d M Y, H:i') : '-',
                         'has_solved'       => (bool) ($issue?->has_solved ?? false),
@@ -1254,10 +1254,8 @@ class PeriodController extends Controller
         }
 
         $extension = pathinfo($periodService->attachment ?? 'file.jpg', PATHINFO_EXTENSION);
-        $serviceName = $periodService->service?->service_name ?? 'Kendala';
-        $serviceSlug = Str::slug($serviceName);
-        $dateSuffix = $periodService->checked_at ? Carbon::parse($periodService->checked_at)->format('Ymd_His') : date('Ymd');
-        $downloadName = 'Bukti_Kendala_' . ($serviceSlug ?: 'layanan') . '_' . $dateSuffix . ($extension ? ('.' . $extension) : '');
+        $downloadName = PeriodService::formatAttachmentName($periodService->attachment, $periodService->service?->service_name)
+            ?? ('Bukti_Kendala_' . (Str::slug($periodService->service?->service_name ?? 'layanan') ?: 'layanan') . ($extension ? ('.' . $extension) : ''));
 
         $isInline = request()->boolean('inline') || request()->has('inline');
 
@@ -1408,7 +1406,7 @@ class PeriodController extends Controller
                 'description' => $log->description,
                 'attachment' => $log->attachment,
                 'attachment_mime' => $log->attachment_mime ?? $ps->attachment_mime ?? null,
-                'attachment_name' => $log->attachment ? basename($log->attachment) : null,
+                'attachment_name' => PeriodService::formatAttachmentName($log->attachment, $ps->service?->service_name),
                 'attachment_url' => $log->attachment ? route('admin.periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                 'created_at' => $createdAt ? $createdAt->format('d M Y, H:i') : '-',
                 'created_at_human' => $createdAt ? $createdAt->diffForHumans() : null,
