@@ -31,6 +31,8 @@ const drillDownStatus = ref('all'); // 'all' | 'normal' | 'gangguan' | 'pending'
 const drillDownCategory = ref('');
 const drillDownServiceName = ref('');
 const analyticsCardRef = ref(null);
+const opdPage = ref(1);
+const opdPerPage = 6;
 
 const opdChartRef = ref(null);
 let opdChartInstance = null;
@@ -114,6 +116,13 @@ const opdBranchStats = computed(() => {
         counts.set(cat, existing);
     });
     return Array.from(counts.values()).sort((a, b) => b.total - a.total);
+});
+
+const opdTotalPages = computed(() => Math.max(1, Math.ceil(opdBranchStats.value.length / opdPerPage)));
+
+const paginatedOpdBranches = computed(() => {
+    const start = (opdPage.value - 1) * opdPerPage;
+    return opdBranchStats.value.slice(start, start + opdPerPage);
 });
 
 const filteredDrillDownItems = computed(() => {
@@ -239,16 +248,18 @@ function buildTrendChart() {
                 },
                 tooltip: {
                     backgroundColor: '#0f172a',
-                    titleFont: { size: 12, weight: 'bold' },
+                    titleFont: { size: 11, weight: 'bold' },
                     bodyFont: { size: 11 },
-                    padding: 10,
-                    cornerRadius: 10,
+                    padding: 8,
+                    cornerRadius: 8,
+                    yAlign: 'bottom',
+                    caretPadding: 6,
                     callbacks: {
                         afterBody: (items) => {
                             const idx = items?.[0]?.dataIndex;
                             const p = props.periodTrends?.[idx];
                             if (!p) return '';
-                            return `Tingkat Normal: ${p.health_rate ?? 0}% (${p.checked}/${p.total} dicek)`;
+                            return `Normal: ${p.health_rate ?? 0}% (${p.checked}/${p.total} dicek)`;
                         },
                     },
                 },
@@ -342,14 +353,17 @@ function buildOpdChart() {
                 },
                 tooltip: {
                     backgroundColor: '#0f172a',
-                    padding: 10,
-                    cornerRadius: 10,
+                    titleFont: { size: 11, weight: 'bold' },
+                    bodyFont: { size: 11 },
+                    padding: 8,
+                    cornerRadius: 8,
+                    yAlign: 'bottom',
+                    caretPadding: 6,
                     callbacks: {
                         title: (items) => {
                             const idx = items?.[0]?.dataIndex;
                             return topBranches[idx]?.category || '';
                         },
-                        afterBody: () => 'Klik batang grafik untuk lihat daftar layanan',
                     },
                 },
             },
@@ -387,6 +401,7 @@ watch(
 watch(
     [drillLevel, drillDownPeriodId, drillDownStatus],
     async ([level]) => {
+        opdPage.value = 1;
         await nextTick();
         if (level === 1) {
             if (opdChartInstance) {
@@ -559,21 +574,50 @@ onUnmounted(() => {
                     </div>
 
                     <div v-if="opdBranchStats.length > 0" class="space-y-3">
-                        <div class="relative h-60 w-full mt-1">
+                        <div class="relative h-52 w-full mt-1">
                             <canvas ref="opdChartRef"></canvas>
                         </div>
-                        <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Cabang OPD:</span>
-                            <button
-                                v-for="branch in opdBranchStats"
-                                :key="branch.category"
-                                type="button"
-                                @click="selectOpdBranch(branch.category)"
-                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 hover:border-primary hover:text-primary bg-slate-50/70 text-slate-700 text-[11px] font-semibold transition-all cursor-pointer"
-                            >
-                                <span class="truncate max-w-[180px]">{{ branch.category }}</span>
-                                <span class="px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-700 text-[10px] font-extrabold">{{ branch.total }}</span>
-                            </button>
+                        <div class="pt-2.5 border-t border-slate-100 space-y-2">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    Cabang OPD ({{ opdBranchStats.length }})
+                                </span>
+                                <div v-if="opdTotalPages > 1" class="inline-flex items-center gap-1.5">
+                                    <button
+                                        type="button"
+                                        @click="opdPage = Math.max(1, opdPage - 1)"
+                                        :disabled="opdPage === 1"
+                                        class="w-6 h-6 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-bold flex items-center justify-center disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                                        aria-label="Halaman sebelumnya"
+                                    >
+                                        &lsaquo;
+                                    </button>
+                                    <span class="text-[11px] font-bold text-slate-500 tabular-nums px-1">
+                                        {{ opdPage }} / {{ opdTotalPages }}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        @click="opdPage = Math.min(opdTotalPages, opdPage + 1)"
+                                        :disabled="opdPage === opdTotalPages"
+                                        class="w-6 h-6 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-bold flex items-center justify-center disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                                        aria-label="Halaman berikutnya"
+                                    >
+                                        &rsaquo;
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                <button
+                                    v-for="branch in paginatedOpdBranches"
+                                    :key="branch.category"
+                                    type="button"
+                                    @click="selectOpdBranch(branch.category)"
+                                    class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-primary hover:text-primary bg-slate-50/70 text-slate-700 text-[11px] font-semibold transition-all cursor-pointer text-left"
+                                >
+                                    <span class="truncate">{{ branch.category }}</span>
+                                    <span class="px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-700 text-[10px] font-extrabold shrink-0">{{ branch.total }}</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div v-else class="h-64 flex flex-col items-center justify-center text-center">
