@@ -680,16 +680,6 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
      </svg>
      <span>Edit Periode</span>
     </Link>
-    <button
-     type="button"
-     @click="syncServicesWithMaster"
-     :disabled="isSyncingServices"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl transition-all cursor-pointer backdrop-blur-sm disabled:opacity-50 shadow-xs active:scale-95"
-     title="Sinkronkan daftar layanan periode dengan Master Layanan Majadigi terbaru"
-    >
-     <svg class="w-3.5 h-3.5 text-white" :class="{'animate-spin': isSyncingServices}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-     <span>{{ isSyncingServices ? 'Menyinkronkan...' : 'Sinkron Layanan' }}</span>
-    </button>
     <a :href="exportExcelUrl" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl transition-all cursor-pointer backdrop-blur-sm shadow-xs active:scale-95">
      <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
      <span>{{ hasActiveFilters ? `Export Excel (${filteredServices.length})` : 'Export Excel' }}</span>
