@@ -1734,7 +1734,7 @@ function submitCheck() {
  </span>
  <span
  v-if="selectedService.level && selectedService.level !== '-'"
- class="px-2.5 py-0.5 rounded-full bg-primary border border-primary text-primary font-bold text-[11px]"
+ class="px-2.5 py-0.5 rounded-full bg-primary border border-primary text-white font-bold text-[11px]"
  >
  {{ selectedService.level }}
  </span>
