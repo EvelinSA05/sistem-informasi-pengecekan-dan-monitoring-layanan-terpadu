@@ -34,6 +34,7 @@ const sessionExpiredMessage = ref(
 );
 
 const showPassword = ref(false);
+const localLoginError = ref('');
 
 const form = useForm({
     email: '',
@@ -48,6 +49,12 @@ const loginErrorMessages = computed(() => {
         ...form.errors,
     };
     const messages = [];
+    if (localLoginError.value) {
+        messages.push(localLoginError.value);
+    }
+    if (page.props.flash?.error && !messages.includes(page.props.flash.error)) {
+        messages.push(page.props.flash.error);
+    }
     Object.values(rawErrors).forEach((msg) => {
         if (!msg) return;
         const normalized = msg === 'These credentials do not match our records.'
@@ -126,8 +133,16 @@ onMounted(() => {
 });
 
 const submit = () => {
-    if (window.grecaptcha) {
-        form['g-recaptcha-response'] = window.grecaptcha.getResponse();
+    localLoginError.value = '';
+    form.clearErrors();
+
+    if (siteKey && window.grecaptcha) {
+        const token = window.grecaptcha.getResponse();
+        form['g-recaptcha-response'] = token;
+        if (!token) {
+            localLoginError.value = 'Silakan centang Captcha ("Saya bukan robot") terlebih dahulu.';
+            return;
+        }
     }
 
     // Kelola penyimpanan lokal untuk fitur Ingat Saya
@@ -144,6 +159,17 @@ const submit = () => {
     } catch (e) {}
 
     form.post(route('login'), {
+        preserveScroll: true,
+        onError: (errors) => {
+            const firstErr = Object.values(errors || {})[0];
+            if (firstErr) {
+                localLoginError.value = firstErr === 'These credentials do not match our records.'
+                    ? 'Email atau kata sandi yang Anda masukkan salah. Silakan periksa kembali.'
+                    : firstErr;
+            } else {
+                localLoginError.value = 'Email atau kata sandi yang Anda masukkan salah.';
+            }
+        },
         onFinish: () => {
             form.reset('password');
             if (window.grecaptcha) {
