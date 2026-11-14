@@ -195,17 +195,19 @@ class HandleInertiaRequests extends Middleware
                     $isUnread = !$readAtCarbon || $handledAt->isAfter($readAtCarbon);
 
                     $items[] = [
-                        'id'          => 'recheck-' . $ps->id,
-                        'type'        => 'recheck_needed',
-                        'severity'    => 'warning',
-                        'badge'       => 'Perlu Cek Ulang',
-                        'title'       => "Cek Ulang: {$serviceName}",
-                        'description' => $adminNote
+                        'id'                => 'recheck-' . $ps->id,
+                        'type'              => 'recheck_needed',
+                        'severity'          => 'warning',
+                        'badge'             => 'Perlu Cek Ulang',
+                        'title'             => "Cek Ulang: {$serviceName}",
+                        'description'       => $adminNote
                             ? 'Admin menindaklanjuti kendala: "' . \Illuminate\Support\Str::limit($adminNote, 70) . '"'
                             : 'Administrator telah menandai kendala selesai. Silakan lakukan pengecekan ulang.',
-                        'time_label'  => $handledAt->diffForHumans(),
-                        'url'         => route('tester.periods.services', ['period' => $ps->period_id, 'status' => 'gangguan']),
-                        'is_unread'   => $isUnread,
+                        'time_label'        => $handledAt->diffForHumans(),
+                        'created_at_full'   => $handledAt->format('d M Y, H:i'),
+                        'sort_ts'           => $handledAt->timestamp,
+                        'url'               => route('tester.periods.services', ['period' => $ps->period_id, 'status' => 'gangguan']),
+                        'is_unread'         => $isUnread,
                     ];
                 }
 
