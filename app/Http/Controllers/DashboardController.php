@@ -587,7 +587,7 @@ class DashboardController extends Controller
                         'tester_instruction' => $ps->service?->tester_instruction,
                         'last_description' => $ps->description,
                         'attachment' => $ps->attachment,
-                        'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
+                        'attachment_name' => PeriodService::formatAttachmentName($ps->attachment, $ps->service?->service_name),
                         'attachment_url' => $ps->attachment ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                         'checked_at' => $ps->checked_at
                             ? Carbon::parse($ps->checked_at)->format('d M Y, H:i')
@@ -627,7 +627,7 @@ class DashboardController extends Controller
                     'status' => $ps->status,
                     'description' => $ps->description,
                     'attachment' => $ps->attachment,
-                    'attachment_name' => $ps->attachment ? basename($ps->attachment) : null,
+                    'attachment_name' => PeriodService::formatAttachmentName($ps->attachment, $ps->service?->service_name),
                     'attachment_url' => $ps->attachment ? route('periods.attachment.download', ['periodService' => $ps->id, 'inline' => 1]) : null,
                     'checked_at' => $ps->checked_at
                         ? Carbon::parse($ps->checked_at)->format('d M Y, H:i')
