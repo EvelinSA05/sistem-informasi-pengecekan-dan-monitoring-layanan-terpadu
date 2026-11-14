@@ -117,6 +117,17 @@ function confirmLogout() {
  router.post(route('logout'));
 }
 
+// ─── Header User Profile Dropdown State & Handlers ──────────────────────
+const isProfileOpen = ref(false);
+const profileDropdownRef = ref(null);
+
+function toggleProfileDropdown() {
+ isProfileOpen.value = !isProfileOpen.value;
+ if (isProfileOpen.value) {
+  isNotifOpen.value = false;
+ }
+}
+
 // ─── In-App Notification Bell State & Handlers ──────────────────────────
 const isNotifOpen = ref(false);
 const notifDropdownRef = ref(null);
@@ -130,11 +141,17 @@ const notifItems = computed(() => notifications.value?.items ?? []);
 
 function toggleNotifDropdown() {
  isNotifOpen.value = !isNotifOpen.value;
+ if (isNotifOpen.value) {
+  isProfileOpen.value = false;
+ }
 }
 
 function handleOutsideNotifClick(event) {
  if (isNotifOpen.value && notifDropdownRef.value && !notifDropdownRef.value.contains(event.target)) {
   isNotifOpen.value = false;
+ }
+ if (isProfileOpen.value && profileDropdownRef.value && !profileDropdownRef.value.contains(event.target)) {
+  isProfileOpen.value = false;
  }
 }
 
@@ -484,9 +501,102 @@ onUnmounted(() => {
    </Transition>
   </div>
 
-  <div class="flex items-center justify-center px-3.5 py-1.5 rounded-full bg-primary border border-primary/80 text-xs font-semibold text-white shadow-xs shrink-0">
-   <span class="hidden sm:inline">Sistem Aktif</span>
-   <span class="sm:hidden text-[10px]">Aktif</span>
+  <!-- Profil User yang Sedang Login + Detail User Dropdown -->
+  <div ref="profileDropdownRef" class="relative shrink-0">
+   <button
+    type="button"
+    @click="toggleProfileDropdown"
+    class="flex items-center gap-2.5 pl-1.5 pr-3 py-1 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200/90 text-xs font-semibold text-slate-700 shadow-2xs transition-all cursor-pointer active:scale-95"
+    aria-label="Profil Pengguna"
+   >
+    <span class="w-7 h-7 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+     {{ initials }}
+    </span>
+    <span class="hidden sm:flex flex-col items-start leading-tight text-left max-w-[140px]">
+     <span class="font-bold text-slate-800 truncate w-full">{{ user?.name || 'Pengguna' }}</span>
+     <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{{ user?.role === 'admin' ? 'Admin' : 'Tester' }}</span>
+    </span>
+    <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-150" :class="isProfileOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+    </svg>
+   </button>
+
+   <Transition
+    enter-active-class="transition ease-out duration-150"
+    enter-from-class="opacity-0 translate-y-1 scale-95"
+    enter-to-class="opacity-100 translate-y-0 scale-100"
+    leave-active-class="transition ease-in duration-100"
+    leave-from-class="opacity-100 translate-y-0 scale-100"
+    leave-to-class="opacity-0 translate-y-1 scale-95"
+   >
+    <div
+     v-if="isProfileOpen"
+     class="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 overflow-hidden"
+    >
+     <!-- Header Profil -->
+     <div class="p-4 bg-gradient-to-br from-primary to-[#1e3a8a] text-white flex items-center gap-3">
+      <div class="w-11 h-11 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-sm font-extrabold shrink-0">
+       {{ initials }}
+      </div>
+      <div class="min-w-0 flex-1">
+       <p class="text-sm font-bold truncate">{{ user?.name || 'Pengguna' }}</p>
+       <p class="text-[11px] text-white/80 truncate">{{ user?.email || '-' }}</p>
+       <div class="flex items-center gap-1.5 mt-1.5">
+        <span class="px-2 py-0.5 rounded-md bg-white/20 text-[10px] font-bold uppercase tracking-wider">
+         {{ user?.role === 'admin' ? 'Administrator' : 'Tester' }}
+        </span>
+        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider" :class="user?.status === 'aktif' ? 'bg-emerald-400/25 text-emerald-100' : 'bg-rose-400/25 text-rose-100'">
+         {{ user?.status === 'aktif' ? 'Aktif' : (user?.status || 'Aktif') }}
+        </span>
+       </div>
+      </div>
+     </div>
+
+     <!-- Detail Informasi User -->
+     <div class="p-4 space-y-2.5 text-xs border-b border-slate-100">
+      <div class="flex items-center justify-between gap-2">
+       <span class="text-slate-400 font-medium">Username</span>
+       <span class="font-semibold text-slate-700 truncate">{{ user?.username || '-' }}</span>
+      </div>
+      <div class="flex items-center justify-between gap-2">
+       <span class="text-slate-400 font-medium">Email</span>
+       <span class="font-semibold text-slate-700 truncate">{{ user?.email || '-' }}</span>
+      </div>
+      <div v-if="user?.nip" class="flex items-center justify-between gap-2">
+       <span class="text-slate-400 font-medium">NIP</span>
+       <span class="font-semibold text-slate-700 truncate">{{ user.nip }}</span>
+      </div>
+      <div v-if="user?.bidang" class="flex items-center justify-between gap-2">
+       <span class="text-slate-400 font-medium">Bidang</span>
+       <span class="font-semibold text-slate-700 truncate text-right max-w-[170px]">{{ user.bidang }}</span>
+      </div>
+     </div>
+
+     <!-- Aksi Cepat -->
+     <div class="p-2.5 bg-slate-50/70 flex items-center gap-2">
+      <Link
+       :href="route('profile.edit')"
+       @click="isProfileOpen = false"
+       class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition-colors"
+      >
+       <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+       </svg>
+       <span>Edit Profil</span>
+      </Link>
+      <button
+       type="button"
+       @click="isProfileOpen = false; showLogoutModal = true"
+       class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200/70 text-xs font-semibold text-rose-600 transition-colors cursor-pointer"
+      >
+       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+       </svg>
+       <span>Keluar</span>
+      </button>
+     </div>
+    </div>
+   </Transition>
   </div>
  </div>
  </header>
