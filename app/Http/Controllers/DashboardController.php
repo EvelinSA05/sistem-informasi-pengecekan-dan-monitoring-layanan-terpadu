@@ -277,6 +277,42 @@ class DashboardController extends Controller
                 ];
             })->values();
 
+            // --- Drill-Down Daftar Layanan Bermasalah (Aktif / Terbaru) ---
+            $troubledServicesDetail = PeriodService::withoutAttachmentData()
+                ->with([
+                    'service:id,service_name,category,level,service_url',
+                    'period:id,date,status',
+                    'tester:id,name',
+                    'serviceIssue:id,period_service_id,handling_status,admin_note',
+                ])
+                ->where('status', 'gangguan')
+                ->orderByDesc('checked_at')
+                ->orderByDesc('id')
+                ->take(100)
+                ->get()
+                ->map(function ($ps) {
+                    $periodDateLabel = $ps->period
+                        ? $this->formatIndonesianDate(Carbon::parse($ps->period->date))
+                        : '-';
+
+                    return [
+                        'id'                => $ps->id,
+                        'period_id'         => $ps->period_id,
+                        'period_date_label' => $periodDateLabel,
+                        'period_status'     => $ps->period?->status ?? 'proses',
+                        'service_id'        => $ps->service_id,
+                        'service_name'      => $ps->service?->service_name ?? 'Layanan',
+                        'category'          => $ps->service?->category ?: '-',
+                        'level'             => $ps->service?->level ?: '-',
+                        'service_url'       => $ps->service?->service_url,
+                        'tester_name'       => $ps->tester?->name ?? '-',
+                        'description'       => $ps->description ?: '-',
+                        'handling_status'   => $ps->serviceIssue?->handling_status ?? 'belum_ditindaklanjuti',
+                        'admin_note'        => $ps->serviceIssue?->admin_note ?? $ps->admin_note ?? null,
+                        'checked_at_label'  => $ps->checked_at ? Carbon::parse($ps->checked_at)->format('d/m/Y H:i') : '-',
+                    ];
+                })->values();
+
             return Inertia::render('Dashboard', [
                 'testerStats' => [
                     'total' => $testerTotal,
@@ -300,8 +336,9 @@ class DashboardController extends Controller
                 'categoryDistribution' => $categoryDistribution,
                 'levelDistribution'    => $levelDistribution,
                 'recentPeriods'        => $recentPeriods,
-                'periodTrends'         => $periodTrends,
-                'topTroubledServices'  => $topTroubledServices,
+                'periodTrends'           => $periodTrends,
+                'topTroubledServices'    => $topTroubledServices,
+                'troubledServicesDetail' => $troubledServicesDetail,
             ]);
         }
 
