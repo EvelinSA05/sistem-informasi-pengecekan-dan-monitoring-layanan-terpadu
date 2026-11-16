@@ -27,6 +27,8 @@ Route::middleware('auth')->group(function () {
             return back();
         }
 
+        \App\Models\UserNotificationRead::ensureSchema();
+
         $notifKey = trim((string) $request->input('notification_key', ''));
 
         if ($notifKey !== '') {

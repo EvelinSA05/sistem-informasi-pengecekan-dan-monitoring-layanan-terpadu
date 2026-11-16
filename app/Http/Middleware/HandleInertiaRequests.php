@@ -60,6 +60,8 @@ class HandleInertiaRequests extends Middleware
         }
 
         try {
+            \App\Models\UserNotificationRead::ensureSchema();
+
             $items = [];
             $readAtDb = \Illuminate\Support\Facades\Schema::hasColumn('users', 'notifications_read_at')
                 ? $user->notifications_read_at
