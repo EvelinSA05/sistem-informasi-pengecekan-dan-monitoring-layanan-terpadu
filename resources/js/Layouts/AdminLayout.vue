@@ -118,7 +118,7 @@ function confirmLogout() {
 }
 
 // ─── Real-Time Polling Notifikasi Global (Admin & Tester) ───────────────
-usePoll(15000, {
+usePoll(10000, {
  only: ['notifications'],
 });
 
@@ -250,8 +250,8 @@ function markAllNotificationsRead() {
 
 function openNotificationItem(item) {
  isNotifOpen.value = false;
- if (item?.is_unread) {
-  router.post(route('notifications.mark_read'), {}, {
+ if (item?.is_unread && item?.id) {
+  router.post(route('notifications.mark_read'), { notification_key: item.id }, {
    preserveScroll: true,
    preserveState: true,
    onFinish: () => {
