@@ -23,12 +23,47 @@ Route::middleware('auth')->group(function () {
     Route::get('/attachment/{periodService}/download', [AdminPeriodController::class, 'downloadAttachment'])->name('periods.attachment.download');
     Route::post('/notifications/mark-read', function (\Illuminate\Http\Request $request) {
         $user = $request->user();
-        if ($user) {
-            if ($user->role === 'admin') {
-                \App\Models\ServiceIssue::where('has_notif', false)->update(['has_notif' => true]);
-            }
-            $request->session()->put('notifications_read_at_' . $user->id, now()->addSecond()->toIso8601String());
+        if (!$user) {
+            return back();
         }
+
+        $notifKey = trim((string) $request->input('notification_key', ''));
+
+        if ($notifKey !== '') {
+            if (\Illuminate\Support\Facades\Schema::hasTable('user_notification_reads')) {
+                \App\Models\UserNotificationRead::updateOrCreate(
+                    ['user_id' => $user->id, 'notification_key' => \Illuminate\Support\Str::limit($notifKey, 120, '')],
+                    ['read_at' => now()]
+                );
+            } else {
+                $keys = $request->session()->get('notifications_read_keys_' . $user->id, []);
+                if (!in_array($notifKey, $keys, true)) {
+                    $keys[] = $notifKey;
+                    $request->session()->put('notifications_read_keys_' . $user->id, $keys);
+                }
+            }
+
+            if ($user->role === 'admin' && str_starts_with($notifKey, 'issue-')) {
+                $issueId = (int) substr($notifKey, 6);
+                if ($issueId > 0) {
+                    \App\Models\ServiceIssue::where('id', $issueId)->update(['has_notif' => true]);
+                }
+            }
+
+            return back();
+        }
+
+        $now = now()->addSecond();
+        if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'notifications_read_at')) {
+            $user->notifications_read_at = $now;
+            $user->save();
+        }
+        $request->session()->put('notifications_read_at_' . $user->id, $now->toIso8601String());
+
+        if ($user->role === 'admin') {
+            \App\Models\ServiceIssue::where('has_notif', false)->update(['has_notif' => true]);
+        }
+
         return back();
     })->name('notifications.mark_read');
 

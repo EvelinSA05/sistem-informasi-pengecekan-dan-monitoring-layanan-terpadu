@@ -61,8 +61,27 @@ class HandleInertiaRequests extends Middleware
 
         try {
             $items = [];
+            $readAtDb = \Illuminate\Support\Facades\Schema::hasColumn('users', 'notifications_read_at')
+                ? $user->notifications_read_at
+                : null;
             $readAtSession = $request->session()->get('notifications_read_at_' . $user->id);
-            $readAtCarbon = $readAtSession ? \Carbon\Carbon::parse($readAtSession) : null;
+            $readAtCarbon = $readAtDb
+                ? \Carbon\Carbon::parse($readAtDb)
+                : ($readAtSession ? \Carbon\Carbon::parse($readAtSession) : null);
+
+            $readKeys = \Illuminate\Support\Facades\Schema::hasTable('user_notification_reads')
+                ? \App\Models\UserNotificationRead::where('user_id', $user->id)
+                    ->pluck('notification_key')
+                    ->flip()
+                    ->all()
+                : array_flip((array) $request->session()->get('notifications_read_keys_' . $user->id, []));
+
+            $isItemUnread = function (string $key, \Carbon\Carbon $eventTime, bool $alreadyRead = false) use ($readKeys, $readAtCarbon): bool {
+                if ($alreadyRead || isset($readKeys[$key])) {
+                    return false;
+                }
+                return !$readAtCarbon || $eventTime->isAfter($readAtCarbon);
+            };
 
             if ($user->role === 'admin') {
                 // 1. Notifikasi Kendala Layanan yang Belum Ditindaklanjuti
@@ -84,10 +103,11 @@ class HandleInertiaRequests extends Middleware
                         ? \Carbon\Carbon::parse($issue->periodService->checked_at)
                         : ($issue->updated_at ?? now());
 
-                    $isUnread = !$issue->has_notif && (!$readAtCarbon || $eventTime->isAfter($readAtCarbon));
+                    $notifKey = 'issue-' . $issue->id;
+                    $isUnread = $isItemUnread($notifKey, $eventTime, (bool) $issue->has_notif);
 
                     $items[] = [
-                        'id'                => 'issue-' . $issue->id,
+                        'id'                => $notifKey,
                         'type'              => 'issue_reported',
                         'severity'          => 'danger',
                         'badge'             => 'Kendala Baru',
@@ -116,11 +136,12 @@ class HandleInertiaRequests extends Middleware
                     $testerName = $log->tester?->name ?? 'Tester';
                     $periodId = $log->periodService?->period_id;
                     $eventTime = $log->created_at ? \Carbon\Carbon::parse($log->created_at) : now();
-                    $isUnread = !$readAtCarbon || $eventTime->isAfter($readAtCarbon);
+                    $notifKey = 'checklog-' . $log->id;
+                    $isUnread = $isItemUnread($notifKey, $eventTime);
                     $isIssue = $log->status === 'gangguan';
 
                     $items[] = [
-                        'id'                => 'checklog-' . $log->id,
+                        'id'                => $notifKey,
                         'type'              => $isIssue ? 'check_issue' : 'check_normal',
                         'severity'          => $isIssue ? 'danger' : 'info',
                         'badge'             => $isIssue ? 'Update Kendala' : 'Update Normal',
@@ -152,10 +173,11 @@ class HandleInertiaRequests extends Middleware
 
                         if ($pendingCount > 0) {
                             $periodDateLabel = \Carbon\Carbon::parse($period->date)->format('d M Y');
-                            $isUnread = !$readAtCarbon || $readAtCarbon->lt(\Carbon\Carbon::today());
+                            $notifKey = 'deadline-admin-' . $period->id;
+                            $isUnread = $isItemUnread($notifKey, \Carbon\Carbon::today());
 
                             $items[] = [
-                                'id'          => 'deadline-admin-' . $period->id,
+                                'id'          => $notifKey,
                                 'type'        => 'deadline_warning',
                                 'severity'    => 'warning',
                                 'badge'       => $daysLeft === 0 ? 'Deadline Hari Ini' : "H-{$daysLeft} Deadline",
@@ -192,10 +214,11 @@ class HandleInertiaRequests extends Middleware
                         ? \Carbon\Carbon::parse($ps->serviceIssue->admin_handled_at)
                         : ($ps->updated_at ?? now());
                     $adminNote = $ps->serviceIssue?->admin_note ?? $ps->admin_note;
-                    $isUnread = !$readAtCarbon || $handledAt->isAfter($readAtCarbon);
+                    $notifKey = 'recheck-' . $ps->id;
+                    $isUnread = $isItemUnread($notifKey, $handledAt);
 
                     $items[] = [
-                        'id'                => 'recheck-' . $ps->id,
+                        'id'                => $notifKey,
                         'type'              => 'recheck_needed',
                         'severity'          => 'warning',
                         'badge'             => 'Perlu Cek Ulang',
@@ -238,9 +261,10 @@ class HandleInertiaRequests extends Middleware
                         $daysLeft = (int) \Carbon\Carbon::today()->diffInDays($deadline, false);
 
                         if ($daysLeft >= 0 && $daysLeft <= 3) {
-                            $isUnread = !$readAtCarbon || $readAtCarbon->lt(\Carbon\Carbon::today());
+                            $notifKey = 'deadline-tester-' . $period->id;
+                            $isUnread = $isItemUnread($notifKey, \Carbon\Carbon::today());
                             $items[] = [
-                                'id'          => 'deadline-tester-' . $period->id,
+                                'id'          => $notifKey,
                                 'type'        => 'deadline_warning',
                                 'severity'    => 'danger',
                                 'badge'       => $daysLeft === 0 ? 'Hari Terakhir!' : "Pengingat H-{$daysLeft}",
@@ -255,10 +279,11 @@ class HandleInertiaRequests extends Middleware
                     }
 
                     $createdAt = $period->created_at ?? now();
-                    $isUnread = !$readAtCarbon || $createdAt->isAfter($readAtCarbon);
+                    $notifKey = 'period-assigned-' . $period->id;
+                    $isUnread = $isItemUnread($notifKey, $createdAt);
 
                     $items[] = [
-                        'id'                => 'period-assigned-' . $period->id,
+                        'id'                => $notifKey,
                         'type'              => 'period_assigned',
                         'severity'          => 'info',
                         'badge'             => 'Tugas Aktif',
@@ -286,11 +311,12 @@ class HandleInertiaRequests extends Middleware
                     $serviceName = $log->periodService?->service?->service_name ?? 'Layanan Digital';
                     $periodId = $log->periodService?->period_id;
                     $eventTime = $log->created_at ? \Carbon\Carbon::parse($log->created_at) : now();
-                    $isUnread = !$readAtCarbon || $eventTime->isAfter($readAtCarbon);
+                    $notifKey = 'mylog-' . $log->id;
+                    $isUnread = $isItemUnread($notifKey, $eventTime);
                     $isIssue = $log->status === 'gangguan';
 
                     $items[] = [
-                        'id'                => 'mylog-' . $log->id,
+                        'id'                => $notifKey,
                         'type'              => $isIssue ? 'check_issue' : 'check_normal',
                         'severity'          => $isIssue ? 'danger' : 'info',
                         'badge'             => $isIssue ? 'Laporan Kendala' : 'Hasil Normal',
