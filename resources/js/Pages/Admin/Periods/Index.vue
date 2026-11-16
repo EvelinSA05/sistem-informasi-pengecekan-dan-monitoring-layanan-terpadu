@@ -296,16 +296,14 @@ function togglePeriodStatus(period) {
  <td class="px-5 py-3.5 text-center">
                         <span
                           v-if="period.status === 'proses'"
-                          class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#021344] text-white shadow-xs"
+                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#021344] text-white shadow-xs"
                         >
-                          <span class="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></span>
                           AKTIF
                         </span>
                         <span
                           v-else
-                          class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#eff4fa] text-slate-500 border border-slate-200/80"
+                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#eff4fa] text-slate-500 border border-slate-200/80"
                         >
-                          <span class="w-2 h-2 rounded-full bg-slate-400 shrink-0"></span>
                           NONAKTIF
                         </span>
                       </td>
