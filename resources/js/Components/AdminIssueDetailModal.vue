@@ -82,7 +82,7 @@ function getFileExtension(filename) {
                                             {{ issue.category }}
                                         </span>
                                         <span v-if="issue.level && issue.level !== '-'" class="text-xs font-semibold px-2.5 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 shadow-2xs">
-                                            Level {{ issue.level }}
+                                            {{ /^level\b/i.test(String(issue.level).trim()) ? issue.level : `Level ${issue.level}` }}
                                         </span>
                                     </div>
                                     <h4 class="text-base font-bold text-slate-800">{{ issue.service_name }}</h4>

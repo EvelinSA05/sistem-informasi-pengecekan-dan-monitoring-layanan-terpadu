@@ -61,7 +61,7 @@ const emit = defineEmits(['close', 'submit']);
                                         {{ item.category }}
                                     </span>
                                     <span v-if="item.level && item.level !== '-'" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-600">
-                                        Level {{ item.level }}
+                                        {{ /^level\b/i.test(String(item.level).trim()) ? item.level : `Level ${item.level}` }}
                                     </span>
                                 </div>
                                 <h4 class="text-sm font-bold text-slate-800">{{ item.service_name }}</h4>

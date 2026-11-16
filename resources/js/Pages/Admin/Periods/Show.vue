@@ -894,7 +894,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
        <span class="font-bold text-slate-900 w-5">{{ (troubledCurrentPage - 1) * troubledPerPage + idx + 1 }}.</span>
        <h4 class="text-sm font-bold text-slate-800">{{ item.service_name }}</h4>
        <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">{{ item.category }}</span>
-       <span v-if="item.level && item.level !== '-'" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">Level {{ item.level }}</span>
+       <span v-if="item.level && item.level !== '-'" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">{{ /^level\b/i.test(String(item.level).trim()) ? item.level : `Level ${item.level}` }}</span>
 
        <span class="text-slate-300 hidden sm:inline">|</span>
        <span class="text-slate-500">
