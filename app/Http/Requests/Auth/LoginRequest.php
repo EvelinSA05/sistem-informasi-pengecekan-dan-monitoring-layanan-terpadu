@@ -27,10 +27,12 @@ class LoginRequest extends FormRequest
      */
     public function rules(): array
     {
+        $hasRecaptcha = ! empty(config('services.recaptcha.site_key')) && ! empty(config('services.recaptcha.secret'));
+
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
-            'g-recaptcha-response' => app()->environment('testing')
+            'g-recaptcha-response' => (app()->environment('testing') || ! $hasRecaptcha)
                 ? ['nullable']
                 : ['required', new \App\Rules\Recaptcha()],
         ];

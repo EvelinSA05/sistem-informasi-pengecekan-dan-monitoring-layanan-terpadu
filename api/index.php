@@ -46,12 +46,34 @@ putenv('DB_CONNECTION=pgsql');
 $_ENV['DB_CONNECTION'] = 'pgsql';
 $_SERVER['DB_CONNECTION'] = 'pgsql';
 
-// Map any available Postgres URL to Laravel 11's DB_URL
+// Map any available Postgres URL to Laravel's DB_URL
 $dbUrl = getenv('POSTGRES_URL') ?: getenv('DATABASE_URL') ?: getenv('DB_URL');
 if ($dbUrl) {
     putenv('DB_URL=' . $dbUrl);
     $_ENV['DB_URL'] = $dbUrl;
     $_SERVER['DB_URL'] = $dbUrl;
+}
+
+// External service catalog sync URL
+$syncUrl = getenv('SERVICE_SYNC_URL');
+if ($syncUrl) {
+    putenv('SERVICE_SYNC_URL=' . $syncUrl);
+    $_ENV['SERVICE_SYNC_URL'] = $syncUrl;
+    $_SERVER['SERVICE_SYNC_URL'] = $syncUrl;
+}
+
+// reCAPTCHA keys
+$recaptchaSiteKey = getenv('RECAPTCHA_SITE_KEY');
+if ($recaptchaSiteKey) {
+    putenv('RECAPTCHA_SITE_KEY=' . $recaptchaSiteKey);
+    $_ENV['RECAPTCHA_SITE_KEY'] = $recaptchaSiteKey;
+    $_SERVER['RECAPTCHA_SITE_KEY'] = $recaptchaSiteKey;
+}
+$recaptchaSecret = getenv('RECAPTCHA_SECRET_KEY');
+if ($recaptchaSecret) {
+    putenv('RECAPTCHA_SECRET_KEY=' . $recaptchaSecret);
+    $_ENV['RECAPTCHA_SECRET_KEY'] = $recaptchaSecret;
+    $_SERVER['RECAPTCHA_SECRET_KEY'] = $recaptchaSecret;
 }
 
 // Force bcrypt rounds to 10 to prevent Bcrypt hashing not supported error on Vercel

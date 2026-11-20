@@ -1,1 +1,0 @@
-import{O as e,v as t,x as n}from"./app-BoX5jtEG.js";import{t as r}from"./_plugin-vue_export-helper-BDNMzG2s.js";var i={},a={class:`flex items-center gap-2.5`};function o(r,i){return e(),n(`div`,a,[...i[0]||=[t(`img`,{src:`/images/logo-simonter.svg`,alt:`Logo SIMONTER`,class:`h-9 w-auto object-contain`},null,-1)]])}var s=r(i,[[`render`,o]]);export{s as t};

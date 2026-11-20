@@ -41,11 +41,11 @@ const submit = () => {
 
  <div class="min-h-screen w-full flex flex-col lg:flex-row bg-secondary selection:bg-primary selection:text-white font-sans antialiased">
  <!-- Left Side (Desktop) / Top Banner Header (Mobile) -->
- <div class="fixed top-0 left-0 right-0 z-10 h-[190px] lg:static lg:h-auto lg:min-h-screen w-full lg:w-[48%] xl:w-[45%] bg-primary p-5 sm:p-7 lg:p-12 xl:p-14 text-white flex flex-col justify-between overflow-hidden shrink-0">
+ <div class="fixed top-0 left-0 right-0 z-10 h-[190px] lg:relative lg:h-auto lg:min-h-screen w-full lg:w-[48%] xl:w-[45%] bg-[#064e3b] p-5 sm:p-7 lg:p-12 xl:p-14 text-white flex flex-col justify-between overflow-hidden shrink-0">
  
  <!-- Background Image Overlay -->
   <div class="absolute inset-0 opacity-60 bg-cover bg-center" style="background-image: url('/images/banner_4.jpg');"></div>
-  <div class="absolute inset-0 bg-gradient-to-b from-[#064e3b]/70 via-[#047857]/50 to-[#064e3b]/85 pointer-events-none"></div>
+  <div class="absolute inset-0 bg-gradient-to-b from-[#064e3b]/70 via-[#047857]/50 to-[#064e3b] pointer-events-none"></div>
 
   <!-- Ambient Background Decorative Circles & Glow -->
  <div class="absolute inset-0 pointer-events-none overflow-hidden">
