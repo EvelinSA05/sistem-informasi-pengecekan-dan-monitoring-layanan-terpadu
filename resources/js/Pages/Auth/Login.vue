@@ -200,34 +200,42 @@ const submit = () => {
  </div>
 
  <!-- Mobile Top Header (Logo left, Badge right) -->
- <div class="relative z-10 flex flex-row items-center justify-between md:hidden mb-2.5">
- <div class="px-3 py-1.5 rounded-xl bg-white shadow-md border border-white/80 flex items-center gap-2">
- <img
- src="/images/logo-layanan-terpadu.svg"
- alt="Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu"
- class="h-6 w-auto object-contain"
- />
- </div>
- <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 shadow-sm">
- <span class="text-[10px] font-bold tracking-wider text-white uppercase">LAYANAN TERPADU</span>
- </div>
- </div>
+	<div class="relative z-10 flex flex-row items-center justify-between md:hidden mb-2.5">
+		<div class="px-3 py-1.5 rounded-xl bg-white shadow-md border border-white/90 flex items-center gap-2 max-w-[70%]">
+			<img
+				src="/images/icon-layanan-terpadu.svg"
+				alt="Icon"
+				class="w-6 h-6 shrink-0 object-contain"
+			/>
+			<div class="min-w-0 flex-1 flex flex-col justify-center">
+				<span class="text-[9.5px] font-extrabold text-[#064e3b] leading-tight tracking-tight uppercase truncate">SISTEM INFORMASI</span>
+				<span class="text-[7.5px] font-bold text-[#059669] leading-tight tracking-tight uppercase truncate">PENGECEKAN &amp; MONITORING</span>
+			</div>
+		</div>
+		<div class="inline-flex items-center px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 shadow-sm">
+			<span class="text-[9.5px] font-bold tracking-wider text-white uppercase">LAYANAN TERPADU</span>
+		</div>
+	</div>
 
- <!-- Desktop Top: Logo & Badge Group (Jarak pendek dan rapi) -->
- <div class="relative z-10 hidden md:flex flex-col items-start gap-2.5 mb-6 xl:mb-7">
- <div class="inline-flex px-3.5 py-1.5 rounded-xl bg-white shadow-md border border-white/90 items-center gap-2">
- <img
- src="/images/logo-layanan-terpadu.svg"
- alt="Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu"
- class="h-7 w-auto object-contain"
- />
- </div>
- <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 shadow-sm w-fit">
- <span class="text-[10.5px] font-bold tracking-wider text-white uppercase">MONITORING & CHECKING TERPADU</span>
- </div>
- </div>
+	<!-- Desktop Top: Logo & Badge Group (Jarak pendek dan rapi) -->
+	<div class="relative z-10 hidden md:flex flex-col items-start gap-2.5 mb-6 xl:mb-7">
+		<div class="inline-flex px-3.5 py-2 rounded-2xl bg-white shadow-md border border-white/90 items-center gap-2.5">
+			<img
+				src="/images/icon-layanan-terpadu.svg"
+				alt="Icon"
+				class="w-8 h-8 shrink-0 object-contain"
+			/>
+			<div class="min-w-0 flex flex-col justify-center">
+				<span class="text-[11.5px] font-extrabold text-[#064e3b] leading-tight tracking-tight uppercase">SISTEM INFORMASI</span>
+				<span class="text-[9px] font-bold text-[#059669] leading-tight tracking-tight uppercase">PENGECEKAN &amp; MONITORING</span>
+			</div>
+		</div>
+		<div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 shadow-sm w-fit">
+			<span class="text-[10px] font-bold tracking-wider text-white uppercase">MONITORING &amp; CHECKING TERPADU</span>
+		</div>
+	</div>
 
- <!-- Main Content Area -->
+	<!-- Main Content Area -->
  <div class="relative z-10 max-w-lg my-auto md:my-0 flex-1 flex flex-col justify-center">
  <!-- Headline -->
  <h1 class="text-xl sm:text-2xl md:text-[38px] xl:text-[42px] font-extrabold text-white tracking-tight leading-tight md:leading-[1.18]">
