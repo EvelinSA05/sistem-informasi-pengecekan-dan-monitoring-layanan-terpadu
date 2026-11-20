@@ -153,7 +153,7 @@ function togglePeriodStatus(period) {
 </script>
 
 <template>
- <Head title="Periode Pengecekan - SIMONTER" />
+ <Head title="Periode Pengecekan - Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu" />
 
  <AdminLayout
  title="Periode Pengecekan"

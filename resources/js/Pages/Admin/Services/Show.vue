@@ -98,7 +98,7 @@ async function toggleIssueFollowUp(issue) {
 </script>
 
 <template>
-	<Head :title="`Detail Layanan: ${service.service_name} - SIMONTER`" />
+	<Head :title="`Detail Layanan: ${service.service_name} - Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu`" />
 
 	<AdminLayout
 		title="Master Layanan"

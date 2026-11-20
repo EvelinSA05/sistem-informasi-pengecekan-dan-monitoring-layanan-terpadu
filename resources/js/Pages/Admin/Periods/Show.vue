@@ -600,7 +600,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
 </script>
 
 <template>
- <Head :title="`Detail ${period.title} - SIMONTER`" />
+ <Head :title="`Detail ${period.title} - Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu`" />
 
  <AdminLayout title="Periode Pengecekan" subtitle="Atur periode dan distribusi layanan">
 

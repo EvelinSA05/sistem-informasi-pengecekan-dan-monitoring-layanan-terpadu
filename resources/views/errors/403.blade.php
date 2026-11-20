@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>403 - Akses Ditolak | SIMONTER</title>
+    <title>403 - Akses Ditolak | Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('images/icon-simonter.svg') }}">
 
     <!-- Fonts -->
@@ -34,7 +34,7 @@
             </p>
             
             <div class="mt-5 text-xs text-slate-400">
-                &copy; {{ date('Y') }} SIMONTER — Sistem Monitoring &amp; Checking Layanan Terpadu
+                &copy; {{ date('Y') }} Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu
             </div>
         </div>
     </div>

@@ -798,14 +798,14 @@ class PeriodController extends Controller
                 fputs($file, "\xEF\xBB\xBF");
                 fputs($file, "sep=,\r\n");
 
-                fputcsv($file, ['SIMONTER - SISTEM MONITORING & CHECKING LAYANAN TERPADU']);
+                fputcsv($file, ['SISTEM INFORMASI PENGECEKAN DAN MONITORING LAYANAN TERPADU']);
                 fputcsv($file, ['LAPORAN HASIL PENGECEKAN KUALITAS & KETERSEDIAAN LAYANAN TERPADU']);
                 fputcsv($file, []);
 
                 fputcsv($file, ['INFORMASI LAPORAN', '']);
                 fputcsv($file, ['Periode Pengecekan', $periodTitle]);
                 fputcsv($file, ['Status Periode', $period->status === 'proses' ? 'AKTIF (Proses Berjalan)' : 'SELESAI (Nonaktif)']);
-                fputcsv($file, ['Dibuat Oleh', $period->creator?->name ?? 'Admin SIMONTER']);
+                fputcsv($file, ['Dibuat Oleh', $period->creator?->name ?? 'Administrator']);
                 fputcsv($file, ['Tanggal Unduh Laporan', date('d/m/Y H:i:s') . ' WIB']);
                 if (!empty($activeFilters)) {
                     $filterSummary = collect($activeFilters)->map(fn($v, $k) => "{$k}: {$v}")->implode(' | ');
@@ -851,14 +851,14 @@ class PeriodController extends Controller
 
         // SHEET 1: RINGKASAN & LAYANAN TERKENDALA
         $sheet1 = [];
-        $sheet1[] = ['<style bgcolor="#059669" color="#FFFFFF" font-size="14"><b>   SIMONTER - SISTEM MONITORING & CHECKING LAYANAN TERPADU   </b></style>'];
+        $sheet1[] = ['<style bgcolor="#059669" color="#FFFFFF" font-size="14"><b>   SISTEM INFORMASI PENGECEKAN DAN MONITORING LAYANAN TERPADU   </b></style>'];
         $sheet1[] = ['<style color="#047857" font-size="11"><b>LAPORAN HASIL PENGECEKAN KUALITAS & KETERSEDIAAN LAYANAN TERPADU</b></style>'];
         $sheet1[] = [''];
 
         $sheet1[] = ['<style bgcolor="#F0FDF4" color="#064E3B"><b>INFORMASI LAPORAN</b></style>', ''];
         $sheet1[] = ['Periode Pengecekan', '<b>' . $periodTitle . '</b>'];
         $sheet1[] = ['Status Periode', $period->status === 'proses' ? '<style bgcolor="#DCFCE7" color="#166534"><b>AKTIF (Sedang Berjalan)</b></style>' : '<style bgcolor="#F1F5F9" color="#475569"><b>SELESAI (Nonaktif)</b></style>'];
-        $sheet1[] = ['Dibuat Oleh', '<b>' . ($period->creator?->name ?? 'Admin SIMONTER') . '</b>'];
+        $sheet1[] = ['Dibuat Oleh', '<b>' . ($period->creator?->name ?? 'Administrator') . '</b>'];
         $sheet1[] = ['Tanggal Unduh Laporan', '<b>' . date('d/m/Y H:i:s') . ' WIB</b>'];
         if (!empty($activeFilters)) {
             $filterSummary = collect($activeFilters)->map(fn($v, $k) => "{$k}: {$v}")->implode(' | ');
@@ -1321,7 +1321,7 @@ class PeriodController extends Controller
                 </g>
                 <text x="300" y="145" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">Bukti Kendala: ' . $cleanServiceName . '</text>
                 <text x="300" y="170" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="12" font-weight="500" fill="#64748b" text-anchor="middle">' . $fileName . '</text>
-                <text x="300" y="195" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">File tercatat di database SIMONTER</text>
+                <text x="300" y="195" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">File tercatat di database sistem</text>
             </svg>';
             return response($svg, 200, [
                 'Content-Type' => 'image/svg+xml; charset=utf-8',
@@ -1330,7 +1330,7 @@ class PeriodController extends Controller
         }
 
         // For download fallback
-        $infoText = "SIMONTER (SISTEM MONITORING & CHECKING LAYANAN TERPADU) - BUKTI KENDALA\n"
+        $infoText = "SISTEM INFORMASI PENGECEKAN DAN MONITORING LAYANAN TERPADU - BUKTI KENDALA\n"
                   . "========================================\n"
                   . "Layanan   : " . ($periodService->service?->service_name ?? '-') . "\n"
                   . "Periode   : " . ($periodService->period?->date ?? '-') . "\n"

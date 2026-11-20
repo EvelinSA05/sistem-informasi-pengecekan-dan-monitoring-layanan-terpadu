@@ -12,13 +12,13 @@ putenv('SESSION_DRIVER=database');
 $_ENV['SESSION_DRIVER'] = 'database';
 $_SERVER['SESSION_DRIVER'] = 'database';
 
-putenv('SESSION_COOKIE=simonter_session');
-$_ENV['SESSION_COOKIE'] = 'simonter_session';
-$_SERVER['SESSION_COOKIE'] = 'simonter_session';
+putenv('SESSION_COOKIE=layanan_terpadu_session');
+$_ENV['SESSION_COOKIE'] = 'layanan_terpadu_session';
+$_SERVER['SESSION_COOKIE'] = 'layanan_terpadu_session';
 
-putenv('APP_NAME=SIMONTER');
-$_ENV['APP_NAME'] = 'SIMONTER';
-$_SERVER['APP_NAME'] = 'SIMONTER';
+putenv('APP_NAME="SISTEM INFORMASI PENGECEKAN DAN MONITORING LAYANAN TERPADU"');
+$_ENV['APP_NAME'] = 'SISTEM INFORMASI PENGECEKAN DAN MONITORING LAYANAN TERPADU';
+$_SERVER['APP_NAME'] = 'SISTEM INFORMASI PENGECEKAN DAN MONITORING LAYANAN TERPADU';
 
 putenv('SESSION_LIFETIME=120');
 $_ENV['SESSION_LIFETIME'] = '120';

@@ -184,7 +184,7 @@ function submitForm() {
 </script>
 
 <template>
- <Head :title="`${isEdit ? 'Edit Periode' : 'Buat Periode Baru'} - SIMONTER`" />
+ <Head :title="`${isEdit ? 'Edit Periode' : 'Buat Periode Baru'} - Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu`" />
 
  <AdminLayout
  title="Periode Pengecekan"

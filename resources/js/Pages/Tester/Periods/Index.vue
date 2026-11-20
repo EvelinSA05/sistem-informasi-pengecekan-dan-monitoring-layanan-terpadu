@@ -83,7 +83,7 @@ onUnmounted(() => {
 </script>
 
 <template>
- <Head title="Layanan Ditugaskan - SIMONTER" />
+ <Head title="Layanan Ditugaskan - Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu" />
 
  <AdminLayout
  title="Layanan Ditugaskan"

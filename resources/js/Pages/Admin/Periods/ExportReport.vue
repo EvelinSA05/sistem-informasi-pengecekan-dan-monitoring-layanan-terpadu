@@ -38,7 +38,7 @@ const targetFileName = computed(() => {
 
 // Judul halaman standar saat dokumen dibuka di tab browser
 const defaultPageTitle = computed(() => {
-	return `Laporan Pengecekan ${props.report?.title || ''} - SIMONTER`;
+	return `Laporan Pengecekan ${props.report?.title || ''} - Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu`;
 });
 
 let isPrinting = false;
@@ -120,13 +120,13 @@ onMounted(() => {
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-4">
 						<img 
-							src="/images/logo-simonter.svg" 
-							alt="Logo SIMONTER" 
+							src="/images/logo-layanan-terpadu.svg" 
+							alt="Logo Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu" 
 							class="h-12 sm:h-14 w-auto object-contain shrink-0"
 						/>
 						<div>
 							<h1 class="text-lg font-black text-slate-900 tracking-tight uppercase leading-none">
-								SIMONTER
+								SISTEM INFORMASI PENGECEKAN DAN MONITORING LAYANAN TERPADU
 							</h1>
 							<p class="text-xs font-bold text-emerald-700 uppercase tracking-wider mt-1">
 								SISTEM MONITORING &amp; CHECKING LAYANAN TERPADU

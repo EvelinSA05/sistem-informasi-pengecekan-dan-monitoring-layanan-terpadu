@@ -1,6 +1,6 @@
-# SIMONTER — Sistem Monitoring & Checking Layanan Terpadu
+# SISTEM INFORMASI PENGECEKAN DAN MONITORING LAYANAN TERPADU
 
-**SIMONTER** (*Sistem Monitoring & Checking Layanan Terpadu*) adalah aplikasi web untuk memantau, memeriksa, dan mengevaluasi ketersediaan serta kualitas layanan digital secara terpadu dan berkala.
+**SISTEM INFORMASI PENGECEKAN DAN MONITORING LAYANAN TERPADU** adalah aplikasi web untuk memantau, memeriksa, dan mengevaluasi ketersediaan serta kualitas layanan digital secara terpadu dan berkala.
 
 Sistem ini menjembatani administrator dan tester melalui mekanisme penugasan berbasis periode yang terstruktur, sehingga seluruh layanan terpadu dapat diperiksa secara berkala dari sisi uptime, fungsionalitas, dan penanganan kendala.
 
@@ -103,4 +103,4 @@ If you discover any security-related issues, please report them directly to the 
 
 ## License
 
-This project is intended for internal use in operating **SIMONTER (Sistem Monitoring & Checking Layanan Terpadu)**. Unauthorized copying, modification, or distribution is prohibited.
+This project is intended for internal use in operating **Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu**. Unauthorized copying, modification, or distribution is prohibited.

@@ -296,7 +296,7 @@ function confirmDelete() {
 </script>
 
 <template>
- <Head title="Master Layanan - SIMONTER" />
+ <Head title="Master Layanan - Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu" />
  <AdminLayout
  title="Master Layanan"
  subtitle="Kelola master data layanan digital"

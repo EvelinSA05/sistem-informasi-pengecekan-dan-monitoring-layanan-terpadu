@@ -181,7 +181,7 @@ const submit = () => {
 </script>
 
 <template>
- <Head title="Masuk - SIMONTER" />
+ <Head title="Masuk - Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu" />
 
  <div class="min-h-screen w-full flex flex-col md:flex-row bg-secondary selection:bg-primary selection:text-white font-sans antialiased">
  <!-- Left Side (Desktop) / Top Banner Header (Mobile) -->
@@ -203,8 +203,8 @@ const submit = () => {
  <div class="relative z-10 flex flex-row items-center justify-between md:hidden mb-2.5">
  <div class="px-3 py-1.5 rounded-xl bg-white shadow-md border border-white/80 flex items-center gap-2">
  <img
- src="/images/logo-simonter.svg"
- alt="SIMONTER - Sistem Monitoring & Checking Layanan Terpadu"
+ src="/images/logo-layanan-terpadu.svg"
+ alt="Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu"
  class="h-6 w-auto object-contain"
  />
  </div>
@@ -217,8 +217,8 @@ const submit = () => {
  <div class="relative z-10 hidden md:flex flex-col items-start gap-2.5 mb-6 xl:mb-7">
  <div class="inline-flex px-3.5 py-1.5 rounded-xl bg-white shadow-md border border-white/90 items-center gap-2">
  <img
- src="/images/logo-simonter.svg"
- alt="SIMONTER - Sistem Monitoring & Checking Layanan Terpadu"
+ src="/images/logo-layanan-terpadu.svg"
+ alt="Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu"
  class="h-7 w-auto object-contain"
  />
  </div>
@@ -285,7 +285,7 @@ const submit = () => {
 
  <!-- Desktop Bottom Footer text -->
  <div class="relative z-10 hidden md:block pt-6 md:pt-8 mt-auto">
- <p class="text-xs text-white/70">© 2026 SIMONTER — Sistem Monitoring &amp; Checking Layanan Terpadu.</p>
+ <p class="text-xs text-white/70">© 2026 Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu.</p>
  </div>
  </div>
 
@@ -301,7 +301,7 @@ const submit = () => {
  <!-- Form Header -->
  <div class="mb-5 sm:mb-6">
  <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
- Masuk ke SIMONTER
+ Masuk ke Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu
  </h2>
  <p class="text-slate-500 text-xs sm:text-sm mt-1.5 leading-relaxed">
  Validasi keandalan dan kualitas layanan terpadu secara berkala.

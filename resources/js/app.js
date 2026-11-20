@@ -6,7 +6,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 
-const appName = import.meta.env.VITE_APP_NAME || 'SIMONTER';
+const appName = import.meta.env.VITE_APP_NAME || 'SISTEM INFORMASI PENGECEKAN DAN MONITORING LAYANAN TERPADU';
 
 createInertiaApp({
     title: (title) => (title && title.includes(appName) ? title : `${title} - ${appName}`),

@@ -18,7 +18,7 @@ const submit = () => {
 </script>
 
 <template>
- <Head title="Lupa Kata Sandi - SIMONTER" />
+ <Head title="Lupa Kata Sandi - Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu" />
 
  <div class="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-700 relative overflow-hidden font-sans antialiased text-slate-800 selection:bg-primary selection:text-white">
  
@@ -37,8 +37,8 @@ const submit = () => {
  <div class="flex items-center justify-center gap-2.5 sm:gap-3 mb-6">
  <div class="px-3.5 py-1.5 rounded-2xl bg-white shadow-md border border-slate-100 flex items-center justify-center">
  <img
- src="/images/logo-simonter.svg"
- alt="SIMONTER - Sistem Monitoring & Checking Layanan Terpadu"
+ src="/images/logo-layanan-terpadu.svg"
+ alt="Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu"
  class="h-6 sm:h-7 w-auto object-contain"
  />
  </div>
@@ -128,7 +128,7 @@ const submit = () => {
 
  <!-- Footer Copyright -->
  <p class="absolute bottom-4 text-center w-full text-xs text-white/80 z-10 px-4">
- © 2026 SIMONTER — Sistem Monitoring &amp; Checking Layanan Terpadu.
+ © 2026 Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu.
  </p>
  </div>
 </template>

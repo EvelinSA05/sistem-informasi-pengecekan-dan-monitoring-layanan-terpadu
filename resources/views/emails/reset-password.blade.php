@@ -92,12 +92,12 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>SIMONTER</h1>
+            <h1 style="font-size: 18px; line-height: 1.3;">SISTEM INFORMASI PENGECEKAN DAN MONITORING LAYANAN TERPADU</h1>
             <p>Sistem Monitoring &amp; Checking Layanan Terpadu</p>
         </div>
         <div class="content">
             <h2>Halo!</h2>
-            <p>Anda menerima email ini karena kami menerima permintaan atur ulang kata sandi (reset password) untuk akun Anda di sistem SIMONTER.</p>
+            <p>Anda menerima email ini karena kami menerima permintaan atur ulang kata sandi (reset password) untuk akun Anda di sistem.</p>
             
             <div class="button-container">
                 <a href="{{ $url }}" class="button">Atur Ulang Kata Sandi</a>
@@ -106,7 +106,7 @@
             <p>Tautan atur ulang kata sandi ini akan kedaluwarsa dalam waktu 60 menit.</p>
             <p>Jika Anda merasa tidak pernah meminta pengaturan ulang kata sandi, Anda dapat mengabaikan email ini dan tidak ada tindakan lebih lanjut yang perlu dilakukan.</p>
             
-            <p>Salam Hormat,<br><strong>Tim Pengelola SIMONTER</strong></p>
+            <p>Salam Hormat,<br><strong>Tim Pengelola Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu</strong></p>
 
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
             
@@ -116,7 +116,7 @@
             </p>
         </div>
         <div class="footer">
-            <p>&copy; {{ date('Y') }} SIMONTER &mdash; Sistem Monitoring &amp; Checking Layanan Terpadu. Hak Cipta Dilindungi.</p>
+            <p>&copy; {{ date('Y') }} Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu. Hak Cipta Dilindungi.</p>
         </div>
     </div>
 </body>

@@ -281,7 +281,7 @@ function submitCheck() {
 </script>
 
 <template>
- <Head title="Layanan yang Ditugaskan - SIMONTER" />
+ <Head title="Layanan yang Ditugaskan - Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu" />
 
  <AdminLayout
  title="Layanan yang Ditugaskan"
@@ -902,7 +902,7 @@ function submitCheck() {
  </p>
  <div class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-semibold text-xs border border-slate-200">
  <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
- Silakan tunggu informasi selanjutnya dari Admin SIMONTER.
+ Silakan tunggu informasi selanjutnya dari Administrator.
  </div>
  </div>
  </template>

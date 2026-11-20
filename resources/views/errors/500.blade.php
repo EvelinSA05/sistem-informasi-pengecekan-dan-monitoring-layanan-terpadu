@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>500 - Terjadi Kesalahan | SIMONTER</title>
+    <title>500 - Terjadi Kesalahan | Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('images/icon-simonter.svg') }}">
 
     <!-- Fonts -->
@@ -44,7 +44,7 @@
             </a>
             
             <div class="mt-6 text-xs text-slate-400">
-                &copy; {{ date('Y') }} SIMONTER — Sistem Monitoring &amp; Checking Layanan Terpadu
+                &copy; {{ date('Y') }} Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu
             </div>
         </div>
     </div>

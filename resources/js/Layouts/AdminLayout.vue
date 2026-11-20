@@ -4,7 +4,7 @@ import { Link, usePage, router, usePoll, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
  title: { type: String, default: 'Dashboard' },
- subtitle: { type: String, default: 'Selamat datang di SIMONTER' },
+ subtitle: { type: String, default: 'Selamat datang di Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu' },
 });
 
 const page = usePage();
@@ -369,8 +369,8 @@ onUnmounted(() => {
  <!-- Official Logo Card in White Pill -->
  <div class="px-4 py-2 rounded-2xl bg-white shadow-md shadow-primary/20 border border-white/60 flex items-center justify-center">
  <img
- src="/images/logo-simonter.svg"
- alt="SIMONTER - Sistem Monitoring & Checking Layanan Terpadu"
+ src="/images/logo-layanan-terpadu.svg"
+ alt="Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu"
  class="h-7 w-auto object-contain"
  />
  </div>
@@ -744,7 +744,7 @@ onUnmounted(() => {
  </div>
  <h3 class="text-lg font-bold text-slate-800 mb-1">Keluar dari sistem?</h3>
  <p class="text-sm text-slate-500">
- Anda harus masuk kembali untuk mengakses SIMONTER.
+ Anda harus masuk kembali untuk mengakses sistem.
  </p>
  </div>
  <div class="flex gap-3">

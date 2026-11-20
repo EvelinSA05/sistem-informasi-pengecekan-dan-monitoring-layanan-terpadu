@@ -45,7 +45,7 @@ class CustomResetPassword extends Notification
         ], false));
 
         return (new MailMessage)
-            ->subject('Atur Ulang Kata Sandi - SIMONTER (Sistem Monitoring & Checking Layanan Terpadu)')
+            ->subject('Atur Ulang Kata Sandi - Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu')
             ->view('emails.reset-password', ['url' => $url]);
     }
 

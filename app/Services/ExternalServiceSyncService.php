@@ -274,7 +274,7 @@ class ExternalServiceSyncService
             'created' => $created,
             'updated' => $updated,
             'deleted' => $deleted,
-            'source'  => $this->syncUrl ?? 'Katalog Layanan Terpadu SIMONTER',
+            'source'  => $this->syncUrl ?? 'Katalog Layanan Terpadu',
         ];
     }
 }

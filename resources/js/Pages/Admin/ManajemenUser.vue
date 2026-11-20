@@ -148,7 +148,7 @@ function confirmDelete() {
 </script>
 
 <template>
- <Head title="Manajemen User - SIMONTER" />
+ <Head title="Manajemen User - Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu" />
  <AdminLayout
  title="Manajemen User"
  subtitle="Kelola akun tester yang terdaftar"
@@ -219,7 +219,7 @@ function confirmDelete() {
           Pengguna Sistem
         </div>
         <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Manajemen User & Tester</h2>
-        <p class="text-white/80 text-xs sm:text-sm mt-1 max-w-xl">Kelola data pengguna, hak akses tester, NIP, serta unit kerja dalam sistem SIMONTER.</p>
+        <p class="text-white/80 text-xs sm:text-sm mt-1 max-w-xl">Kelola data pengguna, hak akses tester, NIP, serta unit kerja dalam sistem.</p>
       </div>
     </div>
 
