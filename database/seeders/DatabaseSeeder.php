@@ -24,7 +24,16 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Administrator',
                 'username' => 'admin',
                 'role' => 'admin',
-                'password' => bcrypt('password'), // Set password manually
+                'password' => bcrypt('password'),
+            ]
+        );
+        User::updateOrCreate(
+            ['email' => 'admin@simonter.id'],
+            [
+                'name' => 'Administrator',
+                'username' => 'admin_simonter',
+                'role' => 'admin',
+                'password' => bcrypt('password'),
             ]
         );
 
@@ -35,7 +44,16 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Tester Layanan Terpadu',
                 'username' => 'tester',
                 'role' => 'tester',
-                'password' => bcrypt('password'), // Set password manually
+                'password' => bcrypt('password'),
+            ]
+        );
+        User::updateOrCreate(
+            ['email' => 'tester@simonter.id'],
+            [
+                'name' => 'Tester Layanan Terpadu',
+                'username' => 'tester_simonter',
+                'role' => 'tester',
+                'password' => bcrypt('password'),
             ]
         );
     }
