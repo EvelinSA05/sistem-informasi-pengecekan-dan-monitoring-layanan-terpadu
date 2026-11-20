@@ -352,36 +352,46 @@ onUnmounted(() => {
  :class="isSidebarOpen ? 'translate-x-0 z-50' : '-translate-x-full z-30'"
  >
 
- <!-- Logo / Brand identical with Auth Page -->
- <div class="px-5 pt-6 pb-5 border-b border-white/10 flex flex-col items-start gap-2.5 relative">
- <!-- Close Button -->
- <button
- @click="isSidebarOpen = false"
- type="button"
- class="absolute top-5 right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white transition-all duration-150 flex items-center justify-center"
- aria-label="Tutup sidebar"
- >
- <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
- <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
- </svg>
- </button>
+ <!-- Logo / Brand Section with Clean Header & Clear Close Button -->
+			<div class="px-4.5 pt-5 pb-4 border-b border-white/10 relative">
+				<div class="flex items-center justify-between gap-2.5">
+					<!-- Official Logo Card in White Pill (Anti-overlap & Clean Typography) -->
+					<div class="flex-1 min-w-0 px-3 py-1.5 rounded-2xl bg-white shadow-md shadow-emerald-950/20 border border-white/90 flex items-center gap-2">
+						<img
+							src="/images/icon-layanan-terpadu.svg"
+							alt="Icon"
+							class="w-7 h-7 shrink-0 object-contain"
+						/>
+						<div class="min-w-0 flex-1 flex flex-col justify-center">
+							<span class="text-[11px] font-extrabold text-[#064e3b] leading-tight tracking-tight uppercase truncate">
+								SISTEM INFORMASI
+							</span>
+							<span class="text-[8.5px] font-bold text-[#059669] leading-tight tracking-tight uppercase truncate">
+								PENGECEKAN &amp; MONITORING
+							</span>
+						</div>
+					</div>
 
- <!-- Official Logo Card in White Pill -->
- <div class="px-4 py-2 rounded-2xl bg-white shadow-md shadow-primary/20 border border-white/60 flex items-center justify-center">
- <img
- src="/images/logo-layanan-terpadu.svg"
- alt="Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu"
- class="h-7 w-auto object-contain"
- />
- </div>
+					<!-- Close Button (Always Clearly Visible on the Right, Never Covered) -->
+					<button
+						@click="isSidebarOpen = false"
+						type="button"
+						class="shrink-0 w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white transition-all duration-150 flex items-center justify-center border border-white/10"
+						aria-label="Tutup sidebar"
+					>
+						<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
 
- <!-- Sub-title Badge Below Logo -->
- <div class="inline-flex items-center px-3 py-1 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 shadow-sm">
- <span class="text-[10px] font-bold tracking-widest text-emerald-100 uppercase">LAYANAN TERPADU</span>
- </div>
- </div>
+				<!-- Sub-title Badge Below Logo -->
+				<div class="inline-flex items-center px-2.5 py-0.5 mt-2 rounded-lg bg-white/15 backdrop-blur-md border border-white/20 shadow-sm">
+					<span class="text-[9.5px] font-bold tracking-wider text-emerald-100 uppercase">LAYANAN TERPADU</span>
+				</div>
+			</div>
 
- <!-- Navigation Menu -->
+			<!-- Navigation Menu -->
  <nav class="flex-1 px-3.5 py-5 space-y-1.5 overflow-y-auto">
  <template v-for="item in navItems" :key="item.label">
  <Link
