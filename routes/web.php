@@ -27,23 +27,15 @@ Route::middleware('auth')->group(function () {
             return back();
         }
 
-        \App\Models\UserNotificationRead::ensureSchema();
+        $request->session()->forget('nav_notifs_' . $user->id);
 
         $notifKey = trim((string) $request->input('notification_key', ''));
 
         if ($notifKey !== '') {
-            if (\Illuminate\Support\Facades\Schema::hasTable('user_notification_reads')) {
-                \App\Models\UserNotificationRead::updateOrCreate(
-                    ['user_id' => $user->id, 'notification_key' => \Illuminate\Support\Str::limit($notifKey, 120, '')],
-                    ['read_at' => now()]
-                );
-            } else {
-                $keys = $request->session()->get('notifications_read_keys_' . $user->id, []);
-                if (!in_array($notifKey, $keys, true)) {
-                    $keys[] = $notifKey;
-                    $request->session()->put('notifications_read_keys_' . $user->id, $keys);
-                }
-            }
+            \App\Models\UserNotificationRead::updateOrCreate(
+                ['user_id' => $user->id, 'notification_key' => \Illuminate\Support\Str::limit($notifKey, 120, '')],
+                ['read_at' => now()]
+            );
 
             if ($user->role === 'admin' && str_starts_with($notifKey, 'issue-')) {
                 $issueId = (int) substr($notifKey, 6);
@@ -56,10 +48,8 @@ Route::middleware('auth')->group(function () {
         }
 
         $now = now()->addSecond();
-        if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'notifications_read_at')) {
-            $user->notifications_read_at = $now;
-            $user->save();
-        }
+        $user->notifications_read_at = $now;
+        $user->save();
         $request->session()->put('notifications_read_at_' . $user->id, $now->toIso8601String());
 
         if ($user->role === 'admin') {

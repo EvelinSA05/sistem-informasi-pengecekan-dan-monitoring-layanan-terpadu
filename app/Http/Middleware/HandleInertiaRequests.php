@@ -59,24 +59,25 @@ class HandleInertiaRequests extends Middleware
             ];
         }
 
-        try {
-            \App\Models\UserNotificationRead::ensureSchema();
+        // Cache hasil notifikasi selama 30 detik di sesi untuk mempercepat transisi antar halaman
+        $cacheKey = 'nav_notifs_' . $user->id;
+        $cached = $request->session()->get($cacheKey);
+        if (is_array($cached) && isset($cached['ts']) && (time() - $cached['ts'] < 30)) {
+            return $cached['data'];
+        }
 
+        try {
             $items = [];
-            $readAtDb = \Illuminate\Support\Facades\Schema::hasColumn('users', 'notifications_read_at')
-                ? $user->notifications_read_at
-                : null;
+            $readAtDb = $user->notifications_read_at;
             $readAtSession = $request->session()->get('notifications_read_at_' . $user->id);
             $readAtCarbon = $readAtDb
                 ? \Carbon\Carbon::parse($readAtDb)
                 : ($readAtSession ? \Carbon\Carbon::parse($readAtSession) : null);
 
-            $readKeys = \Illuminate\Support\Facades\Schema::hasTable('user_notification_reads')
-                ? \App\Models\UserNotificationRead::where('user_id', $user->id)
-                    ->pluck('notification_key')
-                    ->flip()
-                    ->all()
-                : array_flip((array) $request->session()->get('notifications_read_keys_' . $user->id, []));
+            $readKeys = \App\Models\UserNotificationRead::where('user_id', $user->id)
+                ->pluck('notification_key')
+                ->flip()
+                ->all();
 
             $isItemUnread = function (string $key, \Carbon\Carbon $eventTime, bool $alreadyRead = false) use ($readKeys, $readAtCarbon): bool {
                 if ($alreadyRead || isset($readKeys[$key])) {
@@ -352,11 +353,18 @@ class HandleInertiaRequests extends Middleware
 
             $unreadCount = collect($items)->where('is_unread', true)->count();
 
-            return [
+            $result = [
                 'unread_count' => $unreadCount,
                 'total_count'  => count($items),
                 'items'        => $items,
             ];
+
+            $request->session()->put($cacheKey, [
+                'ts'   => time(),
+                'data' => $result,
+            ]);
+
+            return $result;
         } catch (\Throwable $e) {
             return [
                 'unread_count' => 0,

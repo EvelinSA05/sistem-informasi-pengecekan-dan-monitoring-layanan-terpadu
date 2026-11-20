@@ -76,6 +76,20 @@ if ($recaptchaSecret) {
     $_SERVER['RECAPTCHA_SECRET_KEY'] = $recaptchaSecret;
 }
 
+// reCAPTCHA keys
+$recaptchaSiteKey = getenv('RECAPTCHA_SITE_KEY');
+if ($recaptchaSiteKey) {
+    putenv('RECAPTCHA_SITE_KEY=' . $recaptchaSiteKey);
+    $_ENV['RECAPTCHA_SITE_KEY'] = $recaptchaSiteKey;
+    $_SERVER['RECAPTCHA_SITE_KEY'] = $recaptchaSiteKey;
+}
+$recaptchaSecret = getenv('RECAPTCHA_SECRET_KEY');
+if ($recaptchaSecret) {
+    putenv('RECAPTCHA_SECRET_KEY=' . $recaptchaSecret);
+    $_ENV['RECAPTCHA_SECRET_KEY'] = $recaptchaSecret;
+    $_SERVER['RECAPTCHA_SECRET_KEY'] = $recaptchaSecret;
+}
+
 // Force bcrypt rounds to 10 to prevent Bcrypt hashing not supported error on Vercel
 putenv('BCRYPT_ROUNDS=10');
 $_ENV['BCRYPT_ROUNDS'] = '10';
@@ -103,21 +117,23 @@ putenv("APP_KEY=$appKey");
 $_ENV['APP_KEY'] = $appKey;
 $_SERVER['APP_KEY'] = $appKey;
 
-// Create necessary temp directories
-$tmpDirs = [
-    '/tmp/bootstrap/cache',
-    '/tmp/framework/cache/data',
-    '/tmp/framework/sessions',
-    '/tmp/framework/testing',
-    '/tmp/framework/views',
-    '/tmp/logs',
-    '/tmp/views',
-    '/tmp/app/public',
-    '/tmp/app/public/attachments'
-];
-foreach ($tmpDirs as $dir) {
-    if (!is_dir($dir)) {
-        @mkdir($dir, 0777, true);
+// Create necessary temp directories only if not already initialized
+if (!is_dir('/tmp/framework/views')) {
+    $tmpDirs = [
+        '/tmp/bootstrap/cache',
+        '/tmp/framework/cache/data',
+        '/tmp/framework/sessions',
+        '/tmp/framework/testing',
+        '/tmp/framework/views',
+        '/tmp/logs',
+        '/tmp/views',
+        '/tmp/app/public',
+        '/tmp/app/public/attachments'
+    ];
+    foreach ($tmpDirs as $dir) {
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0777, true);
+        }
     }
 }
 @unlink('/tmp/bootstrap/cache/routes.php');
