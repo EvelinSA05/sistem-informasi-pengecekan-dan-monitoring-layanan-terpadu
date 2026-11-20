@@ -1,9 +1,13 @@
 <template>
-    <div class="flex items-center gap-2.5">
+    <div class="inline-flex px-3.5 py-2 rounded-2xl bg-white shadow-md border border-slate-100 items-center gap-2.5">
         <img
-            src="/images/logo-layanan-terpadu.svg"
-            alt="Logo Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu"
-            class="h-9 w-auto object-contain"
+            src="/images/icon-layanan-terpadu.svg"
+            alt="Icon"
+            class="w-8 h-8 shrink-0 object-contain"
         />
+        <div class="flex flex-col text-left">
+            <span class="text-[12px] font-extrabold text-[#064e3b] leading-tight tracking-tight uppercase">SISTEM INFORMASI</span>
+            <span class="text-[9.5px] font-bold text-[#059669] leading-tight tracking-tight uppercase">PENGECEKAN &amp; MONITORING</span>
+        </div>
     </div>
 </template>
