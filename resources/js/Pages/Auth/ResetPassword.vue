@@ -76,16 +76,20 @@ const submit = () => {
  
  <!-- Logo & Badge Row (Side by side) -->
  <div class="flex items-center justify-center gap-2.5 sm:gap-3 mb-6">
- <div class="px-3.5 py-1.5 rounded-2xl bg-white shadow-md border border-slate-100 flex items-center justify-center">
- <img
- src="/images/logo-layanan-terpadu.svg"
- alt="Sistem Informasi Pengecekan dan Monitoring Layanan Terpadu"
- class="h-6 sm:h-7 w-auto object-contain"
- />
- </div>
- </div>
+			<div class="px-3.5 py-2 rounded-2xl bg-white shadow-md border border-slate-100 flex items-center gap-2.5">
+				<img
+					src="/images/icon-layanan-terpadu.svg"
+					alt="Icon"
+					class="w-7 h-7 shrink-0 object-contain"
+				/>
+				<div class="flex flex-col text-left">
+					<span class="text-[11px] font-extrabold text-[#064e3b] leading-tight tracking-tight uppercase">SISTEM INFORMASI</span>
+					<span class="text-[8.5px] font-bold text-[#059669] leading-tight tracking-tight uppercase">PENGECEKAN &amp; MONITORING</span>
+				</div>
+			</div>
+		</div>
 
- <!-- Header -->
+		<!-- Header -->
  <div class="text-center mb-6">
  <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
  Atur Ulang Kata Sandi
