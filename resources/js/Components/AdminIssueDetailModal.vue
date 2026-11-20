@@ -98,7 +98,7 @@ function getFileExtension(filename) {
                                 <a
                                     :href="issue.service_url"
                                     target="_blank"
-                                    class="text-xs text-primary hover:text-blue-700 font-semibold truncate inline-flex items-center gap-1 hover:underline"
+                                    class="text-xs text-primary hover:text-emerald-700 font-semibold truncate inline-flex items-center gap-1 hover:underline"
                                 >
                                     {{ issue.service_url }}
                                     <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
@@ -160,7 +160,7 @@ function getFileExtension(filename) {
                             <div v-if="issue.attachment || issue.attachment_url" class="rounded-2xl border border-slate-200 bg-white p-4 space-y-3 shadow-2xs">
                                 <div class="flex items-center justify-between gap-3 flex-wrap">
                                     <div class="flex items-center gap-3 min-w-0">
-                                        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" :class="isImageFile(issue.attachment_name || issue.attachment) ? 'bg-indigo-50 text-indigo-600 border border-indigo-200' : 'bg-rose-50 text-rose-600 border border-rose-200'">
+                                        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" :class="isImageFile(issue.attachment_name || issue.attachment) ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-rose-50 text-rose-600 border border-rose-200'">
                                             <svg v-if="isImageFile(issue.attachment_name || issue.attachment)" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                             <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                         </div>
@@ -190,7 +190,7 @@ function getFileExtension(filename) {
                                         </a>
                                         <a
                                             :href="route('admin.periods.attachment.download', issue.id)"
-                                            class="px-3.5 py-1.5 rounded-xl bg-primary hover:bg-[#1d4ed8] text-white text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-md shadow-primary/20 active:scale-95 cursor-pointer"
+                                            class="px-3.5 py-1.5 rounded-xl bg-primary hover:bg-[#047857] text-white text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-md shadow-primary/20 active:scale-95 cursor-pointer"
                                             title="Unduh file bukti kendala ke penyimpanan lokal"
                                         >
                                             <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
@@ -363,7 +363,7 @@ function getFileExtension(filename) {
                             <a
                                 v-if="issue.attachment || issue.attachment_url"
                                 :href="route('admin.periods.attachment.download', issue.id)"
-                                class="px-4 py-2 rounded-xl bg-primary hover:bg-[#1d4ed8] text-white text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-md shadow-primary/20 active:scale-95 cursor-pointer"
+                                class="px-4 py-2 rounded-xl bg-primary hover:bg-[#047857] text-white text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-md shadow-primary/20 active:scale-95 cursor-pointer"
                             >
                                 <svg class="w-3.5 h-3.5 fill-none stroke-current" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                                 Unduh Bukti Kendala

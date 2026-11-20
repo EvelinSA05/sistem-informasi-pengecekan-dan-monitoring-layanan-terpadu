@@ -330,7 +330,7 @@ function syncServicesWithMaster() {
  router.post(route('admin.periods.sync_services', props.period.id), {}, {
  preserveScroll: true,
  onSuccess: () => {
- showToast('Layanan periode berhasil disinkronkan dengan Master Layanan Majadigi.', 'success');
+ showToast('Layanan periode berhasil disinkronkan dengan Master Layanan Terpadu.', 'success');
  },
  onError: () => {
  showToast('Gagal menyinkronkan layanan periode.', 'error');
@@ -583,14 +583,14 @@ function getAvatarColor(initials, name) {
 }
 
 const serviceIcons = {
- globe: `<svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>`,
+ globe: `<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>`,
  megaphone: `<svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>`,
  box: `<svg class="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>`,
  chart: `<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>`,
  currency: `<svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
  document: `<svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`,
  certificate: `<svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>`,
- academic: `<svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>`,
+ academic: `<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>`,
  archive: `<svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>`,
  users: `<svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>`,
  database: `<svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path stroke-linecap="round" d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path stroke-linecap="round" d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`,
@@ -600,7 +600,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
 </script>
 
 <template>
- <Head :title="`Detail ${period.title} - MAJADIGI CHECKER`" />
+ <Head :title="`Detail ${period.title} - SIMONTER`" />
 
  <AdminLayout title="Periode Pengecekan" subtitle="Atur periode dan distribusi layanan">
 
@@ -631,13 +631,13 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  <div class="relative rounded-2xl overflow-hidden bg-primary p-6 shadow-lg">
   <!-- Dynamic Background Image -->
   <div class="absolute inset-0 opacity-70 bg-cover bg-center" style="background-image: url('/images/banner_4.jpg');"></div>
-  <div class="absolute inset-0 bg-gradient-to-r from-[#1e3a8a]/85 via-[#1e3a8a]/45 to-transparent pointer-events-none"></div>
+  <div class="absolute inset-0 bg-gradient-to-r from-[#065f46]/85 via-[#065f46]/45 to-transparent pointer-events-none"></div>
  <!-- Dot texture overlay -->
  <div class="absolute inset-0 opacity-[0.07]" style="background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px); background-size: 20px 20px;"></div>
  <!-- Diagonal line texture -->
  <div class="absolute inset-0 opacity-[0.04]" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,1) 35px, rgba(255,255,255,1) 36px);"></div>
  <!-- Subtle glow circle -->
- <div class="absolute -top-20 -right-20 w-60 h-60 bg-cyan-400/10 rounded-full blur-3xl"></div>
+ <div class="absolute -top-20 -right-20 w-60 h-60 bg-emerald-400/10 rounded-full blur-3xl"></div>
  <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-primary/10 rounded-full blur-2xl"></div>
 
  <div class="relative z-10">
@@ -711,19 +711,19 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
  </div>
  </div>
  <p class="text-3xl font-bold text-slate-900">{{ period.total_services }}</p>
- <p class="text-xs text-slate-400 mt-1">Layanan Digital Jatim</p>
+ <p class="text-xs text-slate-400 mt-1">Layanan Terpadu</p>
  </div>
 
  <!-- Layanan Normal -->
  <div class="bg-white rounded-2xl border border-slate-200 p-5">
  <div class="flex items-center justify-between mb-3">
  <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">LAYANAN NORMAL</span>
- <div class="w-8 h-8 rounded-xl bg-cyan-50 text-cyan-500 flex items-center justify-center">
+ <div class="w-8 h-8 rounded-xl bg-teal-50 text-teal-500 flex items-center justify-center">
  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
  </div>
  </div>
  <p class="text-3xl font-bold text-slate-900">{{ period.normal_services }}</p>
- <p class="text-xs text-cyan-600 mt-1 flex items-center">
+ <p class="text-xs text-teal-600 mt-1 flex items-center">
  Berjalan Optimal
  </p>
  </div>
@@ -877,7 +877,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
      class="p-4 sm:p-5 rounded-2xl border transition-all text-xs"
      :class="[
       selectedTroubledIds.includes(item.id)
-       ? 'ring-2 ring-primary/30 border-primary/50 bg-blue-50/20'
+       ? 'ring-2 ring-primary/30 border-primary/50 bg-emerald-50/20'
        : (item.has_solved ? 'bg-slate-50/70 border-slate-200 text-slate-700' : 'bg-rose-50/40 border-rose-200/90 text-slate-800 shadow-2xs')
      ]"
     >
@@ -1145,7 +1145,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
 
    <!-- Status Filter Aktif jika ada filter yang diterapkan -->
    <div v-if="hasActiveFilters" class="flex items-center gap-2 shrink-0">
-    <span class="text-[11px] font-semibold text-primary bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg">
+    <span class="text-[11px] font-semibold text-primary bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
      Filter Aktif: {{ filteredServices.length }} Layanan
     </span>
    </div>
@@ -1212,7 +1212,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
 												type="button"
 												@click="openCheckModal(srv)"
 												class="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-xs transition-all border active:scale-95 cursor-pointer"
-												:class="srv.status === 'pending' ? 'bg-primary text-white border-primary hover:bg-[#1d4ed8]' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'"
+												:class="srv.status === 'pending' ? 'bg-primary text-white border-primary hover:bg-[#047857]' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'"
 												:title="srv.status === 'pending' ? 'Lakukan Pengecekan Layanan' : 'Ubah Hasil Pengecekan'"
 											>
 												<svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
@@ -1275,7 +1275,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
       </button>
       <Link
        :href="route('admin.periods.edit', period.id)"
-       class="flex-1 py-2.5 rounded-xl bg-primary hover:bg-[#1d4ed8] text-white text-sm font-bold shadow-md shadow-primary/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+       class="flex-1 py-2.5 rounded-xl bg-primary hover:bg-[#047857] text-white text-sm font-bold shadow-md shadow-primary/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
       >
        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -1307,7 +1307,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
 						<div class="flex items-center gap-3 min-w-0">
 							<div
 								class="w-8 h-8 rounded-xl flex items-center justify-center font-bold shrink-0 shadow-xs border"
-								:class="isEditMode ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-primary border-primary text-white'"
+								:class="isEditMode ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-primary border-primary text-white'"
 							>
 								<svg v-if="!isEditMode" class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1355,7 +1355,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
 									<a
 										:href="selectedService.service_url || selectedService.url"
 										target="_blank"
-										class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white font-bold text-xs shadow-xs transition-all hover:bg-[#1d4ed8]"
+										class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white font-bold text-xs shadow-xs transition-all hover:bg-[#047857]"
 									>
 										Buka URL Layanan
 										<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
@@ -1562,7 +1562,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
 							:disabled="checkForm.processing || !isCheckFormValid"
 							:class="(!isCheckFormValid || checkForm.processing) 
 								? 'opacity-40 cursor-not-allowed bg-slate-300 text-slate-500 shadow-none' 
-								: 'bg-primary hover:bg-[#1d4ed8] text-white shadow-md shadow-primary/20 cursor-pointer active:scale-95'"
+								: 'bg-primary hover:bg-[#047857] text-white shadow-md shadow-primary/20 cursor-pointer active:scale-95'"
 							class="px-5 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5"
 						>
 							<svg v-if="checkForm.processing" class="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
@@ -1663,7 +1663,7 @@ function getServiceIcon(k) { return serviceIcons[k] || serviceIcons['globe']; }
 								<textarea
 									v-model="bulkSolveForm.description"
 									rows="4"
-									placeholder="Contoh: Server pusat Pemprov Jatim telah selesai maintenance, silakan lakukan pengecekan ulang pada layanan yang ditugaskan..."
+									placeholder="Contoh: Server pusat telah selesai maintenance, silakan lakukan pengecekan ulang pada layanan yang ditugaskan..."
 									class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
 								></textarea>
 								<p v-if="bulkSolveForm.errors" class="mt-1.5 text-xs font-semibold text-rose-600">

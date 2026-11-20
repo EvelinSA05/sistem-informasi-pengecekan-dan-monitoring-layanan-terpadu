@@ -83,7 +83,7 @@ onUnmounted(() => {
 </script>
 
 <template>
- <Head title="Layanan Ditugaskan - MAJADIGI CHECKER" />
+ <Head title="Layanan Ditugaskan - SIMONTER" />
 
  <AdminLayout
  title="Layanan Ditugaskan"
@@ -148,9 +148,9 @@ onUnmounted(() => {
  <!-- ── Hero Banner ────────────────────────────────────── -->
     <div class="relative rounded-2xl overflow-hidden bg-primary p-6 sm:p-8 shadow-lg mb-6">
       <div class="absolute inset-0 opacity-70 bg-cover bg-center" style="background-image: url('/images/banner_4.jpg');"></div>
-      <div class="absolute inset-0 bg-gradient-to-r from-[#1e3a8a]/85 via-[#1e3a8a]/45 to-transparent pointer-events-none"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-[#065f46]/85 via-[#065f46]/45 to-transparent pointer-events-none"></div>
       <div class="relative z-10">
-        <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
+        <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-emerald-100 backdrop-blur-sm">
           Penugasan Pengecekan
         </div>
         <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Daftar Periode Pengecekan</h2>
@@ -222,7 +222,7 @@ onUnmounted(() => {
  <!-- Status AKTIF -->
  <span
  v-if="period.status === 'proses' && !period.is_overdue"
- class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#021344] text-white shadow-xs"
+ class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#064e3b] text-white shadow-xs"
  >
  AKTIF
  </span>
@@ -230,7 +230,7 @@ onUnmounted(() => {
  <!-- Status NONAKTIF -->
  <span
  v-else
- class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#eff4fa] text-slate-500 border border-slate-200/80"
+ class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#f0fdf4] text-slate-500 border border-slate-200/80"
  >
  NONAKTIF
  </span>
@@ -245,7 +245,7 @@ onUnmounted(() => {
  <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
  <div
  class="h-full rounded-full transition-all duration-500"
- :class="period.my_progress_percent === 100 ? 'bg-emerald-500' : 'bg-cyan-500'"
+ :class="period.my_progress_percent === 100 ? 'bg-emerald-500' : 'bg-teal-500'"
  :style="{ width: `${period.my_progress_percent}%` }"
  ></div>
  </div>
@@ -260,7 +260,7 @@ onUnmounted(() => {
  :title="period.status === 'proses' && !period.is_overdue ? 'Lakukan pengecekan layanan' : 'Lihat hasil pengecekan'"
  class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-xs"
  :class="period.status === 'proses' && !period.is_overdue
- ? 'bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white shadow-primary/10'
+ ? 'bg-[#065f46] hover:bg-[#047857] text-white shadow-primary/10'
  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80'"
  >
  <svg v-if="period.status === 'proses' && !period.is_overdue" class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -29,3 +29,5 @@ Thumbs.db
 .agents/
 scratch.php
 test_query.php
+scratch/
+*.docx

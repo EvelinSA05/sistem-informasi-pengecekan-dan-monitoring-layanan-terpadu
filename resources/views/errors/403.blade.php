@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>403 - Akses Ditolak | Majadigi Checking</title>
+    <title>403 - Akses Ditolak | SIMONTER</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/icon-simonter.svg') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,10 +15,10 @@
 </head>
 <body class="font-sans antialiased bg-slate-50 text-slate-900 min-h-screen flex items-center justify-center p-4">
     <div class="max-w-md w-full bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden text-center relative">
-        <div class="h-32 bg-blue-600 relative overflow-hidden flex flex-col items-center justify-center pb-8">
+        <div class="h-32 bg-emerald-600 relative overflow-hidden flex flex-col items-center justify-center pb-8">
             <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
             <h1 class="text-5xl font-black text-white relative z-10 drop-shadow-md tracking-tight">403</h1>
-            <p class="text-blue-100 font-semibold relative z-10 tracking-widest uppercase text-xs mt-1">Forbidden Access</p>
+            <p class="text-emerald-100 font-semibold relative z-10 tracking-widest uppercase text-xs mt-1">Forbidden Access</p>
         </div>
         
         <div class="p-8 pb-10">
@@ -33,7 +34,7 @@
             </p>
             
             <div class="mt-5 text-xs text-slate-400">
-                &copy; {{ date('Y') }} Majadigi Checking System
+                &copy; {{ date('Y') }} SIMONTER — Sistem Monitoring &amp; Checking Layanan Terpadu
             </div>
         </div>
     </div>

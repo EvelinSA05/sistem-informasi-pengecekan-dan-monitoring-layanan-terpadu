@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\PeriodService;
 use App\Models\ServiceIssue;
-use App\Services\MajadigiApiService;
+use App\Services\ExternalServiceSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -82,12 +82,12 @@ class ServiceController extends Controller
     }
 
     /**
-     * Sinkronisasi data layanan dari API Majadigi.
+     * Sinkronisasi data layanan dari sumber katalog eksternal (JSON/CSV) atau katalog terpadu.
      */
-    public function syncMajadigi(MajadigiApiService $apiService): RedirectResponse
+    public function syncServices(ExternalServiceSyncService $syncService): RedirectResponse
     {
         try {
-            $result = $apiService->syncServices();
+            $result = $syncService->syncServices();
 
             // Otomatis sinkronkan periode pengecekan yang sedang aktif/proses
             $activePeriods = \App\Models\CheckingPeriod::where('status', 'proses')->get();
@@ -95,12 +95,12 @@ class ServiceController extends Controller
                 $activePeriod->syncWithMasterServices();
             }
 
-            $deletedMsg = !empty($result['deleted']) ? ", {$result['deleted']} data non-sinkronisasi berhasil dibersihkan" : "";
+            $deletedMsg = !empty($result['deleted']) ? ", {$result['deleted']} data lama dibersihkan" : "";
             $periodMsg = $activePeriods->isNotEmpty() ? " {$activePeriods->count()} periode aktif ikut disinkronkan otomatis." : "";
-            $message = "Sinkronisasi berhasil! Total {$result['total']} layanan dari Majadigi diproses ({$result['created']} data baru ditambahkan, {$result['updated']} data diperbarui{$deletedMsg}).{$periodMsg}";
+            $message = "Sinkronisasi berhasil! Total {$result['total']} layanan terpadu diproses ({$result['created']} data baru ditambahkan, {$result['updated']} data diperbarui{$deletedMsg}).{$periodMsg}";
             return back()->with('success', $message);
         } catch (\Throwable $e) {
-            Log::error('Majadigi sync error: ' . $e->getMessage(), [
+            Log::error('External service sync error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
 

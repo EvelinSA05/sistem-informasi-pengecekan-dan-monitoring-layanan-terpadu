@@ -181,7 +181,7 @@ const submit = () => {
 </script>
 
 <template>
- <Head title="Masuk - MAJADIGI CHECKER SYSTEM" />
+ <Head title="Masuk - SIMONTER" />
 
  <div class="min-h-screen w-full flex flex-col md:flex-row bg-secondary selection:bg-primary selection:text-white font-sans antialiased">
  <!-- Left Side (Desktop) / Top Banner Header (Mobile) -->
@@ -189,13 +189,13 @@ const submit = () => {
  
  <!-- Background Image Overlay -->
   <div class="absolute inset-0 opacity-60 bg-cover bg-center" style="background-image: url('/images/banner_3.jpg');"></div>
-  <div class="absolute inset-0 bg-gradient-to-b from-[#1e3a8a]/70 via-[#1e3a8a]/50 to-[#1e3a8a]/85 pointer-events-none"></div>
+  <div class="absolute inset-0 bg-gradient-to-b from-[#064e3b]/70 via-[#047857]/50 to-[#064e3b]/85 pointer-events-none"></div>
 
   <!-- Ambient Background Decorative Circles & Glow -->
  <div class="absolute inset-0 pointer-events-none overflow-hidden">
  <div class="absolute -left-20 top-10 w-96 h-96 rounded-full border border-white/10 bg-white/[0.02]"></div>
  <div class="absolute -right-20 bottom-0 w-80 h-80 rounded-full border border-white/10 bg-white/[0.02]"></div>
- <div class="absolute right-10 top-20 w-72 h-72 rounded-full bg-cyan-400/10 blur-3xl"></div>
+ <div class="absolute right-10 top-20 w-72 h-72 rounded-full bg-emerald-300/15 blur-3xl"></div>
  <div class="absolute left-1/4 bottom-1/4 w-80 h-80 rounded-full bg-primary/20 blur-3xl"></div>
  </div>
 
@@ -203,13 +203,13 @@ const submit = () => {
  <div class="relative z-10 flex flex-row items-center justify-between md:hidden mb-2.5">
  <div class="px-3 py-1.5 rounded-xl bg-white shadow-md border border-white/80 flex items-center gap-2">
  <img
- src="/images/logo_majadigi.png"
- alt="Majadigi - Majapahit Digital"
+ src="/images/logo-simonter.svg"
+ alt="SIMONTER - Sistem Monitoring & Checking Layanan Terpadu"
  class="h-6 w-auto object-contain"
  />
  </div>
  <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 shadow-sm">
- <span class="text-[10px] font-bold tracking-wider text-white uppercase">CHECKER SYSTEM</span>
+ <span class="text-[10px] font-bold tracking-wider text-white uppercase">LAYANAN TERPADU</span>
  </div>
  </div>
 
@@ -217,13 +217,13 @@ const submit = () => {
  <div class="relative z-10 hidden md:flex flex-col items-start gap-2.5 mb-6 xl:mb-7">
  <div class="inline-flex px-3.5 py-1.5 rounded-xl bg-white shadow-md border border-white/90 items-center gap-2">
  <img
- src="/images/logo_majadigi.png"
- alt="Majadigi - Majapahit Digital"
+ src="/images/logo-simonter.svg"
+ alt="SIMONTER - Sistem Monitoring & Checking Layanan Terpadu"
  class="h-7 w-auto object-contain"
  />
  </div>
  <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 shadow-sm w-fit">
- <span class="text-[10.5px] font-bold tracking-wider text-white uppercase">CHECKER SYSTEM</span>
+ <span class="text-[10.5px] font-bold tracking-wider text-white uppercase">MONITORING & CHECKING TERPADU</span>
  </div>
  </div>
 
@@ -231,13 +231,13 @@ const submit = () => {
  <div class="relative z-10 max-w-lg my-auto md:my-0 flex-1 flex flex-col justify-center">
  <!-- Headline -->
  <h1 class="text-xl sm:text-2xl md:text-[38px] xl:text-[42px] font-extrabold text-white tracking-tight leading-tight md:leading-[1.18]">
- Pantau Layanan Digital<br class="hidden sm:inline"/>
- <span class="text-cyan-300"> Jawa Timur</span>
+ Pantau &amp; Cek Layanan<br class="hidden sm:inline"/>
+ <span class="text-emerald-200"> Secara Terpadu</span>
  </h1>
 
  <!-- Description -->
  <p class="mt-1.5 md:mt-4 text-white/90 text-[11.5px] sm:text-sm md:text-[14.5px] font-normal leading-relaxed max-w-md line-clamp-2 sm:line-clamp-none">
- Platform monitoring terpusat untuk mengecek dan memantau kualitas layanan Majadigi secara berkala dan terstruktur.
+ Platform monitoring terpusat untuk mengecek, memantau, dan memastikan keandalan layanan terpadu secara berkala dan terstruktur.
  </p>
 
  <!-- Features: Khusus desktop (hidden di mobile untuk menghemat ruang & minimalis) -->
@@ -285,7 +285,7 @@ const submit = () => {
 
  <!-- Desktop Bottom Footer text -->
  <div class="relative z-10 hidden md:block pt-6 md:pt-8 mt-auto">
- <p class="text-xs text-white/70">© 2026 Dinas Komunikasi dan Informatika Provinsi Jawa Timur.</p>
+ <p class="text-xs text-white/70">© 2026 SIMONTER — Sistem Monitoring &amp; Checking Layanan Terpadu.</p>
  </div>
  </div>
 
@@ -301,10 +301,10 @@ const submit = () => {
  <!-- Form Header -->
  <div class="mb-5 sm:mb-6">
  <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
- Masuk ke Checker System
+ Masuk ke SIMONTER
  </h2>
  <p class="text-slate-500 text-xs sm:text-sm mt-1.5 leading-relaxed">
- Validasi keandalan dan kualitas layanan publik Majadigi secara berkala.
+ Validasi keandalan dan kualitas layanan terpadu secara berkala.
  </p>
  </div>
 
@@ -434,7 +434,7 @@ const submit = () => {
  <Link
  v-if="canResetPassword"
  :href="route('password.request')"
- class="font-semibold text-[#2563eb] hover:text-[#1d4ed8] hover:underline"
+ class="font-semibold text-[#059669] hover:text-[#047857] hover:underline"
  >
  Lupa Password?
  </Link>
@@ -452,7 +452,7 @@ const submit = () => {
  type="submit"
  :class="{ 'opacity-50 pointer-events-none': form.processing }"
  :disabled="form.processing"
- class="w-full py-3 px-6 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] active:bg-primary text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-primary/25 transition-all duration-200 active:scale-[0.99]"
+ class="w-full py-3 px-6 rounded-xl bg-[#059669] hover:bg-[#047857] active:bg-primary text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-primary/25 transition-all duration-200 active:scale-[0.99]"
  >
  <span>Masuk</span>
  </button>

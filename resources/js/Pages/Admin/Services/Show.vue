@@ -98,7 +98,7 @@ async function toggleIssueFollowUp(issue) {
 </script>
 
 <template>
-	<Head :title="`Detail Layanan: ${service.service_name} - MAJADIGI CHECKER`" />
+	<Head :title="`Detail Layanan: ${service.service_name} - SIMONTER`" />
 
 	<AdminLayout
 		title="Master Layanan"
@@ -151,9 +151,9 @@ async function toggleIssueFollowUp(issue) {
 			<div class="relative rounded-3xl overflow-hidden bg-primary p-6 sm:p-8 shadow-lg">
 				<!-- Background Effects -->
 				<div class="absolute inset-0 opacity-60 bg-cover bg-center" style="background-image: url('/images/banner_4.jpg');"></div>
-				<div class="absolute inset-0 bg-gradient-to-r from-[#1e3a8a]/90 via-[#1e3a8a]/60 to-[#1e3a8a]/30 pointer-events-none"></div>
+				<div class="absolute inset-0 bg-gradient-to-r from-[#065f46]/90 via-[#065f46]/60 to-[#065f46]/30 pointer-events-none"></div>
 				<div class="absolute inset-0 opacity-[0.06]" style="background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px); background-size: 20px 20px;"></div>
-				<div class="absolute -top-24 -right-24 w-72 h-72 bg-cyan-400/20 rounded-full blur-3xl pointer-events-none"></div>
+				<div class="absolute -top-24 -right-24 w-72 h-72 bg-emerald-400/20 rounded-full blur-3xl pointer-events-none"></div>
 
 				<div class="relative z-10">
 					<!-- Tombol Kembali ke Master Layanan -->
@@ -241,7 +241,7 @@ async function toggleIssueFollowUp(issue) {
 				<div class="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-2">
 					<div class="flex items-center justify-between text-slate-400">
 						<span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Kategori</span>
-						<div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+						<div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
 							<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
 						</div>
 					</div>
@@ -269,7 +269,7 @@ async function toggleIssueFollowUp(issue) {
 				<div class="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-2">
 					<div class="flex items-center justify-between text-slate-400">
 						<span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Penugasan</span>
-						<div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+						<div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
 							<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
 						</div>
 					</div>

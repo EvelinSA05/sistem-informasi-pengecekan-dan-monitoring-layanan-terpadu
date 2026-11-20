@@ -148,7 +148,7 @@ function confirmDelete() {
 </script>
 
 <template>
- <Head title="Manajemen User - MAJADIGI CHECKER" />
+ <Head title="Manajemen User - SIMONTER" />
  <AdminLayout
  title="Manajemen User"
  subtitle="Kelola akun tester yang terdaftar"
@@ -213,13 +213,13 @@ function confirmDelete() {
  <!-- ── Hero Banner ────────────────────────────────────── -->
     <div class="relative rounded-2xl overflow-hidden bg-primary p-6 sm:p-8 shadow-lg mb-6">
       <div class="absolute inset-0 opacity-70 bg-cover bg-center" style="background-image: url('/images/banner_3.jpg');"></div>
-      <div class="absolute inset-0 bg-gradient-to-r from-[#1e3a8a]/85 via-[#1e3a8a]/45 to-transparent pointer-events-none"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-[#065f46]/85 via-[#065f46]/45 to-transparent pointer-events-none"></div>
       <div class="relative z-10">
-        <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
+        <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-emerald-100 backdrop-blur-sm">
           Pengguna Sistem
         </div>
         <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Manajemen User & Tester</h2>
-        <p class="text-white/80 text-xs sm:text-sm mt-1 max-w-xl">Kelola data pengguna, hak akses tester, NIP, serta bidang dinas dalam sistem MAJADIGI.</p>
+        <p class="text-white/80 text-xs sm:text-sm mt-1 max-w-xl">Kelola data pengguna, hak akses tester, NIP, serta unit kerja dalam sistem SIMONTER.</p>
       </div>
     </div>
 
@@ -264,7 +264,7 @@ function confirmDelete() {
  <button
  id="btn-tambah-tester"
  @click="openAddModal"
- class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-xl bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 shrink-0 active:scale-[0.99]"
+ class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-xl bg-[#065f46] hover:bg-[#047857] text-white text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 shrink-0 active:scale-[0.99]"
  >
  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
  <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
@@ -413,7 +413,7 @@ function confirmDelete() {
                                     <label class="block text-sm font-semibold text-slate-700 mb-1.5">
                                         Email <span class="text-rose-500">*</span>
                                     </label>
-                                    <input v-model="addForm.email" type="email" placeholder="email@kominfo.jatim.go.id"
+                                    <input v-model="addForm.email" type="email" placeholder="nama@instansi.go.id"
                                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-3 focus:ring-primary/10 transition-all"/>
                                     <p v-if="addForm.errors.email" class="mt-1 text-xs text-rose-500">{{ addForm.errors.email }}</p>
                                 </div>
@@ -509,7 +509,7 @@ function confirmDelete() {
                                         Batal
                                     </button>
                                     <button type="submit" :disabled="addForm.processing"
-                                        class="px-5 py-2.5 rounded-xl bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white text-sm font-semibold shadow-sm transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        class="px-5 py-2.5 rounded-xl bg-[#065f46] hover:bg-[#047857] text-white text-sm font-semibold shadow-sm transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
                                         Tambah Tester
                                     </button>
                                 </div>
@@ -593,7 +593,7 @@ function confirmDelete() {
  Batal
  </button>
  <button type="submit" :disabled="editForm.processing"
- class="px-5 py-2.5 rounded-xl bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white text-sm font-semibold shadow-sm transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
+ class="px-5 py-2.5 rounded-xl bg-[#065f46] hover:bg-[#047857] text-white text-sm font-semibold shadow-sm transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
  Simpan Perubahan
  </button>
  </div>

@@ -153,7 +153,7 @@ function togglePeriodStatus(period) {
 </script>
 
 <template>
- <Head title="Periode Pengecekan - MAJADIGI CHECKER" />
+ <Head title="Periode Pengecekan - SIMONTER" />
 
  <AdminLayout
  title="Periode Pengecekan"
@@ -218,9 +218,9 @@ function togglePeriodStatus(period) {
  <!-- ── Hero Banner ────────────────────────────────────── -->
     <div class="relative rounded-2xl overflow-hidden bg-primary p-6 sm:p-8 shadow-lg mb-6">
       <div class="absolute inset-0 opacity-70 bg-cover bg-center" style="background-image: url('/images/banner_1.jpg');"></div>
-      <div class="absolute inset-0 bg-gradient-to-r from-[#1e3a8a]/85 via-[#1e3a8a]/45 to-transparent pointer-events-none"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-[#065f46]/85 via-[#065f46]/45 to-transparent pointer-events-none"></div>
       <div class="relative z-10">
-        <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm">
+        <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-emerald-100 backdrop-blur-sm">
           Manajemen Periode
         </div>
         <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Daftar Periode & Distribusi</h2>
@@ -296,13 +296,13 @@ function togglePeriodStatus(period) {
  <td class="px-5 py-3.5 text-center">
                         <span
                           v-if="period.status === 'proses'"
-                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#021344] text-white shadow-xs"
+                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#064e3b] text-white shadow-xs"
                         >
                           AKTIF
                         </span>
                         <span
                           v-else
-                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#eff4fa] text-slate-500 border border-slate-200/80"
+                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#f0fdf4] text-slate-500 border border-slate-200/80"
                         >
                           NONAKTIF
                         </span>
@@ -356,8 +356,8 @@ function togglePeriodStatus(period) {
  @click="togglePeriodStatus(period)"
  :disabled="updatingPeriodId === period.id"
  :title="period.status === 'proses' ? 'Klik untuk menonaktifkan periode' : (period.is_overdue ? 'Deadline sudah melewati batas (Klik untuk informasi)' : 'Klik untuk mengaktifkan periode')"
- class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:ring-offset-1 disabled:opacity-50"
- :class="period.status === 'proses' ? 'bg-[#1e3a8a]' : 'bg-slate-300'"
+ class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#065f46] focus:ring-offset-1 disabled:opacity-50"
+ :class="period.status === 'proses' ? 'bg-[#065f46]' : 'bg-slate-300'"
  >
  <span
  class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out"
@@ -583,7 +583,7 @@ function togglePeriodStatus(period) {
       </button>
       <Link
        :href="route('admin.periods.edit', overduePeriod.id)"
-       class="flex-1 py-2.5 rounded-xl bg-primary hover:bg-[#1d4ed8] text-white text-sm font-bold shadow-md shadow-primary/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+       class="flex-1 py-2.5 rounded-xl bg-primary hover:bg-[#047857] text-white text-sm font-bold shadow-md shadow-primary/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
       >
        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>

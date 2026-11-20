@@ -89,7 +89,7 @@ function getTesterAvatarColor(initials, name) {
 
 // ─── Service Icon Helper ─────────────────────────────────────────
 const serviceIcons = {
- globe: `<svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+ globe: `<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
  <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
  </svg>`,
  megaphone: `<svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -110,7 +110,7 @@ const serviceIcons = {
  certificate: `<svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
  </svg>`,
- academic: `<svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+ academic: `<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
  <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
  </svg>`,
  archive: `<svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -184,7 +184,7 @@ function submitForm() {
 </script>
 
 <template>
- <Head :title="`${isEdit ? 'Edit Periode' : 'Buat Periode Baru'} - MAJADIGI CHECKER`" />
+ <Head :title="`${isEdit ? 'Edit Periode' : 'Buat Periode Baru'} - SIMONTER`" />
 
  <AdminLayout
  title="Periode Pengecekan"
@@ -194,7 +194,7 @@ function submitForm() {
  <div class="flex items-center gap-4 mb-6">
  <Link
  :href="route('admin.periods.index')"
- class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 hover:text-primary hover:border-primary/40 hover:bg-blue-50/40 shadow-2xs transition-all group"
+ class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 hover:text-primary hover:border-primary/40 hover:bg-emerald-50/40 shadow-2xs transition-all group"
  >
  <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
   <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -402,7 +402,7 @@ function submitForm() {
  type="button"
  @click="submitForm"
  :disabled="selectedTestersCount === 0 || form.processing"
- :class="[ 'px-6 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 shadow-md', selectedTestersCount === 0 || form.processing ? 'bg-primary text-white/80 cursor-not-allowed shadow-none' : 'bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white shadow-primary/10 hover:shadow-primary/20 hover:-translate-y-0.5' ]"
+ :class="[ 'px-6 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 shadow-md', selectedTestersCount === 0 || form.processing ? 'bg-primary text-white/80 cursor-not-allowed shadow-none' : 'bg-[#065f46] hover:bg-[#047857] text-white shadow-primary/10 hover:shadow-primary/20 hover:-translate-y-0.5' ]"
  >
  <span v-if="form.processing">Memproses...</span>
  <span v-else-if="isEdit">Simpan</span>

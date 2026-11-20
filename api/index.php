@@ -12,13 +12,13 @@ putenv('SESSION_DRIVER=database');
 $_ENV['SESSION_DRIVER'] = 'database';
 $_SERVER['SESSION_DRIVER'] = 'database';
 
-putenv('SESSION_COOKIE=majadigi_session');
-$_ENV['SESSION_COOKIE'] = 'majadigi_session';
-$_SERVER['SESSION_COOKIE'] = 'majadigi_session';
+putenv('SESSION_COOKIE=simonter_session');
+$_ENV['SESSION_COOKIE'] = 'simonter_session';
+$_SERVER['SESSION_COOKIE'] = 'simonter_session';
 
-putenv('APP_NAME=majadigi');
-$_ENV['APP_NAME'] = 'majadigi';
-$_SERVER['APP_NAME'] = 'majadigi';
+putenv('APP_NAME=SIMONTER');
+$_ENV['APP_NAME'] = 'SIMONTER';
+$_SERVER['APP_NAME'] = 'SIMONTER';
 
 putenv('SESSION_LIFETIME=120');
 $_ENV['SESSION_LIFETIME'] = '120';

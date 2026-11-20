@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>500 - Terjadi Kesalahan | Majadigi Checking</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/kominfo-jatim.png') }}">
+    <title>500 - Terjadi Kesalahan | SIMONTER</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/icon-simonter.svg') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,12 +39,12 @@
                 </div>
             @endif
 
-            <a href="{{ url('/') }}" class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-md shadow-blue-600/20 transition-all">
+            <a href="{{ url('/') }}" class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-md shadow-emerald-600/20 transition-all">
                 Kembali ke Beranda
             </a>
             
             <div class="mt-6 text-xs text-slate-400">
-                &copy; {{ date('Y') }} Majadigi Checking System
+                &copy; {{ date('Y') }} SIMONTER — Sistem Monitoring &amp; Checking Layanan Terpadu
             </div>
         </div>
     </div>

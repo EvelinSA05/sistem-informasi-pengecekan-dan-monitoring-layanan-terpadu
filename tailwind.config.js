@@ -17,12 +17,14 @@ export default {
             },
             colors: {
                 primary: {
-                    DEFAULT: '#001166', // Atlantic Depths
-                    hover: '#000c4d', // Slightly darker for hover
+                    DEFAULT: '#059669', // Fresh Emerald Green
+                    hover: '#047857', // Deep Emerald Hover
+                    light: '#10b981', // Vibrant Mint Green
+                    dark: '#065f46', // Forest Emerald
                 },
                 secondary: {
-                    DEFAULT: '#f0f0e7', // Aspen Snow
-                    hover: '#e2e2d9',
+                    DEFAULT: '#f0fdf4', // Fresh Soft Mint
+                    hover: '#dcfce7', // Soft Green Hover
                 },
             },
         },

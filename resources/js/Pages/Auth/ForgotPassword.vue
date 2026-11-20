@@ -18,16 +18,16 @@ const submit = () => {
 </script>
 
 <template>
- <Head title="Lupa Kata Sandi - MAJADIGI CHECKER SYSTEM" />
+ <Head title="Lupa Kata Sandi - SIMONTER" />
 
- <div class="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 bg-primary from-[#1e40af] via-[#1d4ed8] to-[#1e3a8a] relative overflow-hidden font-sans antialiased text-slate-800 selection:bg-primary selection:text-white">
+ <div class="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-700 relative overflow-hidden font-sans antialiased text-slate-800 selection:bg-primary selection:text-white">
  
  <!-- Ambient Decorative Background Circles & Glow -->
  <div class="absolute inset-0 pointer-events-none overflow-hidden">
  <div class="absolute -left-20 top-10 w-96 h-96 rounded-full border border-white/10 bg-white/[0.02]"></div>
  <div class="absolute -right-20 bottom-0 w-80 h-80 rounded-full border border-white/10 bg-white/[0.02]"></div>
- <div class="absolute right-10 top-20 w-72 h-72 rounded-full bg-cyan-400/15 blur-3xl"></div>
- <div class="absolute left-1/4 bottom-1/4 w-80 h-80 rounded-full bg-primary/20 blur-3xl"></div>
+ <div class="absolute right-10 top-20 w-72 h-72 rounded-full bg-emerald-300/20 blur-3xl"></div>
+ <div class="absolute left-1/4 bottom-1/4 w-80 h-80 rounded-full bg-teal-400/20 blur-3xl"></div>
  </div>
 
  <!-- Floating Card -->
@@ -37,13 +37,10 @@ const submit = () => {
  <div class="flex items-center justify-center gap-2.5 sm:gap-3 mb-6">
  <div class="px-3.5 py-1.5 rounded-2xl bg-white shadow-md border border-slate-100 flex items-center justify-center">
  <img
- src="/images/logo_majadigi.png"
- alt="Majadigi - Majapahit Digital"
+ src="/images/logo-simonter.svg"
+ alt="SIMONTER - Sistem Monitoring & Checking Layanan Terpadu"
  class="h-6 sm:h-7 w-auto object-contain"
  />
- </div>
- <div class="inline-flex items-center px-3 py-1.5 rounded-xl bg-primary border border-primary shadow-xs shrink-0">
- <span class="text-[10px] font-bold tracking-wider text-white uppercase">CHECKER SYSTEM</span>
  </div>
  </div>
 
@@ -130,8 +127,8 @@ const submit = () => {
  </div>
 
  <!-- Footer Copyright -->
- <p class="absolute bottom-4 text-center w-full text-xs text-primary/75 z-10 px-4">
- © 2026 Dinas Komunikasi dan Informatika Provinsi Jawa Timur.
+ <p class="absolute bottom-4 text-center w-full text-xs text-white/80 z-10 px-4">
+ © 2026 SIMONTER — Sistem Monitoring &amp; Checking Layanan Terpadu.
  </p>
  </div>
 </template>

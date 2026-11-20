@@ -798,14 +798,14 @@ class PeriodController extends Controller
                 fputs($file, "\xEF\xBB\xBF");
                 fputs($file, "sep=,\r\n");
 
-                fputcsv($file, ['MAJADIGI CHECKER - PEMERINTAH PROVINSI JAWA TIMUR']);
-                fputcsv($file, ['LAPORAN HASIL PENGECEKAN KUALITAS & KETERSEDIAAN LAYANAN DIGITAL']);
+                fputcsv($file, ['SIMONTER - SISTEM MONITORING & CHECKING LAYANAN TERPADU']);
+                fputcsv($file, ['LAPORAN HASIL PENGECEKAN KUALITAS & KETERSEDIAAN LAYANAN TERPADU']);
                 fputcsv($file, []);
 
                 fputcsv($file, ['INFORMASI LAPORAN', '']);
                 fputcsv($file, ['Periode Pengecekan', $periodTitle]);
                 fputcsv($file, ['Status Periode', $period->status === 'proses' ? 'AKTIF (Proses Berjalan)' : 'SELESAI (Nonaktif)']);
-                fputcsv($file, ['Dibuat Oleh', $period->creator?->name ?? 'Admin Majadigi']);
+                fputcsv($file, ['Dibuat Oleh', $period->creator?->name ?? 'Admin SIMONTER']);
                 fputcsv($file, ['Tanggal Unduh Laporan', date('d/m/Y H:i:s') . ' WIB']);
                 if (!empty($activeFilters)) {
                     $filterSummary = collect($activeFilters)->map(fn($v, $k) => "{$k}: {$v}")->implode(' | ');
@@ -851,22 +851,22 @@ class PeriodController extends Controller
 
         // SHEET 1: RINGKASAN & LAYANAN TERKENDALA
         $sheet1 = [];
-        $sheet1[] = ['<style bgcolor="#1E3A8A" color="#FFFFFF" font-size="14"><b>   MAJADIGI CHECKER - PEMERINTAH PROVINSI JAWA TIMUR   </b></style>'];
-        $sheet1[] = ['<style color="#1E3A8A" font-size="11"><b>LAPORAN HASIL PENGECEKAN KUALITAS & KETERSEDIAAN LAYANAN DIGITAL</b></style>'];
+        $sheet1[] = ['<style bgcolor="#059669" color="#FFFFFF" font-size="14"><b>   SIMONTER - SISTEM MONITORING & CHECKING LAYANAN TERPADU   </b></style>'];
+        $sheet1[] = ['<style color="#047857" font-size="11"><b>LAPORAN HASIL PENGECEKAN KUALITAS & KETERSEDIAAN LAYANAN TERPADU</b></style>'];
         $sheet1[] = [''];
 
-        $sheet1[] = ['<style bgcolor="#F1F5F9" color="#0F172A"><b>INFORMASI LAPORAN</b></style>', ''];
+        $sheet1[] = ['<style bgcolor="#F0FDF4" color="#064E3B"><b>INFORMASI LAPORAN</b></style>', ''];
         $sheet1[] = ['Periode Pengecekan', '<b>' . $periodTitle . '</b>'];
         $sheet1[] = ['Status Periode', $period->status === 'proses' ? '<style bgcolor="#DCFCE7" color="#166534"><b>AKTIF (Sedang Berjalan)</b></style>' : '<style bgcolor="#F1F5F9" color="#475569"><b>SELESAI (Nonaktif)</b></style>'];
-        $sheet1[] = ['Dibuat Oleh', '<b>' . ($period->creator?->name ?? 'Admin Majadigi') . '</b>'];
+        $sheet1[] = ['Dibuat Oleh', '<b>' . ($period->creator?->name ?? 'Admin SIMONTER') . '</b>'];
         $sheet1[] = ['Tanggal Unduh Laporan', '<b>' . date('d/m/Y H:i:s') . ' WIB</b>'];
         if (!empty($activeFilters)) {
             $filterSummary = collect($activeFilters)->map(fn($v, $k) => "{$k}: {$v}")->implode(' | ');
-            $sheet1[] = ['Filter Aktif', '<style bgcolor="#EFF6FF" color="#1D4ED8"><b>' . $filterSummary . '</b></style>'];
+            $sheet1[] = ['Filter Aktif', '<style bgcolor="#ECFDF5" color="#047857"><b>' . $filterSummary . '</b></style>'];
         }
         $sheet1[] = [''];
 
-        $sheet1[] = ['<style bgcolor="#1E3A8A" color="#FFFFFF"><b>RINGKASAN STATISTIK PENGECEKAN</b></style>', ''];
+        $sheet1[] = ['<style bgcolor="#059669" color="#FFFFFF"><b>RINGKASAN STATISTIK PENGECEKAN</b></style>', ''];
         $sheet1[] = ['Total Layanan', '<b>' . $totalServices . ' Layanan</b>'];
         $sheet1[] = ['Layanan Normal (Berjalan)', '<style bgcolor="#DCFCE7" color="#166534"><b>' . $normalCount . ' Layanan</b></style>'];
         $sheet1[] = ['Layanan Terkendala (Ada Gangguan)', '<style bgcolor="#FEE2E2" color="#991B1B"><b>' . $issuesCount . ' Layanan</b></style>'];
@@ -1315,13 +1315,13 @@ class PeriodController extends Controller
                 <rect width="600" height="260" fill="#f8fafc" rx="16"/>
                 <rect x="2" y="2" width="596" height="256" fill="none" stroke="#e2e8f0" stroke-width="2" rx="14"/>
                 <g transform="translate(268, 45)">
-                    <rect width="64" height="64" rx="16" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
-                    <path d="M18 46l11-13 9 11 15-19 13 21H18z" fill="#3b82f6"/>
-                    <circle cx="28" cy="23" r="5" fill="#60a5fa"/>
+                    <rect width="64" height="64" rx="16" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.5"/>
+                    <path d="M18 46l11-13 9 11 15-19 13 21H18z" fill="#10b981"/>
+                    <circle cx="28" cy="23" r="5" fill="#34d399"/>
                 </g>
                 <text x="300" y="145" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">Bukti Kendala: ' . $cleanServiceName . '</text>
                 <text x="300" y="170" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="12" font-weight="500" fill="#64748b" text-anchor="middle">' . $fileName . '</text>
-                <text x="300" y="195" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">File tercatat di database Majadigi Checker</text>
+                <text x="300" y="195" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">File tercatat di database SIMONTER</text>
             </svg>';
             return response($svg, 200, [
                 'Content-Type' => 'image/svg+xml; charset=utf-8',
@@ -1330,7 +1330,7 @@ class PeriodController extends Controller
         }
 
         // For download fallback
-        $infoText = "MAJADIGI CHECKING SYSTEM - BUKTI KENDALA\n"
+        $infoText = "SIMONTER (SISTEM MONITORING & CHECKING LAYANAN TERPADU) - BUKTI KENDALA\n"
                   . "========================================\n"
                   . "Layanan   : " . ($periodService->service?->service_name ?? '-') . "\n"
                   . "Periode   : " . ($periodService->period?->date ?? '-') . "\n"
@@ -1470,6 +1470,6 @@ class PeriodController extends Controller
     public function syncPeriodServices(CheckingPeriod $period): RedirectResponse
     {
         $period->syncWithMasterServices();
-        return back()->with('success', 'Layanan periode berhasil disinkronkan dengan Master Layanan Majadigi (' . $period->periodServices()->count() . ' layanan).');
+        return back()->with('success', 'Layanan periode berhasil disinkronkan dengan Master Layanan Terpadu (' . $period->periodServices()->count() . ' layanan).');
     }
 }

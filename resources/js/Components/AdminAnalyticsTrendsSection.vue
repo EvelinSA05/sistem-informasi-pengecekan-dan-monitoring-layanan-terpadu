@@ -448,7 +448,7 @@ onUnmounted(() => {
                 <!-- Header Card + Breadcrumb Drill-Down In-Place -->
                 <div class="mb-4">
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-primary border border-blue-100 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-primary border border-emerald-100 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
                             Analytics Antar-Periode
                         </span>
 
@@ -675,7 +675,7 @@ onUnmounted(() => {
                                     </div>
                                     <Link
                                         :href="route('admin.periods.show', item.period_id)"
-                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary hover:bg-[#1d4ed8] text-white text-[11px] font-bold shrink-0 self-start"
+                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary hover:bg-[#047857] text-white text-[11px] font-bold shrink-0 self-start"
                                     >
                                         <span>Detail</span>
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">

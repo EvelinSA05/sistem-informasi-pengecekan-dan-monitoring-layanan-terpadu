@@ -19,10 +19,10 @@ class DatabaseSeeder extends Seeder
 
         // Akun Admin
         User::updateOrCreate(
-            ['email' => 'admin@majadigi.com'],
+            ['email' => 'admin@simonter.id'],
             [
-                'name' => 'Admin Majadigi',
-                'username' => 'admin_majadigi',
+                'name' => 'Admin SIMONTER',
+                'username' => 'admin_simonter',
                 'role' => 'admin',
                 'password' => bcrypt('password'), // Set password manually
             ]
@@ -30,10 +30,10 @@ class DatabaseSeeder extends Seeder
 
         // Akun Tester
         User::updateOrCreate(
-            ['email' => 'tester@majadigi.com'],
+            ['email' => 'tester@simonter.id'],
             [
-                'name' => 'Tester Majadigi',
-                'username' => 'tester_majadigi',
+                'name' => 'Tester SIMONTER',
+                'username' => 'tester_simonter',
                 'role' => 'tester',
                 'password' => bcrypt('password'), // Set password manually
             ]

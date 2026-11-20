@@ -38,7 +38,7 @@ const targetFileName = computed(() => {
 
 // Judul halaman standar saat dokumen dibuka di tab browser
 const defaultPageTitle = computed(() => {
-	return `Laporan Pengecekan ${props.report?.title || ''} - MAJADIGI CHECKER`;
+	return `Laporan Pengecekan ${props.report?.title || ''} - SIMONTER`;
 });
 
 let isPrinting = false;
@@ -120,25 +120,25 @@ onMounted(() => {
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-4">
 						<img 
-							src="/images/logo_majadigi.png" 
-							alt="Logo Majadigi" 
+							src="/images/logo-simonter.svg" 
+							alt="Logo SIMONTER" 
 							class="h-12 sm:h-14 w-auto object-contain shrink-0"
 						/>
 						<div>
 							<h1 class="text-lg font-black text-slate-900 tracking-tight uppercase leading-none">
-								MAJADIGI CHECKER SYSTEM
+								SIMONTER
 							</h1>
-							<p class="text-xs font-bold text-slate-600 uppercase tracking-wider mt-1">
-								DINAS KOMUNIKASI DAN INFORMATIKA PROVINSI JAWA TIMUR
+							<p class="text-xs font-bold text-emerald-700 uppercase tracking-wider mt-1">
+								SISTEM MONITORING &amp; CHECKING LAYANAN TERPADU
 							</p>
 							<p class="text-[11px] text-slate-400">
-								Sistem Monitoring & Evaluasi Kesiapan Layanan Digital Pemerintah
+								Laporan Pemantauan &amp; Evaluasi Kesiapan Layanan Terpadu
 							</p>
 						</div>
 					</div>
 
 					<div class="text-right">
-						<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wide bg-blue-100 text-blue-800 border border-blue-300">
+						<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wide bg-emerald-100 text-emerald-800 border border-emerald-300">
 							{{ report.status }}
 						</span>
 						<p class="text-xs font-semibold text-slate-500 mt-2">
@@ -162,13 +162,13 @@ onMounted(() => {
 				<!-- Indikator Filter Aktif (Jika Laporan Difilter) -->
 				<div
 					v-if="report.active_filters && Object.keys(report.active_filters).length > 0"
-					class="mt-3 p-3 rounded-xl bg-blue-50/70 border border-blue-200 flex flex-wrap items-center gap-2 text-xs"
+					class="mt-3 p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 flex flex-wrap items-center gap-2 text-xs"
 				>
-					<span class="font-extrabold text-blue-900 uppercase tracking-wider text-[10px] mr-1">Filter Laporan Aktif:</span>
+					<span class="font-extrabold text-emerald-900 uppercase tracking-wider text-[10px] mr-1">Filter Laporan Aktif:</span>
 					<span
 						v-for="(val, label) in report.active_filters"
 						:key="label"
-						class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-white border border-blue-200 text-blue-800 font-semibold text-[11px]"
+						class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-white border border-emerald-200 text-emerald-800 font-semibold text-[11px]"
 					>
 						<span class="text-slate-500 font-medium">{{ label }}:</span>
 						<strong>{{ val }}</strong>
@@ -202,10 +202,10 @@ onMounted(() => {
 				</div>
 
 				<!-- Progress -->
-				<div class="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900">
-					<p class="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Progress Selesai</p>
-					<p class="text-2xl font-black text-blue-800 mt-1">{{ report.progress_percent }}%</p>
-					<p class="text-[10px] text-blue-600 mt-0.5">
+				<div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900">
+					<p class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Progress Selesai</p>
+					<p class="text-2xl font-black text-emerald-800 mt-1">{{ report.progress_percent }}%</p>
+					<p class="text-[10px] text-emerald-600 mt-0.5">
 						{{ report.checked_services }}/{{ report.total_services }} terverifikasi
 					</p>
 				</div>
@@ -250,7 +250,7 @@ onMounted(() => {
 										v-if="srv.service_url"
 										:href="srv.service_url"
 										target="_blank"
-										class="text-blue-600 hover:underline"
+										class="text-emerald-600 hover:underline"
 									>
 										{{ srv.service_url }}
 									</a>
@@ -303,7 +303,7 @@ onMounted(() => {
 										v-if="srv.service_url"
 										:href="srv.service_url"
 										target="_blank"
-										class="text-blue-600 hover:underline"
+										class="text-emerald-600 hover:underline"
 									>
 										{{ srv.service_url }}
 									</a>

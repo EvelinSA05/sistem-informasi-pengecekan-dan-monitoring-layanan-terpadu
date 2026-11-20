@@ -80,7 +80,7 @@ Route::middleware('auth')->group(function () {
         // Master Layanan
         Route::get('/services', [\App\Http\Controllers\Admin\ServiceController::class, 'index'])->name('services.index');
         Route::post('/services', [\App\Http\Controllers\Admin\ServiceController::class, 'store'])->name('services.store');
-        Route::post('/services/sync-majadigi', [\App\Http\Controllers\Admin\ServiceController::class, 'syncMajadigi'])->name('services.sync_majadigi');
+        Route::post('/services/sync', [\App\Http\Controllers\Admin\ServiceController::class, 'syncServices'])->name('services.sync');
         Route::get('/services/{service}', [\App\Http\Controllers\Admin\ServiceController::class, 'show'])->name('services.show');
         Route::get('/services/{service}/history', [\App\Http\Controllers\Admin\ServiceController::class, 'history'])->name('services.history');
         Route::get('/services/{service}/issues', [\App\Http\Controllers\Admin\ServiceController::class, 'issues'])->name('services.issues');
@@ -103,18 +103,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/periods/attachment/{periodService}/download', [AdminPeriodController::class, 'downloadAttachment'])->name('periods.attachment.download');
 
         // Utilitas Migrasi & Sinkronisasi (Hanya Admin)
-        Route::get('/run-migrations', function (\App\Services\MajadigiApiService $apiService) {
+        Route::get('/run-migrations', function (\App\Services\ExternalServiceSyncService $syncService) {
             \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
             $syncMsg = '';
             try {
-                $result = $apiService->syncServices();
-                $syncMsg = " Sinkronisasi Majadigi otomatis: {$result['total']} layanan diproses ({$result['deleted']} data non-sinkronisasi dibersihkan).";
+                $result = $syncService->syncServices();
+                $syncMsg = " Sinkronisasi layanan otomatis: {$result['total']} layanan diproses ({$result['deleted']} data lama dibersihkan).";
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Run-migrations syncMajadigi: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::warning('Run-migrations syncServices: ' . $e->getMessage());
                 $syncMsg = " (Catatan sinkronisasi otomatis: " . $e->getMessage() . ")";
             }
             $total = \App\Models\Service::whereNotNull('synced_at')->count();
-            return "Migrations and cleanup ran successfully! Total layanan aktif tersinkronisasi dari Majadigi: {$total}.{$syncMsg}";
+            return "Migrations and cleanup ran successfully! Total layanan aktif tersinkronisasi: {$total}.{$syncMsg}";
         })->name('run_migrations');
     });
 });

@@ -281,7 +281,7 @@ function submitCheck() {
 </script>
 
 <template>
- <Head title="Layanan yang Ditugaskan - MAJADIGI CHECKER" />
+ <Head title="Layanan yang Ditugaskan - SIMONTER" />
 
  <AdminLayout
  title="Layanan yang Ditugaskan"
@@ -351,9 +351,9 @@ function submitCheck() {
 		<div v-if="periodInfo" class="flex items-center gap-2">
 			<span
 				v-if="periodInfo.status === 'proses' && !periodInfo.is_overdue"
-				class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#021344] text-white shadow-xs"
+				class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#064e3b] text-white shadow-xs"
 			>
-				<span class="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></span>
+				<span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
 				STATUS: PROSES
 			</span>
 			<span
@@ -365,7 +365,7 @@ function submitCheck() {
 			</span>
 			<span
 				v-else
-				class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#eff4fa] text-slate-600 border border-slate-200/80"
+				class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#f0fdf4] text-slate-600 border border-slate-200/80"
 			>
 				<span class="w-2 h-2 rounded-full bg-slate-400 shrink-0"></span>
 				STATUS: SELESAI
@@ -376,11 +376,11 @@ function submitCheck() {
 	<!-- ── Header Banner ────────────────────────────────────── -->
 	<div v-if="periodInfo" class="relative rounded-2xl overflow-hidden bg-primary p-6 sm:p-8 shadow-lg mb-4">
 		<div class="absolute inset-0 opacity-70 bg-cover bg-center" style="background-image: url('/images/banner_3.jpg');"></div>
-		<div class="absolute inset-0 bg-gradient-to-r from-[#1e3a8a]/85 via-[#1e3a8a]/45 to-transparent pointer-events-none"></div>
+		<div class="absolute inset-0 bg-gradient-to-r from-[#065f46]/85 via-[#065f46]/45 to-transparent pointer-events-none"></div>
 		<div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 			<div>
-				<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-cyan-100 backdrop-blur-sm shadow-xs">
-					<span class="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></span>
+				<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 mb-2 text-[11px] font-bold tracking-wider uppercase text-emerald-100 backdrop-blur-sm shadow-xs">
+					<span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
 					PENGUJIAN LAYANAN
 				</div>
 				<h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Pengecekan: {{ periodInfo.month_name || 'Periode Pengujian' }}</h2>
@@ -722,7 +722,7 @@ function submitCheck() {
 									<span
 										v-if="service.level && service.level !== '-'"
 										class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold"
-										:class="service.level === 'Level 1' ? 'bg-primary text-white border border-primary' : (service.level === 'Level 2' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/80' : (service.level === 'Level 3' ? 'bg-purple-50 text-purple-700 border border-purple-200/80' : 'bg-slate-100 text-slate-600 border border-slate-200/60'))"
+										:class="service.level === 'Level 1' ? 'bg-primary text-white border border-primary' : (service.level === 'Level 2' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80' : (service.level === 'Level 3' ? 'bg-purple-50 text-purple-700 border border-purple-200/80' : 'bg-slate-100 text-slate-600 border border-slate-200/60'))"
 									>
 										{{ service.level }}
 									</span>
@@ -902,7 +902,7 @@ function submitCheck() {
  </p>
  <div class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-semibold text-xs border border-slate-200">
  <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
- Silakan tunggu informasi selanjutnya dari Admin Majadigi.
+ Silakan tunggu informasi selanjutnya dari Admin SIMONTER.
  </div>
  </div>
  </template>
@@ -929,7 +929,7 @@ function submitCheck() {
  <div class="flex items-center gap-3 min-w-0">
  <div
  class="w-8 h-8 rounded-xl flex items-center justify-center font-bold shrink-0 shadow-xs border"
- :class="selectedService?.is_recheck_needed ? 'bg-amber-500 border-amber-600 text-white' : (isEditMode ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-primary border-primary text-white')"
+ :class="selectedService?.is_recheck_needed ? 'bg-amber-500 border-amber-600 text-white' : (isEditMode ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-primary border-primary text-white')"
  >
  <svg v-if="selectedService?.is_recheck_needed" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1167,7 +1167,7 @@ function submitCheck() {
      <!-- Document / Generic file icon -->
      <div
       v-else
-      class="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center shrink-0"
+      class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 text-primary flex items-center justify-center shrink-0"
      >
       <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1224,7 +1224,7 @@ function submitCheck() {
    <div
     v-else
     @click="triggerFileInput"
-    class="border-2 border-dashed border-slate-300 hover:border-primary/60 rounded-2xl p-4 sm:p-5 text-center cursor-pointer bg-slate-50/60 hover:bg-blue-50/20 transition-all group select-none"
+    class="border-2 border-dashed border-slate-300 hover:border-primary/60 rounded-2xl p-4 sm:p-5 text-center cursor-pointer bg-slate-50/60 hover:bg-emerald-50/20 transition-all group select-none"
    >
     <div class="w-10 h-10 rounded-full bg-white shadow-2xs border border-slate-200/80 flex items-center justify-center mx-auto mb-2 text-slate-400 group-hover:text-primary group-hover:border-primary/30 transition-colors">
      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -1273,7 +1273,7 @@ function submitCheck() {
  'px-5 py-2 rounded-xl font-bold text-xs text-white transition-all flex items-center gap-1.5 cursor-pointer active:scale-95',
  (checkForm.processing || !checkForm.status || (checkForm.status === 'gangguan' && (!checkForm.description?.trim() || (!checkForm.attachment && !existingAttachmentName))))
  ? 'bg-slate-300 cursor-not-allowed text-slate-500 shadow-none'
- : (selectedService?.is_recheck_needed ? 'bg-amber-500 hover:bg-amber-600 shadow-md shadow-amber-500/20' : 'bg-primary hover:bg-[#1d4ed8] shadow-md shadow-primary/20 disabled:opacity-70')
+ : (selectedService?.is_recheck_needed ? 'bg-amber-500 hover:bg-amber-600 shadow-md shadow-amber-500/20' : 'bg-primary hover:bg-[#047857] shadow-md shadow-primary/20 disabled:opacity-70')
  ]"
  >
  <svg v-if="checkForm.processing" class="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>

@@ -1,8 +1,8 @@
-# MAJADIGI CHECKER
+# SIMONTER — Sistem Monitoring & Checking Layanan Terpadu
 
-MAJADIGI CHECKER is a comprehensive web-based application designed to facilitate the monitoring and evaluation of digital services provided by the East Java Provincial Government (Majadigi). 
+**SIMONTER** (*Sistem Monitoring & Checking Layanan Terpadu*) adalah aplikasi web untuk memantau, memeriksa, dan mengevaluasi ketersediaan serta kualitas layanan digital secara terpadu dan berkala.
 
-This system bridges the gap between administrators and testers by providing a structured, period-based assignment mechanism, ensuring all registered digital services are periodically reviewed for uptime, functionality, and overall health.
+Sistem ini menjembatani administrator dan tester melalui mekanisme penugasan berbasis periode yang terstruktur, sehingga seluruh layanan terpadu dapat diperiksa secara berkala dari sisi uptime, fungsionalitas, dan penanganan kendala.
 
 ## Core Architecture
 
@@ -21,7 +21,7 @@ The application is built using a modern monolithic architecture with a reactive 
 - **Tester**: Focused interface for receiving assignments and submitting test results.
 
 ### Master Service Management
-- Centralized repository of all Majadigi digital services.
+- Centralized repository of all integrated digital services.
 - Real-time status tracking (Active, Inactive, Needs Confirmation).
 - Categorization and hierarchical leveling for easier filtering.
 
@@ -103,4 +103,4 @@ If you discover any security-related issues, please report them directly to the 
 
 ## License
 
-This project is proprietary and intended for internal use by the Majadigi administrative team. Unauthorized copying, modification, or distribution is strictly prohibited.
+This project is intended for internal use in operating **SIMONTER (Sistem Monitoring & Checking Layanan Terpadu)**. Unauthorized copying, modification, or distribution is prohibited.
